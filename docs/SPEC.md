@@ -1,0 +1,307 @@
+# sloplint — spec
+
+A CLI that scans prose for the tells of AI-generated "slop" and reports them as
+linting notes. Think `proselint`, but narrowly aimed at the rhetorical tics and
+puffery that mark LLM writing.
+
+Primary consumer is an **agent** (Claude Code and friends) that runs sloplint,
+reads the JSON, and rewrites the flagged text. Humans are the secondary
+consumer. Every design choice below favors machine-readability and a help text
+an agent can act on without guessing.
+
+## The one test for every rule
+
+A pattern earns a place in the catalog only if it **shows up constantly in AI
+writing and rarely in careful human writing.** That's the whole filter.
+
+If a thoughtful human writer does it all the time too — passive voice, weak
+adverbs, comma splices, wordiness — it belongs in proselint or write-good, not
+here. sloplint is not a general prose linter and never tries to be. It hunts
+the specific fingerprints of a language model: the cadences, the puffery, the
+reflexive both-sidesing that a person almost never produces but an LLM produces
+by the paragraph.
+
+Two payoffs from holding this line: a low false-positive rate (so an agent can
+trust a flag instead of second-guessing it), and no overlap with tools that
+already do general prose well. When a rule is borderline, ask the test again and
+cut it if the answer is soft.
+
+## Prior art we're borrowing from
+
+- **proselint** — subcommand CLI (`check`, `version`, `dump-config`), `--output-format full|json|compact`, LSP-style diagnostics (line/column/severity/code/message), config file, clean exit codes. We copy this shape.
+- **vale** — markup-aware (skips code blocks, knows Markdown). We do a lighter version: optional `--markdown` to skip fenced code and inline code.
+- **write-good / alex** — naive regex rules, one module per rule. We keep rules as data, not code, so they're trivial to add.
+
+## Why build fresh instead of extending proselint
+
+proselint is a general prose linter. Extend it and our AI-tell rules land next
+to its checks for passive voice, clichés, and date formatting — a user who just
+wants "does this read like a bot?" can't get that without running everything and
+filtering. The narrow focus is the whole product, and folding into proselint
+dilutes it on day one.
+
+The practical cost is worse. Upstreaming our rules puts our release schedule at
+the mercy of their review and their view of scope. Forking means maintaining a
+whole prose linter to ship what is really a few hundred lines of regex. Both are
+bad trades for the size of this thing.
+
+And the part we actually care about — the agent-facing design (`explain` and
+`rules` commands, the JSON schema as a fixed contract, the copy-paste recipe in
+`--help`) — isn't in proselint. We'd be bolting it onto someone else's CLI (and
+proselint is Python; we're Ruby). Writing our own shell is about a day, and
+proselint already showed us
+what that shell should look like. The hard part was never the CLI; it's the
+rules and holding down false positives, and proselint helps with neither.
+
+One additive move, not either-or: once the rules exist as data, we can also
+package them as a proselint plugin, so people already using proselint get our
+checks without us inheriting their codebase. Cheap, because the rules are
+already pure data.
+
+## Language & shape
+
+Ruby 3.3+, **standard library only** (`optparse`, `json`, native regex). No gem
+dependencies at runtime.
+
+Rationale: rules are regexes; the whole thing is a scanner plus an output
+formatter. A dependency-free `gem install sloplint` is the robust, boring
+choice. The name is free on RubyGems (taken on PyPI, so this also sidesteps the
+collision). Ships a `sloplint` executable via the gemspec's `bin`.
+
+Package layout (standard gem):
+
+```
+sloplint/
+  bin/sloplint             # thin shim: require "sloplint/cli"; exit Sloplint::CLI.run(ARGV)
+  lib/sloplint.rb          # requires the pieces below
+  lib/sloplint/version.rb
+  lib/sloplint/cli.rb      # optparse, subcommands, exit codes
+  lib/sloplint/rules.rb    # RULES: array of Rule (Data) objects — the catalog
+  lib/sloplint/engine.rb   # Engine.scan(text, rules:, config:) -> [Note]
+  lib/sloplint/output.rb   # format_human / format_json / format_compact
+docs/
+  SPEC.md                  # this file
+spec/
+  rules_spec.rb            # each rule: >=1 positive, >=1 negative fixture
+  cli_spec.rb              # exit codes, stdin, output formats
+  spec_helper.rb
+sloplint.gemspec
+.rspec
+Rakefile                   # rake spec
+```
+
+RSpec is a **development** dependency (in the gemspec's `add_development_
+dependency`), so the runtime stays dependency-free.
+
+## CLI surface
+
+```
+sloplint [GLOBAL] <command> [ARGS]
+
+commands:
+  check       scan paths (or stdin) and report notes   [default command]
+  rules       list the rule catalog (human or --json)
+  explain ID  print one rule's description, examples, and rationale
+  version     print version
+
+global options:
+  -o, --output-format  full | json   (default: full)
+
+check options:
+  paths ...            files to scan; "-" or no paths reads stdin
+  --markdown           skip fenced/inline code spans
+  --select IDS         only run these rules (comma-separated ids or categories)
+  --ignore IDS         skip these rules
+```
+
+Bare `sloplint` with piped stdin behaves as `sloplint check -`. This is the
+common agent path: `cat draft.md | sloplint check --markdown -o json -`.
+
+Deliberately left out of v1 (add when a real need shows up, not before):
+`compact` output, `--min-severity`, `--max-notes`, color, `-q/--quiet`, and a
+`--demo` flag (the slop fixture lives in `spec/` instead).
+
+## Exit codes
+
+Three codes carry the contract. A crash just exits nonzero on its own.
+
+| code | meaning |
+|------|---------|
+| 0    | ran, **no notes** |
+| 1    | ran, **notes found** |
+| 2    | bad arguments / usage error |
+
+## Note (the diagnostic object)
+
+One match = one Note. JSON output is an array of these (or an object keyed by
+path when multiple files are scanned).
+
+```json
+{
+  "path": "draft.md",
+  "line": 12,
+  "column": 5,
+  "severity": "warning",
+  "rule": "no-x-no-y",
+  "category": "rhetorical-tic",
+  "message": "\"No X, no Y\" chain (3 items) reads as AI cadence.",
+  "excerpt": "No fluff, no filler, no jargon.",
+  "count": 3,
+  "suggestion": "Cut the chain or make it one plain sentence."
+}
+```
+
+- `line`/`column` are 1-indexed, pointing at the start of the match.
+- `count` present when the rule counts items (the "badge" in the examples).
+- `suggestion` is a short fix hint; agents may use it, humans see it too.
+
+## Rule model
+
+A rule is data, not a function. `rules.rb` holds an array of `Rule` objects
+built with `Data.define` (immutable value objects, Ruby 3.2+):
+
+```ruby
+Rule = Data.define(
+  :id, :category, :severity, :pattern, :message, :suggestion,
+  :examples_bad, :examples_ok, :count_group, :skip
+) do
+  # sensible defaults for the optional fields
+  def initialize(count_group: nil, skip: [], **rest) = super
+end
+
+RULES = [
+  Rule.new(
+    id:          "no-x-no-y",
+    category:    "rhetorical-tic",
+    severity:    "warning",
+    pattern:     /.../i,                       # regex literal; add /m if multiline
+    message:     "...",                         # may reference %{count}
+    suggestion:  "...",
+    examples_bad: ["No fluff, no filler, no jargon."],
+    examples_ok:  ["No parking on Sundays."],   # must NOT match; asserted in tests
+    count_group:  nil,                          # optional: capture group to tally
+    skip:        [/real estate/i, /real time/i] # optional exclusions
+  ),
+  # ...
+]
+```
+
+Adding a rule = appending one entry + one bad and one ok fixture. That's the
+whole extension story. No new files, no plugin system (YAGNI).
+
+### Why Ruby literals, not JSON/YAML
+
+The rules are data, but they live in a `.rb` array on purpose:
+
+- **YAML** ships with Ruby, but regex in YAML is a string that has to be
+  re-parsed and re-escaped — every `\b` doubled, no `/i` flags inline, and the
+  good/bad fixtures drift away from the pattern they test.
+- **JSON** is stdlib too but worse for regex: same escaping tax, no comments,
+  no multiline patterns. Both external formats also need a load-and-validate
+  layer that a Ruby array gets for free — a typo is a syntax error at require
+  time, not a silent miss.
+
+A Ruby array with real regex literals (`/.../i`) is the nicest place to *author*
+regex — flags, comments, and fixtures all in one spot. The usual reason to move
+rules to a file (non-devs editing them, third-party rule packs) isn't real yet.
+If it becomes real, the migration is cheap precisely because the rules are
+already pure data: write one loader, point it at a JSON dir, done.
+
+Categories (for `--select`/`--ignore` by group):
+
+- `rhetorical-tic` — the cadence patterns (the user's list below)
+- `puffery` — Wikipedia "words to watch" (boasts, vibrant, nestled, tapestry…)
+- `structure` — rule-of-three, "not just X but Y", em-dash overuse
+- `hedging` — vague attribution ("some critics argue", "it is widely regarded")
+
+Severities: `error` for near-certain slop, `warning` for strong tells, `info`
+for weak/contextual ones.
+
+## Rule catalog (v1)
+
+### rhetorical-tic (from the request)
+
+| id | catches | notes |
+|----|---------|-------|
+| `no-x-no-y` | 2+ "no …" items in a row | counts items |
+| `thats-the-whole` | "that/this is the whole point/game/thing…" | |
+| `did-not-x-did-not-y` | 2+ "did not …"/"didn't …" in a row | counts items |
+| `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
+| `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
+| `you-already-know` | "you already know" (+ the answer / standalone) | |
+| `is-the-entire` | "X is the entire point/game/business model" | |
+| `the-entire-is` | "the entire point/game/… is" (flip of above) | |
+| `is-real-and-not` | "the X is real, and/not…", "is the real … and it" | skip "real estate/time" |
+| `the-punchline-is` | "the punchline is/:/?" | |
+| `worth-naming` | "worth naming", "it's worth naming that…", "Worth naming:" | skip "naming names" |
+| `thats-not-nothing` | "that/this/it/which is not nothing" | |
+
+### puffery (Wikipedia: Signs of AI writing)
+
+Single flat rule per word-cluster, matched as whole words:
+
+- `puffery-words` — boasts a, vibrant, rich (history/cultural/tapestry), profound, nestled, in the heart of, groundbreaking, renowned, diverse array, breathtaking, natural beauty, stands as a testament, indelible mark, deeply rooted.
+- `stands-serves-as` — "stands as / serves as", "is a testament/reminder to".
+- `vital-role` — "plays a (vital/crucial/pivotal/significant/key) role".
+- `underscores-highlights` — "underscores/highlights/emphasizes its (importance/significance)".
+- `rich-tapestry` — "rich tapestry", "tapestry of".
+
+### structure
+
+- `not-just-x-but-y` — "not just X, but (also) Y", "not only … but".
+- `rule-of-three` — three parallel comma items ending a sentence (heuristic; `info` severity, off by default via `--select` since it false-positives).
+- `em-dash-overuse` — >N em dashes per paragraph (default N=2); `info`.
+
+### hedging
+
+- `vague-attribution` — "some (critics/experts/observers) (argue/say/believe)", "it is widely (regarded/considered/seen)", "many would argue".
+
+## Markdown handling
+
+`--markdown` blanks out fenced code (```` ``` ````), inline code (`` ` ``), and
+URLs before scanning, replacing them with same-length whitespace so line/column
+stay correct. Off by default (plain-text mode) so it never silently eats prose.
+
+## Agent-first help text
+
+This is a first-class requirement, not an afterthought.
+
+- `sloplint --help` opens with a one-line what-it-does, then a **copy-pasteable
+  agent recipe** block:
+
+  ```
+  # Recommended for agents:
+  cat FILE | sloplint check --markdown -o json -
+  # exit 0 = clean, 1 = notes found, >1 = error
+  # each note: {path,line,column,severity,rule,message,excerpt,suggestion}
+  ```
+
+- Every option has a full-sentence help string (no telegraphic fragments).
+- `sloplint rules` prints the catalog: id, category, severity, one-line
+  description — and with `--json`, the machine version an agent can enumerate.
+- `sloplint explain no-x-no-y` prints the rule's message, rationale, a bad
+  example and an ok (non-matching) example. Agents call this to decide whether a
+  flag is worth acting on.
+- JSON output is stable and documented here; the schema is the contract.
+- `--help` epilog links to `sloplint explain` and `docs/spec.md`.
+
+## Testing
+
+RSpec (dev dependency), run via `rake spec`.
+
+- Every rule ships `examples_bad` (must produce ≥1 note) and `examples_ok`
+  (must produce 0). `rules_spec.rb` iterates the catalog and asserts both — a
+  new rule without fixtures fails CI.
+- `cli_spec.rb` covers: exit codes (0/1/2), stdin path, `-o json` parses and
+  matches the schema, `--select`/`--ignore`, `--markdown` skips code.
+- A built-in slop fixture doubles as an integration example (known note count).
+
+## Explicitly out of scope for v1
+
+- Config files (`.sloplintrc`). Add when someone needs per-project rule tuning;
+  `--select`/`--ignore` cover the common case first.
+- LSP server mode, editor plugins, autofix/rewrite. sloplint *flags*; the agent
+  rewrites. Autofix is a separate tool if ever.
+- Non-English. Languages other than English are a v2 conversation.
+- ML/embedding-based detection. This is a regex linter on purpose — fast,
+  explainable, zero-dependency. Statistical detection is a different product.
