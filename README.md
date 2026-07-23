@@ -117,11 +117,11 @@ A typo in `--select` matches no rules and exits 0, which looks identical to a cl
 
 ## The rule catalog
 
-22 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+25 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
-- **rhetorical-tic** (13) the cadence patterns: `no-x-no-y`, `thats-the-whole`, `exactly-the`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, and more.
+- **rhetorical-tic** (15) the cadence patterns: `no-x-no-y`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exactly-the`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, and more.
 - **puffery** (5) Wikipedia's "signs of AI writing": `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`.
-- **structure** (3) `not-just-x-but-y`, `em-dash-overuse` (three or more em dashes in a paragraph), and `rule-of-three`.
+- **structure** (4) `not-just-x-but-y`, `em-dash-overuse` (three or more em dashes in a paragraph), `clause-triad-then`, and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
 
 Severity is `error` for near-certain slop, `warning` for strong tells, `info` for weak or contextual ones.

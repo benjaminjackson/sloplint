@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Sloplint::RULES do
+RSpec.describe "Sloplint::RULES" do
   it "has unique rule ids" do
     ids = Sloplint::RULES.map(&:id)
     expect(ids).to eq(ids.uniq)
@@ -34,6 +34,22 @@ RSpec.describe Sloplint::RULES do
           notes = Sloplint::Engine.scan(example, rules: [rule])
           expect(notes).to be_empty
         end
+      end
+    end
+  end
+
+  # The README quotes the catalog size and a per-category breakdown. Nothing
+  # regenerates those, so they go stale the moment a rule is added.
+  describe "the README rule counts" do
+    readme = File.read(File.expand_path("../README.md", __dir__))
+
+    it "quotes the catalog total" do
+      expect(readme).to match(/^#{Sloplint::RULES.size} rules across/)
+    end
+
+    Sloplint::RULES.group_by(&:category).each do |category, rules|
+      it "quotes the #{category} count" do
+        expect(readme).to include("**#{category}** (#{rules.size})")
       end
     end
   end

@@ -166,6 +166,31 @@ module Sloplint
       examples_ok: ["She folded it exactly the way he showed her."],
       rationale: "'exactly the X' is a model intensifier that a careful writer rarely leans on."
     ),
+    Rule.new(
+      id: "thats-how-x",
+      category: "rhetorical-tic",
+      severity: "warning",
+      pattern: /(?:\A|[.!?]\s+|\n)\s*(?:that|this)(?:'s| is)\s+how\b/i,
+      message: '"That\'s how…" opening a sentence is a stock LLM aphorism closer.',
+      suggestion: "Cut the closer, or replace it with the concrete result you mean.",
+      examples_bad: ["That's how a review system compounds instead of drifting."],
+      examples_ok: ["I never learned that's how the engine works.", "And that's how I met your mother."],
+      rationale: "Models end paragraphs by generalizing the point into a maxim; 'That's how X' " \
+                 "is the usual hinge. Mid-sentence uses are ordinary, so only the kicker " \
+                 "position is flagged."
+    ),
+    Rule.new(
+      id: "announced-takeaway",
+      category: "rhetorical-tic",
+      severity: "warning",
+      pattern: /(?:\A|[.!?]\s+|\n)\s*(?:here'?s\s+)?the\s+(?:loop|pattern|trick|lesson|takeaway|playbook|framing|insight|kicker)\b[^.!?\n]{0,60}:/i,
+      message: "Colon-led takeaway label announces the lesson before making it.",
+      suggestion: "Give the observation first; let the reader decide it's the takeaway.",
+      examples_bad: ["The loop I'd copy: file the incident, then fix the reviewer."],
+      examples_ok: ["The pattern repeated all week.", "The move: bishop takes rook."],
+      rationale: "Labelling a claim as the portable lesson does the persuading that the claim " \
+                 "should be doing — a model habit borrowed from thought-leader prose."
+    ),
 
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
@@ -247,6 +272,19 @@ module Sloplint
       examples_bad: ["It was fast, cheap, and simple."],
       examples_ok: ["We met on Tuesday afternoon."],
       rationale: "Rule-of-three endings are a model habit, but humans use them too — off by default."
+    ),
+    Rule.new(
+      id: "clause-triad-then",
+      category: "structure",
+      severity: "info",
+      pattern: /[^,.!?\n]{5,60},\s+[^,.!?\n]{5,60},\s+then\s+[^.!?\n]{5,}/i,
+      message: "Three-beat clause chain hinged on 'then' — an AI process-recipe cadence.",
+      suggestion: "Real procedures have an ugly step. Name it, or cut to the two that matter.",
+      examples_bad: ["Take the PR that caused it, update the reviewer to catch that class, " \
+                     "then add the PR to the eval set."],
+      examples_ok: ["I packed a bag, locked the door, and then drove north."],
+      rationale: "Models describe processes as three evenly-weighted parallel clauses with no " \
+                 "step harder than the others, which is how you can tell nobody ran it."
     ),
     Rule.new(
       id: "em-dash-overuse",
