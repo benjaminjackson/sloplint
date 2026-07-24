@@ -61,4 +61,19 @@ RSpec.describe "Sloplint::RULES" do
       expect(note.message).to include("3 items")
     end
   end
+
+  # Each rule's examples_ok is only ever checked against that one rule
+  # (see the "ignores:" tests above). A fixture proven clean against its own
+  # rule can still trip a DIFFERENT rule in the catalog -- this runs every
+  # examples_ok against the full default catalog to catch that.
+  describe "cross-rule false positives" do
+    Sloplint::RULES.each do |owner|
+      owner.examples_ok.each do |example|
+        it "#{owner.id}'s ok-fixture #{example.inspect} trips no other rule" do
+          notes = Sloplint::Engine.scan(example)
+          expect(notes.map(&:rule)).to eq([])
+        end
+      end
+    end
+  end
 end

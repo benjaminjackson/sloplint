@@ -211,7 +211,7 @@ module Sloplint
         "The pattern repeated all week.", "The move: bishop takes rook.",
         # Mid-sentence, hard-wrapped: the label lands after a line break that
         # isn't a paragraph break, and must not read as a kicker.
-        "We noticed something worth naming here, and\nthe pattern: it only ever happened on Fridays."
+        "We noticed something odd about the failures, and\nthe pattern: it only ever happened on Fridays."
       ],
       rationale: "Labelling a claim as the portable lesson does the persuading that the claim " \
                  "should be doing — a model habit borrowed from thought-leader prose. Anchored " \

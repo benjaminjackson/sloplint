@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "stringio"
+require "tempfile"
 
 RSpec.describe Sloplint::CLI do
   def run(argv, stdin_text: "")
@@ -84,6 +85,44 @@ RSpec.describe Sloplint::CLI do
       _, out = run(["-o", "json", "check", "-"], stdin_text: "That's the whole point.")
       note = JSON.parse(out).first
       expect(note).not_to have_key("count")
+    end
+
+    describe "multiple files" do
+      # by_path grouping in cmd_check only kicks in when more than one
+      # non-"-" path is given -- a single-file check still returns a flat
+      # array, and this is the one place that distinction is tested.
+      def write_temp(basename, content)
+        file = Tempfile.create([basename, ".md"])
+        file.write(content)
+        file.close
+        file.path
+      end
+
+      it "groups notes by path, keyed by each file's own path" do
+        a = write_temp("a", "That's the whole point.")
+        b = write_temp("b", "You already know it.")
+
+        _, out = run(["-o", "json", "check", a, b])
+        data = JSON.parse(out)
+
+        expect(data.keys).to contain_exactly(a, b)
+        expect(data[a].map { |n| n["rule"] }).to eq(["thats-the-whole"])
+        expect(data[b].map { |n| n["rule"] }).to eq(["you-already-know"])
+      ensure
+        File.unlink(a, b)
+      end
+
+      it "returns a flat array, not grouped, for a single file" do
+        a = write_temp("a", "That's the whole point.")
+
+        _, out = run(["-o", "json", "check", a])
+        data = JSON.parse(out)
+
+        expect(data).to be_an(Array)
+        expect(data.first["rule"]).to eq("thats-the-whole")
+      ensure
+        File.unlink(a)
+      end
     end
   end
 
