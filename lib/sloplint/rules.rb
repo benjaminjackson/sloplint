@@ -254,12 +254,28 @@ module Sloplint
       id: "not-just-x-but-y",
       category: "structure",
       severity: "warning",
-      pattern: /\bnot\s+(?:just|only)\b[^.!?]*?\bbut\b/i,
-      message: '"not just X, but Y" is a stock AI escalation structure.',
+      pattern: /(?:\bis|\bare|\bwas|\bwere|\bisn['’]t|\baren['’]t|\bwasn['’]t|\bweren['’]t|
+                  \bit['’]s|\bthat['’]s|\bthis\s+is|\bthese\s+are|\bthose\s+are)
+                 \s+not\s+(?:just|only)\b[^.!?]*?\bbut\b(?:\s+also\b)?/ix,
+      message: '"X is not just A, but B" is a stock AI escalation structure.',
       suggestion: "Make the claim once; drop the 'not just… but' frame.",
-      examples_bad: ["It's not just fast, but genuinely reliable."],
-      examples_ok: ["He is not tired."],
-      rationale: "The 'not just X but Y' escalation is a model cadence, overused to the point of tell."
+      examples_bad: [
+        "It's not just fast, but genuinely reliable.",
+        "This is not just a tool, but a partner in your workflow."
+      ],
+      examples_ok: [
+        "He is not tired.",
+        # Federalist No. 44: a real correlative conjunction joining two verb
+        # phrases, not a copula predicating two things of one subject.
+        "This power ought not only to be established, but ought to be established.",
+        "Not only that, but they looked embarrassed.",
+        "not just to acquire users, but to build something people love."
+      ],
+      rationale: "'X is not just A, but B' predicates two things of the same subject through a " \
+                 "copula, which is the specific shape models overuse. 'not only… but' joining " \
+                 "two verb phrases or clauses without a preceding copula is ordinary correlative " \
+                 "conjunction and common in formal human prose; anchoring on the copula is what " \
+                 "keeps this rule off that construction."
     ),
     Rule.new(
       id: "rule-of-three",
