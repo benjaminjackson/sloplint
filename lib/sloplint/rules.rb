@@ -28,11 +28,10 @@ module Sloplint
       count_group: /\bno\b/i,
       examples_bad: ["No fluff, no filler, no jargon."],
       examples_ok: ["No parking on Sundays."],
-      rationale: "Asyndetic negation chains are a signature model cadence. This is near-absent " \
-                 "from human prose at any length -- 24 hits in 1.02M words across Austen, " \
-                 "Melville, Madison, Thoreau, and Emerson combined -- which is why two items is " \
-                 "enough to flag; a careful writer occasionally stacks two (and, rarely, more), " \
-                 "but a model reaches for the pattern constantly."
+      rationale: "Asyndetic negation chains are a signature model cadence, near-absent from " \
+                 "human prose at any length -- 24 hits in 1.02M words across Austen, Melville, " \
+                 "Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks " \
+                 "two (and, rarely, more), but a model reaches for the pattern constantly."
     ),
     Rule.new(
       id: "thats-the-whole",
@@ -194,10 +193,7 @@ module Sloplint
         "things are the way they are because\nthat is how things have to be."
       ],
       rationale: "Models end paragraphs by generalizing the point into a maxim; 'That's how X' " \
-                 "is the usual hinge. Mid-sentence uses are ordinary, so only the kicker " \
-                 "position is flagged — a real paragraph break (blank line), not just a line " \
-                 "break, since hard-wrapped source would otherwise flag mid-sentence text that " \
-                 "happens to land at the start of a line."
+                 "is the usual hinge. Mid-sentence uses are ordinary phrasing, not the tell."
     ),
     Rule.new(
       id: "announced-takeaway",
@@ -214,9 +210,7 @@ module Sloplint
         "We noticed something odd about the failures, and\nthe pattern: it only ever happened on Fridays."
       ],
       rationale: "Labelling a claim as the portable lesson does the persuading that the claim " \
-                 "should be doing — a model habit borrowed from thought-leader prose. Anchored " \
-                 "on a real paragraph break (blank line), not a line break, for the same reason " \
-                 "as thats-how-x."
+                 "should be doing — a model habit borrowed from thought-leader prose."
     ),
 
     # ── puffery ───────────────────────────────────────────────────────────
@@ -244,10 +238,7 @@ module Sloplint
         "helpless Ahab, even in the heart of such a whirlpool as that"
       ],
       rationale: "Travel-brochure adjectives and phrases that models reach for and careful " \
-                 "writers avoid. Dropped 'profound' from this list: bare adjective, no reliable " \
-                 "way to separate sincere use ('a profound silence') from puffery without more " \
-                 "context than a regex has. 'in the heart of' is narrowed to require a place " \
-                 "object, since unguarded it fires on ordinary spatial idiom."
+                 "writers avoid."
     ),
     Rule.new(
       id: "stands-serves-as",
@@ -317,10 +308,9 @@ module Sloplint
         "not just to acquire users, but to build something people love."
       ],
       rationale: "'X is not just A, but B' predicates two things of the same subject through a " \
-                 "copula, which is the specific shape models overuse. 'not only… but' joining " \
-                 "two verb phrases or clauses without a preceding copula is ordinary correlative " \
-                 "conjunction and common in formal human prose; anchoring on the copula is what " \
-                 "keeps this rule off that construction."
+                 "copula, which is the specific shape models overuse. Correlative 'not only… " \
+                 "but' joining two verb phrases or clauses, without a preceding copula, is " \
+                 "ordinary and common in formal human prose."
     ),
     Rule.new(
       id: "rule-of-three",
@@ -364,9 +354,7 @@ module Sloplint
         "It was — I think — a fine choice.\n\nAnother option — entirely separate — came up too."
       ],
       rationale: "Heavy em-dash interjection is a strong model tell; two is fine, three signals " \
-                 "slop. Scoped to a paragraph (stops at a blank line), not a source line, so " \
-                 "hard-wrapped Markdown doesn't dodge the rule and soft-wrapped Markdown doesn't " \
-                 "over-trigger it -- the earlier line-scoped version swung 30x on wrapping alone."
+                 "slop."
     ),
 
     # ── hedging ───────────────────────────────────────────────────────────

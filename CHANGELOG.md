@@ -20,6 +20,10 @@ First public release.
   default printed "version unknown" to the real stdout and hard-exited,
   bypassing the `out:`/return-a-code contract every other path honors --
   caught by hand-testing the freshly built gem before this release shipped.
+- Rationale text (`sloplint explain`) across six rules no longer narrates the
+  rule's own implementation -- pattern scoping, anchoring, tuning history,
+  corpus-driven thresholds. It states why the construct reads as AI writing
+  and nothing else.
 
 Rules narrowed against a corpus of real human prose (the Federalist Papers,
 Moby-Dick, Walden) before release:
