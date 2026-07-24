@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.3", "3.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      # No Gemfile by design (see CLAUDE.md) -- install the dev deps the
+      # gemspec declares directly, rather than bundling.
+      - run: gem install rspec -v "~> 3.0" rake -v "~> 13.0" --no-document
+      - run: rake spec
+      - run: gem build sloplint.gemspec
+      - run: ruby -e 'Gem::Specification.load("sloplint.gemspec").validate'
