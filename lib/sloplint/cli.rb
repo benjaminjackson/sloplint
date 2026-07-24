@@ -16,9 +16,11 @@ module Sloplint
 
     def run(argv, out: $stdout, err: $stderr, stdin: $stdin)
       opts = { format: "full" }
-      parser = global_parser(opts)
+      parser = global_parser(opts, out:)
       # Split global options from the subcommand and its args.
       parser.order!(argv)
+      return 0 if opts[:help_shown]
+
       command = argv.shift
 
       # Bare invocation with piped stdin behaves as `check -`.
@@ -170,7 +172,7 @@ module Sloplint
       rules
     end
 
-    def global_parser(opts)
+    def global_parser(opts, out:)
       OptionParser.new do |o|
         o.banner = <<~BANNER
           sloplint — flag the rhetorical tics and puffery that mark AI-generated prose.
@@ -195,8 +197,8 @@ module Sloplint
           opts[:format] = v
         end
         o.on("-h", "--help", "Show this help, including the copy-paste agent recipe above.") do
-          puts o.help
-          exit 0
+          out.puts(o.help)
+          opts[:help_shown] = true
         end
         o.separator ""
         o.separator "See `sloplint explain <id>` for any rule, or docs/SPEC.md for the JSON contract."

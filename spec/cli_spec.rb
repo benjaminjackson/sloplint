@@ -207,6 +207,23 @@ RSpec.describe Sloplint::CLI do
       expect(code).to eq(0)
       expect(out.strip).to eq(Sloplint::VERSION)
     end
+
+    # -h/--help used to write to the real $stdout via bare `puts` and call
+    # Kernel#exit directly, bypassing the out:/return-a-code contract every
+    # other path honors -- untestable through this run() seam, which is
+    # exactly how it shipped unnoticed. Now it writes to the injected `out:`
+    # and returns 0 like everything else.
+    it "-h writes to the injected out stream and returns 0, not exit" do
+      code, out = run(["-h"])
+      expect(code).to eq(0)
+      expect(out).to include("Recommended for agents")
+    end
+
+    it "--help behaves the same as -h" do
+      code, out = run(["--help"])
+      expect(code).to eq(0)
+      expect(out).to include("Recommended for agents")
+    end
   end
 
   describe "slop fixture integration" do
