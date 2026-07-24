@@ -170,26 +170,40 @@ module Sloplint
       id: "thats-how-x",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /(?:\A|[.!?]\s+|\n)\s*(?:that|this)(?:'s| is)\s+how\b/i,
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:that|this)(?:'s| is)\s+how\b/i,
       message: '"That\'s how…" opening a sentence is a stock LLM aphorism closer.',
       suggestion: "Cut the closer, or replace it with the concrete result you mean.",
       examples_bad: ["That's how a review system compounds instead of drifting."],
-      examples_ok: ["I never learned that's how the engine works.", "And that's how I met your mother."],
+      examples_ok: [
+        "I never learned that's how the engine works.", "And that's how I met your mother.",
+        # A mid-sentence use that happens to fall right after a hard-wrapped
+        # line break must not read as a paragraph-opening kicker.
+        "things are the way they are because\nthat is how things have to be."
+      ],
       rationale: "Models end paragraphs by generalizing the point into a maxim; 'That's how X' " \
                  "is the usual hinge. Mid-sentence uses are ordinary, so only the kicker " \
-                 "position is flagged."
+                 "position is flagged — a real paragraph break (blank line), not just a line " \
+                 "break, since hard-wrapped source would otherwise flag mid-sentence text that " \
+                 "happens to land at the start of a line."
     ),
     Rule.new(
       id: "announced-takeaway",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /(?:\A|[.!?]\s+|\n)\s*(?:here'?s\s+)?the\s+(?:loop|pattern|trick|lesson|takeaway|playbook|framing|insight|kicker)\b[^.!?\n]{0,60}:/i,
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:here'?s\s+)?the\s+(?:loop|pattern|trick|lesson|takeaway|playbook|framing|insight|kicker)\b[^.!?\n]{0,60}:/i,
       message: "Colon-led takeaway label announces the lesson before making it.",
       suggestion: "Give the observation first; let the reader decide it's the takeaway.",
       examples_bad: ["The loop I'd copy: file the incident, then fix the reviewer."],
-      examples_ok: ["The pattern repeated all week.", "The move: bishop takes rook."],
+      examples_ok: [
+        "The pattern repeated all week.", "The move: bishop takes rook.",
+        # Mid-sentence, hard-wrapped: the label lands after a line break that
+        # isn't a paragraph break, and must not read as a kicker.
+        "We noticed something worth naming here, and\nthe pattern: it only ever happened on Fridays."
+      ],
       rationale: "Labelling a claim as the portable lesson does the persuading that the claim " \
-                 "should be doing — a model habit borrowed from thought-leader prose."
+                 "should be doing — a model habit borrowed from thought-leader prose. Anchored " \
+                 "on a real paragraph break (blank line), not a line break, for the same reason " \
+                 "as thats-how-x."
     ),
 
     # ── puffery ───────────────────────────────────────────────────────────
@@ -324,12 +338,25 @@ module Sloplint
       id: "em-dash-overuse",
       category: "structure",
       severity: "info",
-      pattern: /—[^\n]*—[^\n]*—/,
+      pattern: /—(?:[^\n]|\n(?!\s*\n))*—(?:[^\n]|\n(?!\s*\n))*—/,
       message: "Three or more em dashes in one paragraph — an AI punctuation tell.",
       suggestion: "Recast with commas, parentheses, or separate sentences.",
-      examples_bad: ["It was — I think — the best — no, the only — option."],
-      examples_ok: ["It was — I think — a fine option."],
-      rationale: "Heavy em-dash interjection is a strong model tell; two is fine, three signals slop."
+      examples_bad: [
+        "It was — I think — the best — no, the only — option.",
+        # Hard-wrapped Markdown: the same paragraph, split across lines. The
+        # tell is per-paragraph, not per-line, so this must still flag.
+        "It was — I think — the best decision\nwe made all year — though nobody\nbelieved it at the time."
+      ],
+      examples_ok: [
+        "It was — I think — a fine option.",
+        # Two separate paragraphs, two dashes each -- never three within one
+        # paragraph, even though the raw text has four dashes total.
+        "It was — I think — a fine choice.\n\nAnother option — entirely separate — came up too."
+      ],
+      rationale: "Heavy em-dash interjection is a strong model tell; two is fine, three signals " \
+                 "slop. Scoped to a paragraph (stops at a blank line), not a source line, so " \
+                 "hard-wrapped Markdown doesn't dodge the rule and soft-wrapped Markdown doesn't " \
+                 "over-trigger it -- the earlier line-scoped version swung 30x on wrapping alone."
     ),
 
     # ── hedging ───────────────────────────────────────────────────────────
