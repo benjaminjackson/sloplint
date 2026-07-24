@@ -197,12 +197,30 @@ module Sloplint
       id: "puffery-words",
       category: "puffery",
       severity: "warning",
-      pattern: /\b(?:boasts\s+a\b|vibrant|profound|nestled|in\s+the\s+heart\s+of|groundbreaking|renowned|diverse\s+array|breathtaking|natural\s+beauty|indelible\s+mark|deeply\s+rooted|stands\s+as\s+a\s+testament|rich\s+(?:history|cultural|heritage))/i,
+      pattern: /\b(?:boasts\s+a\b|vibrant|nestled|
+                  in\s+the\s+heart\s+of\s+(?:the\s+\w+|downtown\b|(?-i:[A-Z])\w+)|
+                  groundbreaking|renowned|diverse\s+array|breathtaking|
+                  natural\s+beauty|indelible\s+mark|deeply\s+rooted|
+                  stands\s+as\s+a\s+testament|rich\s+(?:history|cultural|heritage))/ix,
       message: "Wikipedia-style puffery word/phrase — a common AI tell.",
       suggestion: "Replace with a concrete, specific detail or cut it.",
-      examples_bad: ["The vibrant city, nestled in the heart of the valley."],
-      examples_ok: ["The city sits at the north end of the valley."],
-      rationale: "Travel-brochure adjectives that models reach for and careful writers avoid."
+      examples_bad: [
+        "The vibrant city, nestled in the heart of the valley.",
+        "A boutique hotel in the heart of Paris."
+      ],
+      examples_ok: [
+        "The city sits at the north end of the valley.",
+        # Moby-Dick: "in the heart of" used as spatial/emphatic idiom, not a
+        # place-description cliché — the narrow trigger requires a definite
+        # or proper noun object, which this lacks.
+        "You cannot sit motionless in the heart of these perils.",
+        "helpless Ahab, even in the heart of such a whirlpool as that"
+      ],
+      rationale: "Travel-brochure adjectives and phrases that models reach for and careful " \
+                 "writers avoid. Dropped 'profound' from this list: bare adjective, no reliable " \
+                 "way to separate sincere use ('a profound silence') from puffery without more " \
+                 "context than a regex has. 'in the heart of' is narrowed to require a place " \
+                 "object, since unguarded it fires on ordinary spatial idiom."
     ),
     Rule.new(
       id: "stands-serves-as",
