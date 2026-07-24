@@ -214,8 +214,9 @@ Categories (for `--select`/`--ignore` by group):
 - `structure` — rule-of-three, "not just X but Y", em-dash overuse
 - `hedging` — vague attribution ("some critics argue", "it is widely regarded")
 
-Severities: `error` for near-certain slop, `warning` for strong tells, `info`
-for weak/contextual ones.
+Severities: `warning` for strong tells, `info` for weak/contextual ones. No
+rule ships at `error` yet -- reserved for a pattern with essentially zero
+false-positive risk, which none has demonstrated.
 
 ## Rule catalog (v1)
 
@@ -240,7 +241,7 @@ for weak/contextual ones.
 
 Single flat rule per word-cluster, matched as whole words:
 
-- `puffery-words` — boasts a, vibrant, rich (history/cultural/tapestry), profound, nestled, in the heart of, groundbreaking, renowned, diverse array, breathtaking, natural beauty, stands as a testament, indelible mark, deeply rooted.
+- `puffery-words` — boasts a, vibrant, rich (history/cultural/tapestry), nestled, in the heart of (gated to a place object), groundbreaking, renowned, diverse array, breathtaking, natural beauty, stands as a testament, indelible mark, deeply rooted.
 - `stands-serves-as` — "stands as / serves as", "is a testament/reminder to".
 - `vital-role` — "plays a (vital/crucial/pivotal/significant/key) role".
 - `underscores-highlights` — "underscores/highlights/emphasizes its (importance/significance)".

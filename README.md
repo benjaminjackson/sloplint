@@ -128,7 +128,7 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 - **structure** (3) `not-just-x-but-y`, `em-dash-overuse` (three or more em dashes in a paragraph), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
 
-Severity is `error` for near-certain slop, `warning` for strong tells, `info` for weak or contextual ones.
+Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.
 
 One rule ships **off by default**: `rule-of-three` flags three parallel comma items closing a sentence, which humans do all the time, so it false-positives. It runs only when you name it: `sloplint check --select rule-of-three -`.
 
