@@ -119,9 +119,14 @@ module Sloplint
       pattern: /\bis\s+real,?\s+(?:and|but|not)\b/i,
       message: '"The X is real, and…" is a stock LLM concession move.',
       suggestion: "Drop the 'is real, and' scaffolding; assert the point directly.",
-      skip: [/real estate/i, /real time/i, /real-time/i],
+      # No skip: for "real estate"/"real time" -- with a word between "real"
+      # and the conjunction ("is real estate, and"), the pattern's ,?\s+
+      # never reaches the conjunction in the first place, so those compound
+      # nouns can't produce a false positive here to begin with. A skip: for
+      # them was here before and never fired; confirmed by testing every
+      # phrasing it could plausibly have been guarding against.
       examples_bad: ["The risk is real, and it is growing."],
-      examples_ok: ["This is real leather."],
+      examples_ok: ["This is real leather.", "This is real estate, and it is expensive."],
       rationale: "'X is real, and/but/not' is a model both-sidesing cadence."
     ),
     Rule.new(
@@ -139,12 +144,16 @@ module Sloplint
       id: "worth-naming",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /\bworth\s+naming\b/i,
+      # Widened to optionally include a trailing "names" so the "naming
+      # names" idiom is part of the matched text -- skip: checks the matched
+      # text itself, and the tighter /\bworth\s+naming\b/ never captured
+      # enough of "worth naming names" for the skip to ever reach it.
+      pattern: /\bworth\s+naming(?:\s+names)?\b/i,
       message: '"Worth naming…" is a stock LLM signposting phrase.',
       suggestion: "Just name the thing; skip the meta-announcement.",
       skip: [/naming names/i],
       examples_bad: ["One tension is worth naming here."],
-      examples_ok: ["It's worth reading twice."],
+      examples_ok: ["It's worth reading twice.", "It's worth naming names in this report."],
       rationale: "'worth naming' is a model signpost that a human would simply skip."
     ),
     Rule.new(
