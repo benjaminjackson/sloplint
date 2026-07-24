@@ -163,10 +163,10 @@ module Sloplint
       id: "exactly-the",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /\b(?:that's|this is|it's)?\s*exactly\s+the\s+(?:point|kind|type|sort|problem|question|issue|opposite|reason|thing|tension)\b/i,
+      pattern: /\b(?:(?:that's|this is|it's)\s+)?exactly\s+the\s+(?:point|kind|type|sort|problem|question|issue|opposite|reason|thing|tension)\b/i,
       message: '"exactly the point/kind/problem/…" is an overused LLM emphasis tic.',
       suggestion: "Drop 'exactly the'; state the point without the intensifier.",
-      examples_bad: ["That's exactly the point."],
+      examples_bad: ["That's exactly the point.", "We proved exactly the point we needed."],
       examples_ok: ["She folded it exactly the way he showed her."],
       rationale: "'exactly the X' is a model intensifier that a careful writer rarely leans on."
     ),
