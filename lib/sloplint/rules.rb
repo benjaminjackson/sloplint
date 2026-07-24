@@ -321,19 +321,16 @@ module Sloplint
       examples_ok: ["We met on Tuesday afternoon."],
       rationale: "Rule-of-three endings are a model habit, but humans use them too — off by default."
     ),
-    Rule.new(
-      id: "clause-triad-then",
-      category: "structure",
-      severity: "info",
-      pattern: /[^,.!?\n]{5,60},\s+[^,.!?\n]{5,60},\s+then\s+[^.!?\n]{5,}/i,
-      message: "Three-beat clause chain hinged on 'then' — an AI process-recipe cadence.",
-      suggestion: "Real procedures have an ugly step. Name it, or cut to the two that matter.",
-      examples_bad: ["Take the PR that caused it, update the reviewer to catch that class, " \
-                     "then add the PR to the eval set."],
-      examples_ok: ["I packed a bag, locked the door, and then drove north."],
-      rationale: "Models describe processes as three evenly-weighted parallel clauses with no " \
-                 "step harder than the others, which is how you can tell nobody ran it."
-    ),
+    # clause-triad-then was cut. The pattern (comma-clause, comma-clause,
+    # "then" clause) had no way to require the clauses actually be parallel
+    # process steps -- against a 1M-word human corpus it went 0-for-40 on its
+    # own description, catching ordinary conditionals ("when A, and B, then
+    # C") and unrelated comma-separated fragments instead. A skip for leading
+    # if/when/once didn't hold up either: real conditionals don't reliably
+    # announce themselves at the match boundary ("but, when he does speak,
+    # then...", elliptical legal "shall... then..."). It was also the most
+    # expensive rule in the catalog at 65% of scan time on 1MB. Per
+    # CLAUDE.md: some tells can't be regexes; this was one.
     Rule.new(
       id: "em-dash-overuse",
       category: "structure",
