@@ -19,7 +19,7 @@ module Sloplint
       parser = global_parser(opts, out:)
       # Split global options from the subcommand and its args.
       parser.order!(argv)
-      return 0 if opts[:help_shown]
+      return 0 if opts[:help_shown] || opts[:version_shown]
 
       command = argv.shift
 
@@ -199,6 +199,10 @@ module Sloplint
         o.on("-h", "--help", "Show this help, including the copy-paste agent recipe above.") do
           out.puts(o.help)
           opts[:help_shown] = true
+        end
+        o.on("-v", "--version", "Print the sloplint version.") do
+          out.puts(VERSION)
+          opts[:version_shown] = true
         end
         o.separator ""
         o.separator "See `sloplint explain <id>` for any rule, or docs/SPEC.md for the JSON contract."

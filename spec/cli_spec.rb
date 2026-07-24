@@ -224,6 +224,21 @@ RSpec.describe Sloplint::CLI do
       expect(code).to eq(0)
       expect(out).to include("Recommended for agents")
     end
+
+    # optparse auto-registers a built-in "--version" switch (Officious) on any
+    # parser unless one is explicitly defined; that default prints its own
+    # "version unknown" text to the real $stdout and calls Kernel#exit,
+    # bypassing our out:/return-a-code contract entirely -- so it shipped
+    # broken and untested, same shape as the -h/--help bug above.
+    it "-v/--version prints the version and returns 0, not exit" do
+      code, out = run(["-v"])
+      expect(code).to eq(0)
+      expect(out.strip).to eq(Sloplint::VERSION)
+
+      code, out = run(["--version"])
+      expect(code).to eq(0)
+      expect(out.strip).to eq(Sloplint::VERSION)
+    end
   end
 
   describe "slop fixture integration" do

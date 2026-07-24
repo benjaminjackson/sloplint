@@ -15,6 +15,11 @@ First public release.
 - Exit codes: `0` clean, `1` notes found, `2` bad arguments or invalid input
   (including invalid UTF-8 and unknown `--select`/`--ignore` ids).
 - Zero runtime dependencies; requires Ruby >= 3.3.
+- `-v`/`--version` print the version and exit 0. optparse auto-registers its
+  own `--version` switch on any parser that doesn't define one, and that
+  default printed "version unknown" to the real stdout and hard-exited,
+  bypassing the `out:`/return-a-code contract every other path honors --
+  caught by hand-testing the freshly built gem before this release shipped.
 
 Rules narrowed against a corpus of real human prose (the Federalist Papers,
 Moby-Dick, Walden) before release:
