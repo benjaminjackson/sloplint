@@ -12,16 +12,20 @@ A pattern earns a place in the catalog only if it shows up constantly in AI writ
 
 Requires **Ruby 3.3+** and nothing else. The runtime is standard library only (`optparse`, `json`, native regex).
 
-sloplint is not on RubyGems yet. Build and install from source:
+```bash
+gem install sloplint
+```
+
+Or build from source:
 
 ```bash
 git clone https://github.com/benjaminjackson/sloplint
 cd sloplint
 gem build sloplint.gemspec
-gem install ./sloplint-0.1.0.gem
+gem install ./sloplint-*.gem
 ```
 
-That puts a `sloplint` executable on your path.
+Either way, that puts a `sloplint` executable on your path.
 
 ## Quick start
 
@@ -113,7 +117,7 @@ Three codes carry the contract. A crash exits nonzero on its own.
 | 1    | ran, notes found |
 | 2    | bad arguments or usage error |
 
-A typo in `--select` matches no rules and exits 0, which looks identical to a clean file. If a scan you expected to flag something comes back clean, check the rule id against `sloplint rules` before trusting the 0.
+An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, naming the id) rather than a silent no-op, so a typo can't masquerade as a clean scan.
 
 ## The rule catalog
 
@@ -148,7 +152,7 @@ Rule.new(
   skip:         [/real estate/i],              # optional: drop the note if these match
   examples_bad: ["No fluff, no filler, no jargon."],
   examples_ok:  ["No parking on Sundays."],
-  rationale:    "LLMs love asyndetic negation triplets."
+  rationale:    "Asyndetic negation chains are a signature model cadence, rare in human prose."
 )
 ```
 
@@ -156,8 +160,9 @@ Adding a rule is one entry plus its fixtures. `rules_spec.rb` iterates the catal
 
 ## Development
 
+No `Gemfile` -- install `rspec` and `rake` yourself (`gem install rspec rake`), then:
+
 ```bash
-bundle install
 rake spec        # or: rspec
 ```
 
