@@ -16,6 +16,7 @@ module Sloplint
     # path: label carried into each Note (e.g. filename or "-" for stdin).
     def scan(text, rules: RULES, markdown: false, path: "-")
       text = blank_markdown(text) if markdown
+      line_starts = line_starts_for(text)
       notes = []
       rules.each do |rule|
         text.to_enum(:scan, rule.pattern).each do
@@ -24,7 +25,7 @@ module Sloplint
           next if rule.skip.any? { |re| matched.match?(re) }
 
           count = rule.count_group ? matched.scan(rule.count_group).size : nil
-          line, column = line_col(text, m.begin(0))
+          line, column = line_col(text, m.begin(0), line_starts:)
           message = count ? rule.message % { count: count } : rule.message
           notes << Note.new(
             path: path, line: line, column: column,
@@ -37,12 +38,31 @@ module Sloplint
       notes.sort_by { |n| [n.line, n.column] }
     end
 
-    # 1-indexed line and column for a byte/char offset into text.
-    def line_col(text, offset)
-      prefix = text[0, offset]
-      line = prefix.count("\n") + 1
-      column = offset - (prefix.rindex("\n") || -1)
-      [line, column]
+    # 1-indexed line and column for a char offset into text. Binary-searches a
+    # precomputed line_starts table (see line_starts_for) so a scan with many
+    # notes doesn't re-walk the prefix from offset 0 for every single one --
+    # the previous version did text[0, offset] per note, which is O(n) per
+    # call and O(n * notes) overall, quadratic on a large file with many hits.
+    # line_starts is optional so this stays callable standalone.
+    def line_col(text, offset, line_starts: nil)
+      line_starts ||= line_starts_for(text)
+      idx = (line_starts.bsearch_index { |s| s > offset } || line_starts.length) - 1
+      [idx + 1, offset - line_starts[idx] + 1]
+    end
+
+    # Char offset where each line begins, index 0 = line 1. Computed once per
+    # scan and shared across every note instead of recomputed per note.
+    #
+    # Built via each_line + line.length, not repeated String#index(pat, pos)
+    # calls -- on non-ASCII-only text (e.g. curly quotes, em dashes), index
+    # with a start position is not O(1)-amortized per call in CRuby, and a
+    # few thousand newlines turned this quadratic: 7.4s on a 1.2MB UTF-8
+    # file that each_line does in 0.004s.
+    def line_starts_for(text)
+      starts = [0]
+      text.each_line { |line| starts << starts.last + line.length }
+      starts.pop unless text.empty? || text.end_with?("\n")
+      starts
     end
 
     # Replace fenced code, inline code, and URLs with same-length whitespace so

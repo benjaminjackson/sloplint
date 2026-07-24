@@ -45,4 +45,47 @@ RSpec.describe Sloplint::Engine do
     expect(note.excerpt).to start_with("exactly")
     expect(note.column).to eq(11)
   end
+
+  describe ".line_starts_for" do
+    # The reference implementation this is checked against: count("\n") in
+    # the prefix for the line, position since the last "\n" for the column.
+    # This is what line_col used to do directly, per note, before it became
+    # a single line_starts table built once and binary-searched -- kept here
+    # as ground truth so a future change to the table-building strategy (it
+    # already changed once, over a real perf trap -- see git log) can't
+    # silently drift from what line/column actually mean.
+    def reference_line_col(text, offset)
+      prefix = text[0, offset]
+      line = prefix.count("\n") + 1
+      column = offset - (prefix.rindex("\n") || -1)
+      [line, column]
+    end
+
+    [
+      ["", 0],
+      ["abc", 0],
+      ["abc", 2],
+      ["abc\ndef", 0],
+      ["abc\ndef", 3],
+      ["abc\ndef", 4],
+      ["abc\ndef", 6],
+      ["a\n\nb", 3],
+      ["abc\n", 4],       # offset at end of text, right after a trailing newline
+      ["\n\n\n", 3]       # all-newline document
+    ].each do |text, offset|
+      it "matches the reference for #{text.inspect} at offset #{offset}" do
+        expect(Sloplint::Engine.line_col(text, offset))
+          .to eq(reference_line_col(text, offset))
+      end
+    end
+
+    it "matches the reference across a real multibyte document, sampled" do
+      doc = (["The café's façade — nestled — reopened.\n"] * 40).join
+      starts = Sloplint::Engine.line_starts_for(doc)
+      (0...doc.length).step(7).each do |offset|
+        expect(Sloplint::Engine.line_col(doc, offset, line_starts: starts))
+          .to eq(reference_line_col(doc, offset))
+      end
+    end
+  end
 end
