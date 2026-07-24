@@ -37,6 +37,26 @@ RSpec.describe Sloplint::CLI do
       code, = run(["-o", "yaml", "check", "-"], stdin_text: "hi")
       expect(code).to eq(2)
     end
+
+    it "returns 2 on invalid UTF-8 input, not the 'notes found' code" do
+      bad_bytes = "That is the whole point. \xFF\xFE bad bytes\n"
+      code, _out, err = run(["check", "-"], stdin_text: bad_bytes)
+      expect(code).to eq(2)
+      expect(err).to include("invalid")
+    end
+
+    it "returns 2 on an unknown --select id instead of silently matching nothing" do
+      code, out, err = run(["check", "--select", "no-such-rule", "-"], stdin_text: "hi")
+      expect(code).to eq(2)
+      expect(out).to be_empty
+      expect(err).to include("no-such-rule")
+    end
+
+    it "returns 2 on an unknown --ignore id" do
+      code, _out, err = run(["check", "--ignore", "no-such-rule", "-"], stdin_text: "hi")
+      expect(code).to eq(2)
+      expect(err).to include("no-such-rule")
+    end
   end
 
   describe "stdin" do

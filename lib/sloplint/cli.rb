@@ -55,6 +55,13 @@ module Sloplint
       end
       p.order!(argv)
 
+      unknown = unknown_rule_refs(select) + unknown_rule_refs(ignore)
+      unless unknown.empty?
+        err.puts("sloplint: unknown rule or category: #{unknown.join(", ")}")
+        err.puts("run `sloplint rules` to list them.")
+        return 2
+      end
+
       rules = select_rules(select, ignore)
       paths = argv.empty? ? ["-"] : argv
       by_path = paths.reject { |x| x == "-" }.size > 1
@@ -84,6 +91,9 @@ module Sloplint
       end
 
       all_notes.empty? ? 0 : 1
+    rescue ArgumentError => e
+      err.puts("sloplint: invalid input: #{e.message}")
+      2
     end
 
     # ── rules ───────────────────────────────────────────────────────────────
@@ -137,6 +147,15 @@ module Sloplint
     end
 
     # ── helpers ─────────────────────────────────────────────────────────────
+    # Ids/categories in refs that match no rule in the catalog. nil (no --select
+    # or --ignore given) passes through as no unknowns.
+    def unknown_rule_refs(refs)
+      return [] unless refs
+
+      known = RULES.flat_map { |r| [r.id, r.category] }.uniq
+      refs - known
+    end
+
     # --select/--ignore accept rule ids or category names. Default set excludes
     # default_on:false rules unless they are explicitly selected.
     def select_rules(select, ignore)
