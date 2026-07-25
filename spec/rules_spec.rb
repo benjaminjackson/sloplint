@@ -41,7 +41,7 @@ RSpec.describe "Sloplint::RULES" do
   # The README quotes the catalog size and a per-category breakdown. Nothing
   # regenerates those, so they go stale the moment a rule is added.
   describe "the README rule counts" do
-    readme = File.read(File.expand_path("../README.md", __dir__))
+    readme = File.read(File.expand_path("../README.md", __dir__), encoding: "UTF-8")
 
     it "quotes the catalog total" do
       expect(readme).to match(/^#{Sloplint::RULES.size} rules across/)
