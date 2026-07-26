@@ -26,6 +26,33 @@ trust a flag instead of second-guessing it), and no overlap with tools that
 already do general prose well. When a rule is borderline, ask the test again and
 cut it if the answer is soft.
 
+## Provenance: what may be committed
+
+Finding rules means reading a great deal of other people's writing: slop in the
+wild to spot a tell, careful human prose to check a candidate against. Reading it
+is fine. Committing it is not. A regex carries nothing of the text it came from,
+so the source never needs to enter the repository.
+
+- **No corpus is committed**, on either side. Collection notes stay out of the
+  repo.
+- **`examples_bad` are written, not lifted.** When a real sentence is the only
+  illustration on hand, rewrite it until it carries the pattern without carrying
+  the original wording.
+- **`examples_ok` may quote real prose, public domain only**, with the source
+  named in a comment. The Moby-Dick and Federalist No. 44 fixtures are the model.
+  A common idiom or a title is not a quotation and needs no such treatment.
+- **`rationale:` states frequencies, not quotations.** "24 hits in 1.02M words"
+  is the form.
+- **A human reference corpus is the bigger trap than the slop side**, because a
+  test corpus reproduces the works in it whole. Public domain is a hard
+  constraint rather than a convenience: a corpus built from copyrighted modern
+  prose can't be redistributed, which strands both the corpus and the precision
+  check that depends on it.
+
+This repository is MIT-licensed, so anything committed is redistributable by
+anyone. Writing the fixtures ourselves also means nobody's prose gets held up as
+a specimen of slop, which is reason enough on its own.
+
 ## Prior art we're borrowing from
 
 - **proselint** — subcommand CLI (`check`, `version`, `dump-config`), `--output-format full|json|compact`, LSP-style diagnostics (line/column/severity/code/message), config file, clean exit codes. We copy this shape.
@@ -306,3 +333,7 @@ RSpec (dev dependency), run via `rake spec`.
 - Non-English. Languages other than English are a v2 conversation.
 - ML/embedding-based detection. This is a regex linter on purpose — fast,
   explainable, zero-dependency. Statistical detection is a different product.
+- Scraped corpora. Platform terms prohibit automated collection, and finding a
+  repeated shape needs hundreds of samples rather than millions, so collection
+  stays manual. Analysis is offline development work either way; the shipped
+  runtime stays regex plus stdlib.
