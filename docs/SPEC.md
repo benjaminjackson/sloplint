@@ -43,11 +43,9 @@ so the source never needs to enter the repository.
   A common idiom or a title is not a quotation and needs no such treatment.
 - **`rationale:` states frequencies, not quotations.** "24 hits in 1.02M words"
   is the form.
-- **A human reference corpus is the bigger trap than the slop side**, because a
-  test corpus reproduces the works in it whole. Public domain is a hard
-  constraint rather than a convenience: a corpus built from copyrighted modern
-  prose can't be redistributed, which strands both the corpus and the precision
-  check that depends on it.
+- **A reference corpus of human prose must be public domain.** Copyrighted text
+  can't be redistributed, so a corpus built from it can't live in the repo, and
+  neither can the false-positive check that depends on it.
 
 This repository is MIT-licensed, so anything committed is redistributable by
 anyone. Writing the fixtures ourselves also means nobody's prose gets held up as
