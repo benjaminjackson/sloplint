@@ -23,4 +23,9 @@ Some tells can't be regexes. The give-away is often an absence — a claim of
 experience with no incident behind it — and a pattern can't see what isn't
 there. Leave those out rather than approximating them into noise.
 
+Fixtures are ours to write. `examples_bad` are synthetic; never paste a real
+sentence found in the wild, however perfect a specimen it is. `examples_ok` may
+quote public-domain prose with the source named in a comment. No collected
+corpus belongs in the repo, on either side. See "Provenance" in `docs/SPEC.md`.
+
 Tests: `rspec`. There's no Gemfile; run it directly.
