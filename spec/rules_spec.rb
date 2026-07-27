@@ -67,11 +67,15 @@ RSpec.describe "Sloplint::RULES" do
   # rule can still trip a DIFFERENT rule in the catalog -- this runs every
   # examples_ok against the full default catalog to catch that.
   describe "cross-rule false positives" do
+    # em-dash flags every dash by design, so em-dash-overuse's ok-fixtures (one
+    # or two dashes -- clean for *overuse*) legitimately trip it. Only this pair.
+    overlaps = { "em-dash-overuse" => %w[em-dash] }
+
     Sloplint::RULES.each do |owner|
       owner.examples_ok.each do |example|
         it "#{owner.id}'s ok-fixture #{example.inspect} trips no other rule" do
           notes = Sloplint::Engine.scan(example)
-          expect(notes.map(&:rule)).to eq([])
+          expect(notes.map(&:rule) - overlaps.fetch(owner.id, [])).to eq([])
         end
       end
     end
