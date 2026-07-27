@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+- New rule `em-dash` (`structure`, `info`): flags every em dash, not just
+  paragraphs dense with them.
+- `em-dash-overuse` (3+ em dashes in one paragraph) is now `warning`, up from
+  `info`.
+
 ## [0.1.0] - 2026-07-24
 
 First public release.

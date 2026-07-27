@@ -236,7 +236,7 @@ Categories (for `--select`/`--ignore` by group):
 
 - `rhetorical-tic` — the cadence patterns (the user's list below)
 - `puffery` — Wikipedia "words to watch" (boasts, vibrant, nestled, tapestry…)
-- `structure` — rule-of-three, "not just X but Y", em-dash overuse
+- `structure` — rule-of-three, "not just X but Y", em dash, em-dash overuse
 - `hedging` — vague attribution ("some critics argue", "it is widely regarded")
 
 Severities: `warning` for strong tells, `info` for weak/contextual ones. No
@@ -276,7 +276,8 @@ Single flat rule per word-cluster, matched as whole words:
 
 - `not-just-x-but-y` — "not just X, but (also) Y", "not only … but".
 - `rule-of-three` — three parallel comma items ending a sentence (heuristic; `info` severity, off by default via `--select` since it false-positives).
-- `em-dash-overuse` — >N em dashes per paragraph (default N=2); `info`.
+- `em-dash` — any em dash; `info`.
+- `em-dash-overuse` — 3+ em dashes in one paragraph; `warning`.
 
 ### hedging
 

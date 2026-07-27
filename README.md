@@ -121,11 +121,11 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## The rule catalog
 
-24 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+25 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
 - **rhetorical-tic** (15) the cadence patterns: `no-x-no-y`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exactly-the`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, and more.
 - **puffery** (5) Wikipedia's "signs of AI writing": `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`.
-- **structure** (3) `not-just-x-but-y`, `em-dash-overuse` (three or more em dashes in a paragraph), and `rule-of-three`.
+- **structure** (4) `not-just-x-but-y`, `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
 
 Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.

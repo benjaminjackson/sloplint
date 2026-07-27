@@ -335,9 +335,29 @@ module Sloplint
     # expensive rule in the catalog at 65% of scan time on 1MB. Per
     # CLAUDE.md: some tells can't be regexes; this was one.
     Rule.new(
-      id: "em-dash-overuse",
+      id: "em-dash",
       category: "structure",
       severity: "info",
+      pattern: /—/,
+      message: "Em dash — an AI punctuation tell.",
+      suggestion: "Recast with a comma, parentheses, or a separate sentence.",
+      examples_bad: [
+        "It was — surprisingly — the best option.",
+        "The fix is simple — do less."
+      ],
+      examples_ok: [
+        # Hyphen in a compound modifier -- not the U+2014 this rule targets.
+        "The state-of-the-art model shipped on time.",
+        # En dash (U+2013) in a range: a different character entirely.
+        "See pages 12–18 for the full account."
+      ],
+      rationale: "Models reach for the em dash by default; humans use it too, but far less " \
+                 "often."
+    ),
+    Rule.new(
+      id: "em-dash-overuse",
+      category: "structure",
+      severity: "warning",
       pattern: /—(?:[^\n]|\n(?!\s*\n))*—(?:[^\n]|\n(?!\s*\n))*—/,
       message: "Three or more em dashes in one paragraph — an AI punctuation tell.",
       suggestion: "Recast with commas, parentheses, or separate sentences.",
@@ -353,8 +373,8 @@ module Sloplint
         # paragraph, even though the raw text has four dashes total.
         "It was — I think — a fine choice.\n\nAnother option — entirely separate — came up too."
       ],
-      rationale: "Heavy em-dash interjection is a strong model tell; two is fine, three signals " \
-                 "slop."
+      rationale: "Three or more em dashes packed into one paragraph is a denser interjection " \
+                 "habit than most human writing settles into."
     ),
 
     # ── hedging ───────────────────────────────────────────────────────────
