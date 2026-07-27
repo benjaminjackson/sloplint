@@ -341,12 +341,14 @@ module Sloplint
       pattern: /—/,
       message: "Em dash — an AI punctuation tell.",
       suggestion: "Recast with a comma, parentheses, or a separate sentence.",
-      examples_bad: ["It was — surprisingly — the best option."],
+      examples_bad: [
+        "It was — surprisingly — the best option.",
+        "The fix is simple — do less."
+      ],
       examples_ok: [
-        # Hyphen used as a dash, not the U+2014 em dash this rule targets.
-        "It was - surprisingly - the best option.",
-        "It was -- surprisingly -- the best option.",
-        # En dash (U+2013), e.g. a page range: a different character entirely.
+        # Hyphen in a compound modifier -- not the U+2014 this rule targets.
+        "The state-of-the-art model shipped on time.",
+        # En dash (U+2013) in a range: a different character entirely.
         "See pages 12–18 for the full account."
       ],
       rationale: "Models reach for the em dash by default; humans use it too, but far less " \
