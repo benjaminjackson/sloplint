@@ -33,9 +33,8 @@ module Sloplint
       examples_bad: ["No fluff, no filler, no jargon."],
       examples_ok: ["No parking on Sundays."],
       rationale: "Asyndetic negation chains are a signature model cadence, near-absent from " \
-                 "human prose at any length -- 24 hits in 1.02M words across Austen, Melville, " \
-                 "Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks " \
-                 "two (and, rarely, more), but a model reaches for the pattern constantly."
+                 "human prose at any length. A careful writer occasionally stacks two (and, " \
+                 "rarely, more), but a model reaches for the pattern constantly."
     ),
     Rule.new(
       id: "no-x-no-y-frag",
@@ -76,11 +75,9 @@ module Sloplint
       ],
       rationale: "The fragment form of the same cadence, and the weaker signal of the two: the " \
                  "comma chain is one authored sentence, while this is just short sentences in " \
-                 "sequence, which human prose also does. It scored 1 hit in a 744k-word " \
-                 "five-book probe (Hamilton's 'no common coin; no common judicatory', itself " \
-                 "the chain in question), so it is rare in careful writing -- but a deliberate " \
-                 "staccato run ('No one moved. No one spoke.') has the identical shape and is " \
-                 "not a tell. Treat a flag here as a question, not a verdict."
+                 "sequence, which human prose also does. It's rare in careful writing, but a " \
+                 "deliberate staccato run ('No one moved. No one spoke.') has the identical " \
+                 "shape and is not a tell. Treat a flag here as a question, not a verdict."
     ),
     Rule.new(
       id: "thats-the-whole",
@@ -397,8 +394,8 @@ module Sloplint
                  "copula, which is the specific shape models overuse. Correlative 'not only… " \
                  "but' joining two verb phrases or clauses, without a preceding copula, is " \
                  "ordinary and common in formal human prose; requiring the escalation word " \
-                 "keeps those out. 'not because… but because' scored 2 hits in a 744k-word " \
-                 "five-book probe (Austen, Melville, Hamilton/Madison, Thoreau, Emerson)."
+                 "keeps those out. The same logic covers 'not because A, but because B': the " \
+                 "escalation word is what marks it deliberate."
     ),
     Rule.new(
       id: "not-x-but-y",
@@ -464,9 +461,9 @@ module Sloplint
       ],
       rationale: "The bare 'is not A but B' corrective is the 'not just… but' move with the " \
                  "escalation word dropped, and models reach for it constantly. It is the " \
-                 "noisiest rule in the catalog by design: a loose version scored 174 hits in a " \
-                 "744k-word five-book probe, and the narrowings here cut that to 15 -- but not " \
-                 "all 15 are correctives. Some are concessions with an elided subject (Walden's " \
+                 "noisiest rule in the catalog by design: a loose version scored 174 hits " \
+                 "before narrowing, cut to 15 here -- but not all 15 are correctives. Some " \
+                 "are concessions with an elided subject (Walden's " \
                  "'It was not lonely, but made all the earth lonely beneath it'), which no " \
                  "surface pattern can tell apart from the real thing. Hence info: a flag here " \
                  "means 'this has the shape', not 'this is slop'."
