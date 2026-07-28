@@ -163,7 +163,7 @@ module Sloplint
     Rule.new(
       id: "is-real-and-not",
       category: "rhetorical-tic",
-      severity: "warning",
+      severity: "info",
       pattern: /\bis\s+real,?\s+(?:and|but|not)\b/i,
       message: '"The X is real, and…" is a stock LLM concession move.',
       suggestion: "Drop the 'is real, and' scaffolding; assert the point directly.",
@@ -175,7 +175,12 @@ module Sloplint
       # phrasing it could plausibly have been guarding against.
       examples_bad: ["The risk is real, and it is growing."],
       examples_ok: ["This is real leather.", "This is real estate, and it is expensive."],
-      rationale: "'X is real, and/but/not' is a model both-sidesing cadence."
+      rationale: "The pattern requires nothing about what follows the conjunction, so it fires " \
+                 "on any 'is real' sentence that happens to continue with and/but/not, concession " \
+                 "or not. Emerson's 'my debt to my senses is real and constant' is two predicate " \
+                 "adjectives, not a both-sidesing move -- the AI cadence and the plain sentence " \
+                 "are three words apart and identical on the surface. An agent reading the flag " \
+                 "has the rest of the sentence to judge; the pattern alone doesn't."
     ),
     Rule.new(
       id: "the-punchline-is",
@@ -191,7 +196,7 @@ module Sloplint
     Rule.new(
       id: "worth-naming",
       category: "rhetorical-tic",
-      severity: "warning",
+      severity: "info",
       # Widened to optionally include a trailing "names" so the "naming
       # names" idiom is part of the matched text -- skip: checks the matched
       # text itself, and the tighter /\bworth\s+naming\b/ never captured
@@ -202,7 +207,12 @@ module Sloplint
       skip: [/naming names/i],
       examples_bad: ["One tension is worth naming here."],
       examples_ok: ["It's worth reading twice.", "It's worth naming names in this report."],
-      rationale: "'worth naming' is a model signpost that a human would simply skip."
+      rationale: "'worth naming' collapses two senses a regex can't tell apart: the AI " \
+                 "meta-signpost announcing a point is coming ('One tension is worth naming " \
+                 "here') and the plain sense of a thing worth calling or mentioning, which " \
+                 "careful writers use too -- Emerson's 'the only thing worth naming to do that' " \
+                 "is the latter, not the former. A flag here means the phrase is present, not " \
+                 "which sense it's in."
     ),
     Rule.new(
       id: "thats-not-nothing",
@@ -267,7 +277,11 @@ module Sloplint
       id: "puffery-words",
       category: "puffery",
       severity: "warning",
-      pattern: /\b(?:boasts\s+a\b|vibrant|nestled|
+      # "nestled" alone is the literal verb as often as the puffery sense --
+      # a head nestling against a shoulder, a kitten nestling into a blanket
+      # -- so it requires a following in/among/between, the same shape the
+      # travel-brochure cliché actually takes ("nestled in the hills").
+      pattern: /\b(?:boasts\s+a\b|vibrant|nestled\b(?:\s+\S+){0,2}?\s+(?:in|among|between)\b|
                   in\s+the\s+heart\s+of\s+(?:the\s+\w+|downtown\b|(?-i:[A-Z])\w+)|
                   groundbreaking|renowned|diverse\s+array|breathtaking|
                   natural\s+beauty|indelible\s+mark|deeply\s+rooted|
@@ -276,7 +290,8 @@ module Sloplint
       suggestion: "Replace with a concrete, specific detail or cut it.",
       examples_bad: [
         "The vibrant city, nestled in the heart of the valley.",
-        "A boutique hotel in the heart of Paris."
+        "A boutique hotel in the heart of Paris.",
+        "A cottage nestled snugly among the pines."
       ],
       examples_ok: [
         "The city sits at the north end of the valley.",
@@ -284,7 +299,12 @@ module Sloplint
         # place-description cliché — the narrow trigger requires a definite
         # or proper noun object, which this lacks.
         "You cannot sit motionless in the heart of these perils.",
-        "helpless Ahab, even in the heart of such a whirlpool as that"
+        "helpless Ahab, even in the heart of such a whirlpool as that",
+        # Austen, Emma: "nestled" as the physical verb, not the scene-setting
+        # adjective -- no following in/among/between, so the narrowed trigger
+        # leaves it alone.
+        "He had nestled down his head most conveniently.",
+        "The kitten nestled into the blanket."
       ],
       rationale: "Travel-brochure adjectives and phrases that models reach for and careful " \
                  "writers avoid."

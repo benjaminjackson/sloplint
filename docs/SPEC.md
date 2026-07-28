@@ -272,16 +272,16 @@ false-positive risk, which none has demonstrated.
 | `you-already-know` | "you already know" (+ the answer / standalone) | |
 | `is-the-entire` | "X is the entire point/game/business model" | |
 | `the-entire-is` | "the entire point/game/… is" (flip of above) | |
-| `is-real-and-not` | "the X is real, and/not…", "is the real … and it" | skip "real estate/time" |
+| `is-real-and-not` | "the X is real, and/not…", "is the real … and it" | skip "real estate/time"; `info` |
 | `the-punchline-is` | "the punchline is/:/?" | |
-| `worth-naming` | "worth naming", "it's worth naming that…", "Worth naming:" | skip "naming names" |
+| `worth-naming` | "worth naming", "it's worth naming that…", "Worth naming:" | skip "naming names"; `info` |
 | `thats-not-nothing` | "that/this/it/which is not nothing" | |
 
 ### puffery (Wikipedia: Signs of AI writing)
 
 Single flat rule per word-cluster, matched as whole words:
 
-- `puffery-words` — boasts a, vibrant, rich (history/cultural/tapestry), nestled, in the heart of (gated to a place object), groundbreaking, renowned, diverse array, breathtaking, natural beauty, stands as a testament, indelible mark, deeply rooted.
+- `puffery-words` — boasts a, vibrant, rich (history/cultural/tapestry), nestled (gated to a following in/among/between, so the literal verb — a head nestled against a shoulder — doesn't count), in the heart of (gated to a place object), groundbreaking, renowned, diverse array, breathtaking, natural beauty, stands as a testament, indelible mark, deeply rooted.
 - `stands-serves-as` — "stands as / serves as", "is a testament/reminder to".
 - `vital-role` — "plays a (vital/crucial/pivotal/significant/key) role".
 - `underscores-highlights` — "underscores/highlights/emphasizes its (importance/significance)".
