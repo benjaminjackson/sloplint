@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.2.0] - 2026-07-28
 
 - `is-real-and-not` and `worth-naming` move from `warning` to `info`. Both
   patterns match on surface form alone and can't tell the AI cadence from an
