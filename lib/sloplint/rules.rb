@@ -304,10 +304,7 @@ module Sloplint
                  "subject and the second 'is' is the verb -- and it is the model's version, a " \
                  "frame that stages a definition instead of asserting one, the same move as " \
                  "'the punchline is'. The NP form ('the thing is, is that') is the true double " \
-                 "copula and a spoken disfluency. The third is a typo. Zero hits across " \
-                 "~1.9M words -- 1.5M of public-domain prose (Austen, Melville, Madison, " \
-                 "Thoreau, Emerson, Fielding, Joyce, Fitzgerald) and 417k of modern Wikipedia " \
-                 "-- with the comma form included in the search."
+                 "copula and a spoken disfluency. The third is a typo."
     ),
 
     # ── puffery ───────────────────────────────────────────────────────────
