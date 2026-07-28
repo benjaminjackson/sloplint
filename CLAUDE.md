@@ -28,4 +28,13 @@ sentence found in the wild, however perfect a specimen it is. `examples_ok` may
 quote public-domain prose with the source named in a comment. No collected
 corpus belongs in the repo, on either side. See "Provenance" in `docs/SPEC.md`.
 
+## Rationale stays lean
+
+`rationale:` tells the reader why a construct reads as AI-written. Probing is
+process, not payload — the corpus size, source list, and search mechanics that
+justified a pattern belong in the commit message, not the shipped text. Cite a
+number only when it's doing real work for the reader (why a rule sits at
+`info`, why a narrowing exists); never as backup evidence for a call that's
+already obvious on its face.
+
 Tests: `rspec`. There's no Gemfile; run it directly.
