@@ -6,7 +6,7 @@ module Sloplint
   # One match = one Note. See docs/SPEC.md "Note".
   Note = Data.define(
     :path, :line, :column, :severity, :rule, :category,
-    :message, :excerpt, :context, :count, :suggestion
+    :message, :excerpt, :context, :count, :rationale, :suggestion
   )
 
   module Engine
@@ -35,7 +35,7 @@ module Sloplint
             severity: rule.severity, rule: rule.id, category: rule.category,
             message: message, excerpt: matched.gsub(/\s+/, " ").strip,
             context: context_for(source, m),
-            count: count, suggestion: rule.suggestion
+            count: count, rationale: rule.rationale, suggestion: rule.suggestion
           )
         end
       end

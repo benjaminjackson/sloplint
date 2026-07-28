@@ -173,6 +173,7 @@ path when multiple files are scanned).
   "excerpt": "No fluff, no filler, no jargon",
   "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
   "count": 3,
+  "rationale": "Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length -- 24 hits in 1.02M words across Austen, Melville, Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.",
   "suggestion": "Cut the chain or make it one plain sentence."
 }
 ```
@@ -187,6 +188,10 @@ path when multiple files are scanned).
   the text as written, so `--markdown` still shows real code and URLs here even
   though they were blanked before matching.
 - `count` present when the rule counts items (the "badge" in the examples).
+- `rationale` is the same text `sloplint explain` prints under `Why:` — why the
+  pattern reads as a tell. `check` carries it on every note so an agent acting
+  on an `info` flag (or deciding whether to) doesn't have to shell out to
+  `explain` first; that's the whole point of the field.
 - `suggestion` is a short fix hint; agents may use it, humans see it too.
 
 ## Rule model
@@ -311,7 +316,7 @@ This is a first-class requirement, not an afterthought.
   # Recommended for agents:
   cat FILE | sloplint check --markdown -o json -
   # exit 0 = clean, 1 = notes found, >1 = error
-  # each note: {path,line,column,severity,rule,message,excerpt,context,suggestion}
+  # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion}
   ```
 
 - Every option has a full-sentence help string (no telegraphic fragments).

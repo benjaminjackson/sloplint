@@ -43,18 +43,21 @@ The human-readable form drops `-o json`:
 $ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the point I keep making about it.\n' | sloplint check -
 -:1:17: warning rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
     excerpt: The report is a [rich tapestry] of vibrant detail. That is exactly the…
+    why: 'tapestry of' is one of the most reliable single-phrase model tells.
     fix: Cut the metaphor; name the actual things.
 
 -:1:34: warning puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
     excerpt: The report is a rich tapestry of [vibrant] detail. That is exactly the point I…
+    why: Travel-brochure adjectives and phrases that models reach for and careful writers avoid.
     fix: Replace with a concrete, specific detail or cut it.
 
 -:2:9: warning exactly-the  "exactly the point/kind/problem/…" is an overused LLM emphasis tic.
     excerpt: …tapestry of vibrant detail. That is [exactly the point] I keep making about it.
+    why: 'exactly the X' is a model intensifier that a careful writer rarely leans on.
     fix: Drop 'exactly the'; state the point without the intensifier.
 ```
 
-The brackets mark the match; the rest is there so you can see what you're fixing without opening the file.
+The brackets mark the match; the rest is there so you can see what you're fixing without opening the file — including *why*, so an agent doesn't have to run `explain` separately to decide whether a flag is worth acting on.
 
 ## Commands
 
@@ -104,11 +107,12 @@ One match is one note. JSON output is an array of these, or an object keyed by p
   "excerpt": "No fluff, no filler, no jargon",
   "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
   "count": 3,
+  "rationale": "Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length -- 24 hits in 1.02M words across Austen, Melville, Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.",
   "suggestion": "Cut the chain or make it one plain sentence."
 }
 ```
 
-`line` and `column` are 1-indexed and point at the start of the match. `excerpt` is the bare match; `context` is the same match bracketed inside about 40 characters of surrounding prose, which is what you want when the match is a single word or a lone em dash. A match already 40 characters long carries its own context, so `context` returns it alone rather than padding it further. `count` appears only when the rule tallies items (a "no X, no Y" chain, a "did not, did not" chain). `suggestion` is a short fix hint.
+`line` and `column` are 1-indexed and point at the start of the match. `excerpt` is the bare match; `context` is the same match bracketed inside about 40 characters of surrounding prose, which is what you want when the match is a single word or a lone em dash. A match already 40 characters long carries its own context, so `context` returns it alone rather than padding it further. `count` appears only when the rule tallies items (a "no X, no Y" chain, a "did not, did not" chain). `rationale` is why the pattern is a tell — the same text `sloplint explain` prints — so an agent deciding whether an `info` flag is worth acting on doesn't have to run `explain` separately to find out. `suggestion` is a short fix hint.
 
 ## Exit codes
 
