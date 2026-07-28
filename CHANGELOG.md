@@ -5,6 +5,27 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- New rule `not-x-but-y` (`structure`, `info`): the bare corrective "is not A
+  but B" with no escalation word, comma before "but" or none. Ships at `info`
+  because the line between a corrective and an ordinary concession is
+  syntactic, and a pattern can only approximate it — a concession with an
+  elided subject ("was not perfect but got us there") still gets through.
+- New rule `no-x-no-y-frag` (`rhetorical-tic`, `info`): the "no X, no Y"
+  cadence built from sentence fragments ("No fluff. No filler.") rather than
+  commas. `info`, not `warning`, because two short "no" sentences in a row is
+  also just writing.
+- `not-just-x-but-y` now also catches "not because A, but because B" and the
+  escalation words `merely`, `simply`, and `solely` alongside `just`/`only`.
+  It keeps `warning`: the escalation word is a deliberate authorial move.
+- Both `not-…-but-…` rules now stop at a paragraph break, so an unpunctuated
+  heading or list item no longer joins up with the next paragraph's "But …".
+- `no-x-no-y-frag` links must begin a sentence, so an ordinary sentence can no
+  longer donate its tail to a chain ("There was no bread. No milk either." is
+  one sentence and one fragment, not a chain), and the link separator is
+  capped at two spaces so a code span blanked by `--markdown` cannot weld two
+  distant fragments together.
+- `sloplint explain` no longer breaks its aligned fixture block when a fixture
+  contains a newline; those are escaped as `\n`.
 - Notes carry a new `context` field: the match bracketed inside ~40 characters
   of surrounding prose. Human output shows it in place of the bare match, which
   told you nothing when the match was a single word or a lone em dash. `excerpt`

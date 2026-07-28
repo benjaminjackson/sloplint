@@ -81,7 +81,7 @@ no-x-no-y  (rhetorical-tic, warning)
 
 "No X, no Y" chain (%{count} items) reads as AI cadence.
 
-Why: LLMs love asyndetic negation triplets. A careful writer rarely stacks three.
+Why: Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length -- 24 hits in 1.02M words across Austen, Melville, Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.
 Fix: Cut the chain or make it one plain sentence.
 
 Flags:    No fluff, no filler, no jargon.
@@ -124,14 +124,16 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## The rule catalog
 
-25 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+27 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
-- **rhetorical-tic** (15) the cadence patterns: `no-x-no-y`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exactly-the`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, and more.
+- **rhetorical-tic** (16) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exactly-the`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, and more.
 - **puffery** (5) Wikipedia's "signs of AI writing": `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`.
-- **structure** (4) `not-just-x-but-y`, `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), and `rule-of-three`.
+- **structure** (5) `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
 
 Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.
+
+Some tells come in a confident form and an ambiguous one, and those ship as a pair rather than as one rule stretched over both. `no-x-no-y` wants the comma chain a writer clearly authored; `no-x-no-y-frag` takes the same cadence built from sentence fragments, which ordinary prose also produces, and ships at `info`. Same with `not-just-x-but-y` and `not-x-but-y`. The quiet half is still worth flagging — an agent that reads the rationale can judge — but it should not carry the same weight as the half we're sure about.
 
 One rule ships **off by default**: `rule-of-three` flags three parallel comma items closing a sentence, which humans do all the time, so it false-positives. It runs only when you name it: `sloplint check --select rule-of-three -`.
 
@@ -145,19 +147,22 @@ Rules are data, not code. Each is a `Data.define` object in `lib/sloplint/rules.
 
 ```ruby
 Rule.new(
-  id:           "no-x-no-y",
-  category:     "rhetorical-tic",
-  severity:     "warning",
-  pattern:      /\bno\s+[\w'-]+,\s+no\s+[\w'-]+(?:,?\s+(?:and\s+)?no\s+[\w'-]+)*/i,
-  message:      '"No X, no Y" chain (%{count} items) reads as AI cadence.',
-  suggestion:   "Cut the chain or make it one plain sentence.",
-  count_group:  /\bno\b/i,                     # optional: a regex tallied over the match
-  skip:         [/real estate/i],              # optional: drop the note if these match
-  examples_bad: ["No fluff, no filler, no jargon."],
-  examples_ok:  ["No parking on Sundays."],
-  rationale:    "Asyndetic negation chains are a signature model cadence, rare in human prose."
+  id:           "rule-id",
+  category:     "rhetorical-tic",              # or puffery, structure, hedging
+  severity:     "warning",                     # or info
+  pattern:      /.../i,
+  message:      "What the reader sees. %{count} interpolates the tally.",
+  suggestion:   "One short fix hint.",
+  count_group:  /.../i,                        # optional: a regex tallied over the match
+  skip:         [/.../i],                      # optional: drop the note if these match
+  default_on:   false,                         # optional: runs only when named in --select
+  examples_bad: ["A sentence the rule must flag."],
+  examples_ok:  ["A sentence it must leave alone."],
+  rationale:    "Why this is a tell, and what it costs when it's wrong."
 )
 ```
+
+`rationale` is not decoration. `sloplint explain` prints it, and that is what an agent reads to decide whether a flag is worth acting on — so it should say what the pattern is, how it was probed, and where it's known to be weak.
 
 Adding a rule is one entry plus its fixtures. `rules_spec.rb` iterates the catalog and asserts every `examples_bad` produces at least one note and every `examples_ok` produces none, so a rule without fixtures, or one whose regex is too greedy, fails the suite.
 
