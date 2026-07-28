@@ -74,7 +74,7 @@ RSpec.describe Sloplint::CLI do
       data = JSON.parse(out)
       expect(data).to be_an(Array)
       note = data.first
-      expect(note.keys).to include("path", "line", "column", "severity", "rule", "category", "message", "excerpt", "suggestion")
+      expect(note.keys).to include("path", "line", "column", "severity", "rule", "category", "message", "excerpt", "context", "suggestion")
       expect(note["rule"]).to eq("no-x-no-y")
       expect(note["count"]).to eq(3)
       expect(note["line"]).to eq(1)

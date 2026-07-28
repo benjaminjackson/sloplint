@@ -6,15 +6,18 @@ module Sloplint
   # One match = one Note. See docs/SPEC.md "Note".
   Note = Data.define(
     :path, :line, :column, :severity, :rule, :category,
-    :message, :excerpt, :count, :suggestion
+    :message, :excerpt, :context, :count, :suggestion
   )
 
   module Engine
+    CONTEXT_CHARS = 40
+
     module_function
 
     # text: the source. rules: which Rule objects to run. markdown: blank code/URLs first.
     # path: label carried into each Note (e.g. filename or "-" for stdin).
     def scan(text, rules: RULES, markdown: false, path: "-")
+      source = text
       text = blank_markdown(text) if markdown
       line_starts = line_starts_for(text)
       notes = []
@@ -31,11 +34,38 @@ module Sloplint
             path: path, line: line, column: column,
             severity: rule.severity, rule: rule.id, category: rule.category,
             message: message, excerpt: matched.gsub(/\s+/, " ").strip,
+            context: context_for(source, m),
             count: count, suggestion: rule.suggestion
           )
         end
       end
       notes.sort_by { |n| [n.line, n.column] }
+    end
+
+    # The match plus ~CONTEXT_CHARS either side, bracketed, whitespace collapsed.
+    # A bare `excerpt` is useless for a rule whose match is one character -- see
+    # em-dash, where the note said only "—" and you had to open the file and
+    # count to the column to learn anything.
+    #
+    # Truncated ends get an ellipsis and are trimmed back to a word boundary so
+    # the window doesn't open mid-word. A match already CONTEXT_CHARS long
+    # carries its own context; padding it just makes an em-dash-overuse span
+    # (which can run a whole paragraph) longer for no gain, so those return the
+    # match alone.
+    #
+    # source is the PRE-blanking text. blank_markdown replaces each non-newline
+    # char with one space, so offsets are identical either way, but a window
+    # over blanked text shows code and URLs as a run of spaces. Offsets here are
+    # character offsets (MatchData#begin), matching the char-based line_starts_for.
+    def context_for(source, match)
+      return "[#{match[0].gsub(/\s+/, " ").strip}]" if match[0].length >= CONTEXT_CHARS
+
+      b, e = match.begin(0), match.end(0)
+      pre  = source[[b - CONTEXT_CHARS, 0].max...b]
+      post = source[e, CONTEXT_CHARS].to_s
+      pre  = "…#{pre.sub(/\A\S*\s+/, "")}" if b > CONTEXT_CHARS
+      post = "#{post.sub(/\s+\S*\z/, "")}…" if e + CONTEXT_CHARS < source.length
+      "#{pre}[#{match[0]}]#{post}".gsub(/\s+/, " ").strip
     end
 
     # 1-indexed line and column for a char offset into text. Binary-searches a

@@ -180,7 +180,7 @@ module Sloplint
           # Recommended for agents:
           cat FILE | sloplint check --markdown -o json -
           # exit 0 = clean, 1 = notes found, >1 = error
-          # each note: {path,line,column,severity,rule,category,message,excerpt,suggestion}
+          # each note: {path,line,column,severity,rule,category,message,excerpt,context,suggestion}
 
           usage: sloplint [-o full|json] <command> [args]
 

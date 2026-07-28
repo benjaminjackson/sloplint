@@ -170,13 +170,22 @@ path when multiple files are scanned).
   "rule": "no-x-no-y",
   "category": "rhetorical-tic",
   "message": "\"No X, no Y\" chain (3 items) reads as AI cadence.",
-  "excerpt": "No fluff, no filler, no jargon.",
+  "excerpt": "No fluff, no filler, no jargon",
+  "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
   "count": 3,
   "suggestion": "Cut the chain or make it one plain sentence."
 }
 ```
 
 - `line`/`column` are 1-indexed, pointing at the start of the match.
+- `excerpt` is the bare match, nothing else. It is what `column` points at.
+- `context` is the match bracketed inside ~40 characters of surrounding prose,
+  whitespace collapsed, with `…` on any end that was cut. It exists because a
+  bare `excerpt` says nothing useful when the match is one word or a lone em
+  dash. A match already 40 characters long carries its own context, so `context`
+  returns it alone rather than padding it out further. The window is sliced from
+  the text as written, so `--markdown` still shows real code and URLs here even
+  though they were blanked before matching.
 - `count` present when the rule counts items (the "badge" in the examples).
 - `suggestion` is a short fix hint; agents may use it, humans see it too.
 
@@ -300,7 +309,7 @@ This is a first-class requirement, not an afterthought.
   # Recommended for agents:
   cat FILE | sloplint check --markdown -o json -
   # exit 0 = clean, 1 = notes found, >1 = error
-  # each note: {path,line,column,severity,rule,message,excerpt,suggestion}
+  # each note: {path,line,column,severity,rule,message,excerpt,context,suggestion}
   ```
 
 - Every option has a full-sentence help string (no telegraphic fragments).

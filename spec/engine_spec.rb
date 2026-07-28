@@ -46,6 +46,58 @@ RSpec.describe Sloplint::Engine do
     expect(note.column).to eq(11)
   end
 
+  describe ".context_for" do
+    def context(text, pattern)
+      Sloplint::Engine.context_for(text, pattern.match(text))
+    end
+
+    it "surrounds a short match with the words either side" do
+      text = "The report landed on a Tuesday and it was blunt — no hedging, no flattery, nothing held back at all."
+      expect(context(text, /—/)).to eq("…landed on a Tuesday and it was blunt [—] no hedging, no flattery, nothing held…")
+    end
+
+    it "opens at a word boundary rather than mid-word" do
+      # The 40-char window starts inside "Tuesday"; the partial word is dropped
+      # along with its trailing space, so the ellipsis butts against "landed".
+      text = "The report landed on a Tuesday and it was blunt — no hedging."
+      expect(context(text, /—/)).to start_with("…landed on")
+    end
+
+    it "omits the leading ellipsis for a match at the very start" do
+      expect(context("— then the sentence carries on for a while yet.", /—/))
+        .to eq("[—] then the sentence carries on for a…")
+    end
+
+    it "omits the trailing ellipsis for a match at the very end" do
+      expect(context("The sentence trails off into a dash —", /—/))
+        .to eq("The sentence trails off into a dash [—]")
+    end
+
+    it "returns a long match alone, without padding it further" do
+      # em-dash-overuse can span a whole paragraph. Bolting 80 more characters
+      # onto an already-long match makes the worst case worse, not clearer.
+      text = "She did not flinch, did not blink, did not look away, and did not say a word."
+      expect(context(text, /did not flinch.*did not say a word/))
+        .to eq("[did not flinch, did not blink, did not look away, and did not say a word]")
+    end
+
+    it "collapses a match that wraps across a source line" do
+      expect(context("wrapped across\na line — break here.", /—/))
+        .to eq("wrapped across a line [—] break here.")
+    end
+
+    # scan slices context out of the text as written, not the blanked copy.
+    # blank_markdown is length-preserving, so offsets are the same either way --
+    # which makes it easy to pass the wrong string and never notice, since
+    # line/column stay correct and only the excerpt turns into a run of spaces.
+    it "shows real code in the window even when --markdown blanked it" do
+      doc = "Run `bundle exec rake` and the vibrant suite goes green in under a minute.\n"
+      note = Sloplint::Engine.scan(doc, markdown: true).find { |n| n.rule == "puffery-words" }
+      expect(note.context).to include("bundle exec rake")
+      expect(note.context).to include("[vibrant]")
+    end
+  end
+
   describe ".line_starts_for" do
     # The reference implementation this is checked against: count("\n") in
     # the prefix for the line, position since the last "\n" for the column.

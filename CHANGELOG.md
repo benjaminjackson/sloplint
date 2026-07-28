@@ -5,6 +5,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Notes carry a new `context` field: the match bracketed inside ~40 characters
+  of surrounding prose. Human output shows it in place of the bare match, which
+  told you nothing when the match was a single word or a lone em dash. `excerpt`
+  is unchanged and still the bare match.
 - New rule `em-dash` (`structure`, `info`): flags every em dash, not just
   paragraphs dense with them.
 - `em-dash-overuse` (3+ em dashes in one paragraph) is now `warning`, up from
