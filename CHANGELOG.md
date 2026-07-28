@@ -5,6 +5,19 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- `is-real-and-not` and `worth-naming` move from `warning` to `info`. Both
+  patterns match on surface form alone and can't tell the AI cadence from an
+  unrelated sentence that happens to share it: "is real, and/but/not" fires on
+  any predicate-adjective sentence regardless of what follows the conjunction
+  ("my debt to my senses is real and constant" -- Emerson), and "worth naming"
+  collapses the AI meta-signpost with the plain sense of a thing worth
+  mentioning ("the only thing worth naming to do that" -- Emerson). Probed
+  against a 1.06M-word corpus (Austen, Melville, Madison, Thoreau, Emerson);
+  the other 19 rules still at `warning` were probed too and held up clean.
+- `puffery-words`' bare `nestled` matched the literal verb as often as the
+  puffery sense -- a head nestled against a shoulder, a kitten nestled into a
+  blanket. It now requires a following in/among/between, the shape the
+  travel-brochure cliché actually takes ("nestled in the hills").
 - New rule `not-x-but-y` (`structure`, `info`): the bare corrective "is not A
   but B" with no escalation word, comma before "but" or none. Ships at `info`
   because the line between a corrective and an ordinary concession is
