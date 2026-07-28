@@ -68,13 +68,21 @@ RSpec.describe Sloplint::CLI do
     end
   end
 
+  describe "full output" do
+    it "prints the rule's rationale on a 'why:' line, without needing a separate explain call" do
+      _, out = run(["check", "-"], stdin_text: "That's the whole point.")
+      rule = Sloplint::RULES.find { |r| r.id == "thats-the-whole" }
+      expect(out).to include("why: #{rule.rationale}")
+    end
+  end
+
   describe "-o json" do
     it "emits a parseable array matching the note schema" do
       _, out = run(["-o", "json", "check", "-"], stdin_text: "No fluff, no filler, no jargon.")
       data = JSON.parse(out)
       expect(data).to be_an(Array)
       note = data.first
-      expect(note.keys).to include("path", "line", "column", "severity", "rule", "category", "message", "excerpt", "context", "suggestion")
+      expect(note.keys).to include("path", "line", "column", "severity", "rule", "category", "message", "excerpt", "context", "rationale", "suggestion")
       expect(note["rule"]).to eq("no-x-no-y")
       expect(note["count"]).to eq(3)
       expect(note["line"]).to eq(1)
@@ -85,6 +93,13 @@ RSpec.describe Sloplint::CLI do
       _, out = run(["-o", "json", "check", "-"], stdin_text: "That's the whole point.")
       note = JSON.parse(out).first
       expect(note).not_to have_key("count")
+    end
+
+    it "carries the rule's rationale" do
+      _, out = run(["-o", "json", "check", "-"], stdin_text: "That's the whole point.")
+      note = JSON.parse(out).first
+      rule = Sloplint::RULES.find { |r| r.id == "thats-the-whole" }
+      expect(note["rationale"]).to eq(rule.rationale)
     end
 
     describe "multiple files" do

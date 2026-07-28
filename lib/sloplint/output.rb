@@ -13,8 +13,9 @@ module Sloplint
       notes.map do |n|
         head = "#{n.path}:#{n.line}:#{n.column}: #{n.severity} #{n.rule}  #{n.message}"
         excerpt = "    excerpt: #{n.context}"
+        why = "    why: #{n.rationale}"
         fix = "    fix: #{n.suggestion}"
-        [head, excerpt, fix].join("\n")
+        [head, excerpt, why, fix].join("\n")
       end.join("\n\n")
     end
 
