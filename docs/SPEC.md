@@ -258,7 +258,8 @@ false-positive risk, which none has demonstrated.
 
 | id | catches | notes |
 |----|---------|-------|
-| `no-x-no-y` | 2+ "no …" items in a row | counts items |
+| `no-x-no-y` | 2+ comma-separated "no …" items in a row | counts items |
+| `no-x-no-y-frag` | the same cadence as sentence fragments ("No fluff. No filler.") | counts items; `info` |
 | `thats-the-whole` | "that/this is the whole point/game/thing…" | |
 | `did-not-x-did-not-y` | 2+ "did not …"/"didn't …" in a row | counts items |
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
@@ -283,7 +284,8 @@ Single flat rule per word-cluster, matched as whole words:
 
 ### structure
 
-- `not-just-x-but-y` — "not just X, but (also) Y", "not only … but".
+- `not-just-x-but-y` — copula + "not just/only/merely/simply/solely X … but (also) Y", plus "not because X, but because Y". Requires the escalation word.
+- `not-x-but-y` — the bare corrective "is not X but Y" with no escalation word; `info`, because the corrective/concession distinction is syntactic and the pattern can only approximate it.
 - `rule-of-three` — three parallel comma items ending a sentence (heuristic; `info` severity, off by default via `--select` since it false-positives).
 - `em-dash` — any em dash; `info`.
 - `em-dash-overuse` — 3+ em dashes in one paragraph; `warning`.

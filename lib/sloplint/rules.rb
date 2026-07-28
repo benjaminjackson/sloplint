@@ -22,6 +22,10 @@ module Sloplint
       id: "no-x-no-y",
       category: "rhetorical-tic",
       severity: "warning",
+      # Comma chains only: "no fluff, no filler, no jargon". The comma is the
+      # evidence -- it makes the parallelism deliberate. Fragment chains split
+      # by sentence punctuation are a separate, quieter rule (no-x-no-y-frag),
+      # because periods are not an authorial choice the way commas are.
       pattern: /\bno\s+[\w'-]+,\s+no\s+[\w'-]+(?:,?\s+(?:and\s+)?no\s+[\w'-]+)*/i,
       message: '"No X, no Y" chain (%{count} items) reads as AI cadence.',
       suggestion: "Cut the chain or make it one plain sentence.",
@@ -32,6 +36,51 @@ module Sloplint
                  "human prose at any length -- 24 hits in 1.02M words across Austen, Melville, " \
                  "Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks " \
                  "two (and, rarely, more), but a model reaches for the pattern constantly."
+    ),
+    Rule.new(
+      id: "no-x-no-y-frag",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The same cadence built from sentence fragments: "No fluff. No filler."
+      # Ships at info, not warning, because the shape is genuinely ambiguous --
+      # two short "no" sentences in a row is also just writing ("No one moved.
+      # No one spoke."). The agent reading the flag decides; see rationale.
+      #
+      # Two structural guards keep it from reporting chains that are not in the
+      # text at all. A link must START a sentence, so an ordinary sentence
+      # cannot donate its tail ("There was no bread." + "No milk either." is
+      # one sentence and one fragment, not a chain). And the separator is at
+      # most two spaces, so a blanked-out code span or URL under --markdown
+      # cannot silently weld two distant fragments together. Links may cross a
+      # hard-wrapped newline (\r\n included) but never a paragraph break.
+      pattern: /(?:^|(?<=[.;!?])[ \t]{1,2})\K
+                no[ \t]+[\w'-]+(?:[ \t]+[\w'-]+)?[ \t]*[.;!]
+                (?:(?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]*)
+                   (?:and[ \t]+)?no[ \t]+[\w'-]+(?:[ \t]+[\w'-]+)?[ \t]*[.;!])+/ix,
+      message: '"No X. No Y." fragment chain (%{count} items) reads as AI cadence.',
+      suggestion: "Cut the chain or make it one plain sentence.",
+      count_group: /\bno\b/i,
+      examples_bad: [
+        "No fluff. No filler. No jargon.",
+        "No fees; no contracts; no hidden charges.",
+        # Hard-wrapped Markdown: the chain survives one newline.
+        "No fluff.\nNo filler."
+      ],
+      examples_ok: [
+        "No parking on Sundays.",
+        # A link must start a sentence, so this donates no tail.
+        "There was no bread. No milk either.",
+        "Say no more. No worries.",
+        # Two fragments split by a paragraph break never chain.
+        "No answer.\n\nNo one was home when we finally arrived."
+      ],
+      rationale: "The fragment form of the same cadence, and the weaker signal of the two: the " \
+                 "comma chain is one authored sentence, while this is just short sentences in " \
+                 "sequence, which human prose also does. It scored 1 hit in a 744k-word " \
+                 "five-book probe (Hamilton's 'no common coin; no common judicatory', itself " \
+                 "the chain in question), so it is rare in careful writing -- but a deliberate " \
+                 "staccato run ('No one moved. No one spoke.') has the identical shape and is " \
+                 "not a tell. Treat a flag here as a question, not a verdict."
     ),
     Rule.new(
       id: "thats-the-whole",
@@ -290,14 +339,29 @@ module Sloplint
       id: "not-just-x-but-y",
       category: "structure",
       severity: "warning",
+      # Two branches, both anchored on an explicit escalation word. (1) The
+      # copula escalation: "is not just/only/merely/simply/solely A … but B".
+      # (2) "not because A, but because B". The escalation word is what makes
+      # these safe to ship at warning -- it is a deliberate authorial move, not
+      # a shape ordinary prose falls into. The bare corrective without it
+      # ("is not A but B") is a separate, quieter rule: not-x-but-y.
+      #
+      # Interior spans stop at a paragraph break so a heading or list item
+      # cannot join up with the next paragraph's "But …".
       pattern: /(?:\bis|\bare|\bwas|\bwere|\bisn['’]t|\baren['’]t|\bwasn['’]t|\bweren['’]t|
                   \bit['’]s|\bthat['’]s|\bthis\s+is|\bthese\s+are|\bthose\s+are)
-                 \s+not\s+(?:just|only)\b[^.!?]*?\bbut\b(?:\s+also\b)?/ix,
-      message: '"X is not just A, but B" is a stock AI escalation structure.',
+                 \s+not\s+(?:just|only|merely|simply|solely)\b
+                 (?:[^.!?\n]|\n(?!\s*\n))*?\bbut\b(?:\s+also\b)?
+                |
+                \bnot\s+because\b(?:[^.!?;\n]|\n(?!\s*\n)){1,60}?\bbut\s+because\b/ix,
+      message: '"not just A, but B" is a stock AI escalation structure.',
       suggestion: "Make the claim once; drop the 'not just… but' frame.",
       examples_bad: [
         "It's not just fast, but genuinely reliable.",
-        "This is not just a tool, but a partner in your workflow."
+        "This is not just a tool, but a partner in your workflow.",
+        "It is not merely fast but reliable.",
+        "The issue is not solely technical but cultural.",
+        "She stayed not because it was easy, but because it was hers."
       ],
       examples_ok: [
         "He is not tired.",
@@ -305,12 +369,87 @@ module Sloplint
         # phrases, not a copula predicating two things of one subject.
         "This power ought not only to be established, but ought to be established.",
         "Not only that, but they looked embarrassed.",
-        "not just to acquire users, but to build something people love."
+        "not just to acquire users, but to build something people love.",
+        # A paragraph break ends the span; the next paragraph's "but" is not B.
+        "He left not because of the noise\n\nbut because of the smell."
       ],
       rationale: "'X is not just A, but B' predicates two things of the same subject through a " \
                  "copula, which is the specific shape models overuse. Correlative 'not only… " \
                  "but' joining two verb phrases or clauses, without a preceding copula, is " \
-                 "ordinary and common in formal human prose."
+                 "ordinary and common in formal human prose; requiring the escalation word " \
+                 "keeps those out. 'not because… but because' scored 2 hits in a 744k-word " \
+                 "five-book probe (Austen, Melville, Hamilton/Madison, Thoreau, Emerson)."
+    ),
+    Rule.new(
+      id: "not-x-but-y",
+      category: "structure",
+      severity: "info",
+      # The bare corrective: "is not A but B", no escalation word, comma or no
+      # comma. Ships at info because the line between a corrective ("not an
+      # accident but a strategy") and an ordinary concession ("not warm but the
+      # fire helped") is syntactic, and a regex cannot see syntax. What is here
+      # is a set of cheap narrowings that cut the worst of the noise: A is
+      # capped at one word after an optional article, "so" is excluded to spare
+      # the archaic "not so deep but that", degree words ("quite", "very") are
+      # excluded because they open concessives, and B may not be a pronoun,
+      # possessive, demonstrative, auxiliary, or quantifier.
+      #
+      # Those guards are a filter, not a decision procedure. They still let
+      # through a concession whose second clause opens with a noun phrase
+      # ("was not warm but the fire helped") or a bare lexical verb ("was not
+      # perfect but got us there"), because neither is distinguishable from the
+      # corrective by surface form. That is the cost of the rule and the reason
+      # it is info: the agent reading the flag has the context to judge, and
+      # should. Do not chase these by growing the B-list -- every word added
+      # silently narrows recall with nothing pinning it.
+      pattern: /(?:\bis|\bare|\bwas|\bwere|\bisn['’]t|\baren['’]t|\bwasn['’]t|\bweren['’]t|
+                  \bit['’]s|\bthat['’]s|\bthis\s+is|\bthese\s+are|\bthose\s+are)
+                 \s+not\s+
+                 (?!so\b|just\b|only\b|merely\b|simply\b|solely\b|even\b|yet\b|quite\b|very\b
+                   |too\b|all\b|always\b|enough\b)
+                 (?:a\s+|an\s+|the\s+)?[\w'’-]+
+                 ,?(?:[ \t]|\r?\n(?!\s*\n))+but(?:[ \t]|\r?\n(?!\s*\n))+
+                 (?:rather(?:[ \t]|\r?\n(?!\s*\n))+)?
+                 (?!also\b|that\b|this\b|these\b|those\b|they\b|it\b|he\b|she\b|we\b|you\b|i\b
+                   |his\b|her\b|their\b|its\b|my\b|your\b|our\b|there\b|then\b|still\b|now\b
+                   |is\b|was\b|are\b|were\b|has\b|had\b|have\b|will\b|would\b|could\b|should\b
+                   |may\b|might\b|must\b|can\b|to\b|as\b|if\b|when\b|because\b|not\b|no\b|never\b
+                   |nor\b|neither\b|every\w*\b|nobody\b|none\b|some\b|somebody\b|someone\b
+                   |anyone\b|anybody\b|anything\b|nothing\b|many\b|most\b|few\b)
+                 (?:a\s+|an\s+|the\s+)?[\w'’-]+/ix,
+      message: '"not A but B" is the bare AI corrective frame.',
+      suggestion: "Make the claim once; drop the 'not… but' frame.",
+      examples_bad: [
+        "The delay was not an accident but a strategy.",
+        "The delay was not an accident, but a strategy.",
+        "The problem is not misconduct but tone.",
+        "It's not a bug but a feature.",
+        "That's not an accident but a strategy."
+      ],
+      examples_ok: [
+        # Comma concessive with a pronoun subject: a contrast, not a correction.
+        "He was not handsome, but he was kind.",
+        # B-side pronoun: concession that continues the sentence.
+        "The results are not conclusive but they point in the right direction.",
+        # Archaic "not so X but that", common in 19th-century prose.
+        "The stream is not so deep but that we may ford it.",
+        # A capped at one word: multi-word predicates stay unflagged.
+        "The evening was not particularly warm but everyone stayed late.",
+        # B-side possessive, with the comma allowed.
+        "The house was not large, but its garden ran clear to the river.",
+        # Bare "every" on the B side, not just "everyone"/"everything".
+        "It is not a bug but every case differs.",
+        # A paragraph break ends the frame.
+        "The result was not final\n\nBut the team moved on anyway."
+      ],
+      rationale: "The bare 'is not A but B' corrective is the 'not just… but' move with the " \
+                 "escalation word dropped, and models reach for it constantly. It is the " \
+                 "noisiest rule in the catalog by design: a loose version scored 174 hits in a " \
+                 "744k-word five-book probe, and the narrowings here cut that to 15 -- but not " \
+                 "all 15 are correctives. Some are concessions with an elided subject (Walden's " \
+                 "'It was not lonely, but made all the earth lonely beneath it'), which no " \
+                 "surface pattern can tell apart from the real thing. Hence info: a flag here " \
+                 "means 'this has the shape', not 'this is slop'."
     ),
     Rule.new(
       id: "rule-of-three",

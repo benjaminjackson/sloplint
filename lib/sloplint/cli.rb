@@ -142,10 +142,18 @@ module Sloplint
         Why: #{rule.rationale}
         Fix: #{rule.suggestion}
 
-        Flags:    #{rule.examples_bad.join("\n          ")}
-        Does not: #{rule.examples_ok.join("\n          ")}
+        Flags:    #{fixture_list(rule.examples_bad)}
+        Does not: #{fixture_list(rule.examples_ok)}
       TXT
       0
+    end
+
+    # One fixture per line, aligned under the label. Fixtures may contain
+    # newlines (a chain that survives a hard wrap, one that dies at a paragraph
+    # break), so escape them rather than letting a fixture break the block --
+    # `explain` is parsed by agents, and a stray newline reads as end-of-list.
+    def fixture_list(examples)
+      examples.map { |e| e.gsub("\r", '\r').gsub("\n", '\n') }.join("\n          ")
     end
 
     # ── helpers ─────────────────────────────────────────────────────────────
