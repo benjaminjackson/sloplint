@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+- New rule `is-is` (`rhetorical-tic`, `warning`): the doubled copula, "what it
+  is is a mistake" / "the thing is, is that...". No anchor needed -- the bare
+  pattern scored 0 hits across ~1.9M words of public-domain and modern prose.
+
 ## [0.2.0] - 2026-07-28
 
 - `is-real-and-not` and `worth-naming` move from `warning` to `info`. Both

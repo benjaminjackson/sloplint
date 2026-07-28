@@ -271,6 +271,45 @@ module Sloplint
       rationale: "Labelling a claim as the portable lesson does the persuading that the claim " \
                  "should be doing — a model habit borrowed from thought-leader prose."
     ),
+    Rule.new(
+      id: "is-is",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # No anchor needed -- the doubled copula alone scored 0 across ~1.9M words.
+      # The comma is allowed because "What it is, is a mystery" grates the same
+      # way. Sentence and clause punctuation still block the weld ("what it is.
+      # Is that…", "here's what it is: is anyone…"), and \b on both ends keeps
+      # the pattern out of "his island". \s+ needs no paragraph-break guard: a
+      # false match would need a paragraph that begins with "is ".
+      pattern: /\bis,?\s+is\b/i,
+      message: 'Doubled copula ("is is" / "is, is") — spoken cadence on the page.',
+      suggestion: "Drop the cleft and say it straight, or delete the second 'is'.",
+      examples_bad: [
+        "What this really is is a bet on distribution.",
+        "What it is is a rounding error with a press release.",
+        "What it is, is a failure of nerve.",
+        "The thing is, is that nobody checked the logs."
+      ],
+      examples_ok: [
+        # Walden: the cleft with a single copula, which is ordinary English.
+        "We have heard of this virtue, but we know not what it is.",
+        # Sentence and clause punctuation can't be welded across.
+        "I know what it is. Is that a problem?",
+        "Here's what it is: is anyone actually reading this?",
+        # Both \b anchors matter -- "his island" contains the literal string "is is".
+        "He sailed to his island at dawn."
+      ],
+      rationale: "Three things produce a doubled copula and all three read as unedited. The " \
+                 "wh-cleft ('what it is is a mistake') is grammatical -- 'what it is' is the " \
+                 "subject and the second 'is' is the verb -- and it is the model's version, a " \
+                 "frame that stages a definition instead of asserting one, the same move as " \
+                 "'the punchline is'. The NP form ('the thing is, is that') is the true double " \
+                 "copula and a spoken disfluency. The third is a typo. The surface is rare " \
+                 "enough that the pattern needs no anchor: zero hits across ~1.9M words -- " \
+                 "1.5M of public-domain prose (Austen, Melville, Madison, Thoreau, Emerson, " \
+                 "Fielding, Joyce, Fitzgerald) and 417k of modern Wikipedia -- with the comma " \
+                 "form included in the search."
+    ),
 
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(

@@ -276,6 +276,7 @@ false-positive risk, which none has demonstrated.
 | `the-punchline-is` | "the punchline is/:/?" | |
 | `worth-naming` | "worth naming", "it's worth naming that…", "Worth naming:" | skip "naming names"; `info` |
 | `thats-not-nothing` | "that/this/it/which is not nothing" | |
+| `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)
 
