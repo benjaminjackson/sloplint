@@ -40,19 +40,21 @@ cat draft.md | sloplint check --markdown -o json -
 The human-readable form drops `-o json`:
 
 ```
-$ echo "A rich tapestry of vibrant cultures. That's exactly the point." | sloplint check -
--:1:3: warning rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
-    excerpt: rich tapestry
+$ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the point I keep making about it.\n' | sloplint check -
+-:1:17: warning rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
+    excerpt: The report is a [rich tapestry] of vibrant detail. That is exactly the…
     fix: Cut the metaphor; name the actual things.
 
--:1:20: warning puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
-    excerpt: vibrant
+-:1:34: warning puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
+    excerpt: The report is a rich tapestry of [vibrant] detail. That is exactly the point I…
     fix: Replace with a concrete, specific detail or cut it.
 
--:1:38: warning exactly-the  "exactly the point/kind/problem/…" is an overused LLM emphasis tic.
-    excerpt: That's exactly the point
+-:2:9: warning exactly-the  "exactly the point/kind/problem/…" is an overused LLM emphasis tic.
+    excerpt: …tapestry of vibrant detail. That is [exactly the point] I keep making about it.
     fix: Drop 'exactly the'; state the point without the intensifier.
 ```
+
+The brackets mark the match; the rest is there so you can see what you're fixing without opening the file.
 
 ## Commands
 
@@ -100,12 +102,13 @@ One match is one note. JSON output is an array of these, or an object keyed by p
   "category": "rhetorical-tic",
   "message": "\"No X, no Y\" chain (3 items) reads as AI cadence.",
   "excerpt": "No fluff, no filler, no jargon",
+  "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
   "count": 3,
   "suggestion": "Cut the chain or make it one plain sentence."
 }
 ```
 
-`line` and `column` are 1-indexed and point at the start of the match. `count` appears only when the rule tallies items (a "no X, no Y" chain, a "did not, did not" chain). `suggestion` is a short fix hint.
+`line` and `column` are 1-indexed and point at the start of the match. `excerpt` is the bare match; `context` is the same match bracketed inside about 40 characters of surrounding prose, which is what you want when the match is a single word or a lone em dash. A match already 40 characters long carries its own context, so `context` returns it alone rather than padding it further. `count` appears only when the rule tallies items (a "no X, no Y" chain, a "did not, did not" chain). `suggestion` is a short fix hint.
 
 ## Exit codes
 

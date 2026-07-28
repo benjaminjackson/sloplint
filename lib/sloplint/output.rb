@@ -12,7 +12,7 @@ module Sloplint
 
       notes.map do |n|
         head = "#{n.path}:#{n.line}:#{n.column}: #{n.severity} #{n.rule}  #{n.message}"
-        excerpt = "    excerpt: #{n.excerpt}"
+        excerpt = "    excerpt: #{n.context}"
         fix = "    fix: #{n.suggestion}"
         [head, excerpt, fix].join("\n")
       end.join("\n\n")
