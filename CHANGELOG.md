@@ -5,6 +5,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-02
+
 - New rule `load-bearing` (`rhetorical-tic`, `warning`): "load-bearing" used
   as a borrowed metaphor for anything important, outside its literal
   construction sense (a wall, a column, a beam). Guards on both sides —
@@ -13,6 +15,23 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - New rule `is-is` (`rhetorical-tic`, `warning`): the doubled copula, "what it
   is is a mistake" / "the thing is, is that...". No anchor needed -- the bare
   pattern scored 0 hits across ~1.9M words of public-domain and modern prose.
+- `exactly-the` replaced by the broader `exact-exactly` (`rhetorical-tic`,
+  now `info`): flags "exact/exactly" generally, not just the fixed "exactly
+  the point/kind/problem/…" phrase shape, with an allowlist for the places
+  it's doing real work (numbers, times, same/opposite/way/etc.). Severity
+  drops to `info` because a common word will still slip through on cases
+  the allowlist hasn't seen yet.
+- `thats-not-nothing` replaced by the broader `not-nothing`
+  (`rhetorical-tic`, `warning`): catches the "is not nothing" litotes
+  regardless of subject ("Fifty basis points is not nothing"), not only
+  the demonstrative-subject form ("that's not nothing"). Personal-subject
+  litotes ("he was not nothing to her") and the "there is not nothing"
+  philosophy frame are allowlisted as legitimate human use.
+- `underscores-highlights` broadened (`puffery`, still `info`): "underscores
+  the need for", "underscored how fragile", and "underscoring the urgency"
+  now match, not only the fixed "underscores/highlights/emphasizes its/the/
+  their importance/significance" phrase. The character-noun sense
+  ("a leading underscore", snake_case) stays excluded.
 
 ## [0.2.0] - 2026-07-28
 
