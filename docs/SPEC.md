@@ -285,7 +285,7 @@ Single flat rule per word-cluster, matched as whole words:
 - `puffery-words` — boasts a, vibrant, rich (history/cultural/tapestry), nestled (gated to a following in/among/between, so the literal verb — a head nestled against a shoulder — doesn't count), in the heart of (gated to a place object), groundbreaking, renowned, diverse array, breathtaking, natural beauty, stands as a testament, indelible mark, deeply rooted.
 - `stands-serves-as` — "stands as / serves as", "is a testament/reminder to".
 - `vital-role` — "plays a (vital/crucial/pivotal/significant/key) role".
-- `underscores-highlights` — "underscores/highlights/emphasizes its (importance/significance)".
+- `underscores-highlights` — "underscore(s)" + determiner and "underscored/underscoring" anywhere (the emphasis verb); "highlights/emphasizes its (importance/significance)" stays narrow.
 - `rich-tapestry` — "rich tapestry", "tapestry of".
 
 ### structure

@@ -481,12 +481,50 @@ module Sloplint
       id: "underscores-highlights",
       category: "puffery",
       severity: "info",
-      pattern: /\b(?:underscores|highlights|emphasizes)\s+(?:its|the|their)\s+(?:importance|significance)\b/i,
-      message: '"underscores/highlights its importance" is stock AI framing.',
+      # "underscored/underscoring" are unambiguously the verb and flag bare.
+      # "underscore/underscores" is also the character noun (a leading
+      # underscore, snake_case docs), so those forms require a following
+      # determiner/wh-word -- the frame the emphasis verb takes, which the
+      # noun never precedes. That guard also skips bare-noun objects
+      # ("underscores concerns about"), an accepted miss: widening the frame
+      # to catch them readmits the noun sense. Token gaps cross a
+      # hard-wrapped line but never a paragraph break. highlights/emphasizes
+      # stay narrowed to the importance/significance frame -- both verbs are
+      # too common in ordinary prose to match broadly.
+      pattern: /\bunderscor(?:ed|ing)\b
+               |\bunderscores?(?:[ \t]|\r?\n(?![ \t]*\r?\n))+
+                 (?:a|an|the|its|his|her|their|our|your|my|this|that|these|those|what|why|how|just)\b
+               |\b(?:highlights|emphasizes)\s+(?:its|the|their)\s+(?:importance|significance)\b/ix,
+      message: '"underscores" as emphasis (or "highlights/emphasizes its importance") is stock AI framing.',
       suggestion: "Show why it matters rather than asserting that it does.",
-      examples_bad: ["This underscores its importance to the field."],
-      examples_ok: ["She highlights the key line in yellow."],
-      rationale: "The 'underscores its importance' move asserts significance without earning it."
+      examples_bad: [
+        "This underscores its importance to the field.",
+        "The delay underscores the need for better tooling.",
+        "The outage underscored how fragile the pipeline was.",
+        "Underscoring the urgency, the board met twice.",
+        "The results underscore a deeper problem with the method.",
+        "The report underscores just how far behind we are.",
+        "It underscores that the market has moved on.",
+        "The essay highlights its importance at length.",
+        "This emphasizes the significance of early testing."
+      ],
+      examples_ok: [
+        "Replace each space with an underscore.",
+        "Variable names use underscores instead of dashes.",
+        "The underscore character separates words in snake case.",
+        "Prefix private methods with a leading underscore.",
+        "Ruby numeric literals accept underscores for readability.",
+        "Two underscores mark a dunder method in Python.",
+        "She highlights the key line in yellow.",
+        "The paper emphasizes the method, not the results.",
+        # A paragraph break never welds the noun onto the next sentence.
+        "Numbers accept underscores\n\nThe next section covers floats."
+      ],
+      rationale: "Models reach for 'underscore' as an all-purpose emphasis verb -- findings " \
+                 "underscore, outages underscore -- asserting significance without earning it. " \
+                 "Sincere journalistic and academic use exists, hence info: a flag means the " \
+                 "move is present, not that it's slop. The character noun never takes the " \
+                 "verb's frame and stays out."
     ),
     Rule.new(
       id: "rich-tapestry",
