@@ -51,10 +51,10 @@ $ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the 
     why: Travel-brochure adjectives and phrases that models reach for and careful writers avoid.
     fix: Replace with a concrete, specific detail or cut it.
 
--:2:9: warning exactly-the  "exactly the point/kind/problem/…" is an overused LLM emphasis tic.
-    excerpt: …tapestry of vibrant detail. That is [exactly the point] I keep making about it.
-    why: 'exactly the X' is a model intensifier that a careful writer rarely leans on.
-    fix: Drop 'exactly the'; state the point without the intensifier.
+-:2:9: info exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
+    excerpt: …tapestry of vibrant detail. That is [exactly] the point I keep making about it.
+    why: Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to check; it earns its place only next to a number, a name, or a stated identity.
+    fix: Cut it, or replace with the number, name, or match it's supposed to be precise about.
 ```
 
 The brackets mark the match; the rest is there so you can see what you're fixing without opening the file — including *why*, so an agent doesn't have to run `explain` separately to decide whether a flag is worth acting on.
@@ -130,7 +130,7 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 28 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
-- **rhetorical-tic** (17) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exactly-the`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, `is-is` (doubled copula), and more.
+- **rhetorical-tic** (17) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exact-exactly`, `you-already-know`, `sit-with-that`, `thats-not-nothing`, `is-is` (doubled copula), and more.
 - **puffery** (5) Wikipedia's "signs of AI writing": `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`.
 - **structure** (5) `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."

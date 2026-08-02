@@ -224,15 +224,36 @@ module Sloplint
     ),
 
     Rule.new(
-      id: "exactly-the",
+      id: "exact-exactly",
       category: "rhetorical-tic",
-      severity: "warning",
-      pattern: /\b(?:(?:that's|this is|it's)\s+)?exactly\s+the\s+(?:point|kind|type|sort|problem|question|issue|opposite|reason|thing|tension)\b/i,
-      message: '"exactly the point/kind/problem/…" is an overused LLM emphasis tic.',
-      suggestion: "Drop 'exactly the'; state the point without the intensifier.",
-      examples_bad: ["That's exactly the point.", "We proved exactly the point we needed."],
-      examples_ok: ["She folded it exactly the way he showed her."],
-      rationale: "'exactly the X' is a model intensifier that a careful writer rarely leans on."
+      severity: "info",
+      pattern: /\bexact(?:ly)?\b(?!\s*(?:(?:the\s+)?(?:same|opposite|science|change|replica|copy|location|coordinates|way)\b|[$\d]|noon\b|midnight\b|o'?\s*clock\b))/i,
+      message: '"exact/exactly" is reflexive emphasis unless it names something checkable.',
+      suggestion: "Cut it, or replace with the number, name, or match it's supposed to be precise about.",
+      examples_bad: [
+        "That's exactly the point.", "We proved exactly the point we needed.",
+        "This is exactly the kind of thing we warned about.",
+        "That's the exact problem with the old system.",
+        "That's exactly right.", "I know exactly why this happened."
+      ],
+      examples_ok: [
+        "She folded it exactly the way he showed her.",
+        "The bill came to exactly $42.",
+        "We agreed on the exact same design.",
+        "It's not an exact science.",
+        "Please bring exact change for the bus.",
+        "The museum built an exact replica of the ship.",
+        "This is an exact copy of the original.",
+        "He wanted the exact opposite of what she suggested.",
+        "Rescue teams pinpointed the exact location of the wreck.",
+        "GPS gave us the exact coordinates of the site.",
+        "The train left at exactly noon.",
+        "They agreed to meet at exactly midnight.",
+        "The meeting starts at exactly 3 o'clock.",
+        "She has exacting standards for her students."
+      ],
+      rationale: "Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to " \
+                 "check; it earns its place only next to a number, a name, or a stated identity."
     ),
     Rule.new(
       id: "thats-how-x",

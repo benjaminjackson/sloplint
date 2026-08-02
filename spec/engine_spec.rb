@@ -35,13 +35,11 @@ RSpec.describe Sloplint::Engine do
     )
   end
 
-  # exactly-the's optional "that's/this is/it's" prefix used to leave a bare
-  # \s* free to absorb the space before "exactly" even when no prefix
-  # matched, so the reported column pointed at whitespace instead of the
-  # word. Pin the fix: mid-sentence, no prefix, column lands on "exactly".
+  # Pin the match position: mid-sentence, no leading space swallowed,
+  # column lands right on "exactly".
   it "does not include a leading space in a match with no matched prefix" do
     notes = Sloplint::Engine.scan("We proved exactly the point we needed.")
-    note = notes.find { |n| n.rule == "exactly-the" }
+    note = notes.find { |n| n.rule == "exact-exactly" }
     expect(note.excerpt).to start_with("exactly")
     expect(note.column).to eq(11)
   end
