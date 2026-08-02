@@ -256,6 +256,56 @@ module Sloplint
                  "check; it earns its place only next to a number, a name, or a stated identity."
     ),
     Rule.new(
+      id: "load-bearing",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Two guards, both structural, over the same noun list so they can't
+      # drift apart. Forward: a physical building part right after it is the
+      # literal sense, checked with a negative lookahead. Backward: the
+      # predicate form ("the wall is load-bearing") is literal too, but a
+      # fixed-width lookbehind covering this many noun x tense combinations
+      # trips a real Ruby/Onigmo lookbehind bug on some inputs (RegexpError
+      # at match time, not compile time -- reproduced on em-dash's own
+      # fixtures). Pulling the noun+copula into the pattern itself as an
+      # optional leading group sidesteps lookbehind entirely: when present,
+      # it's captured as part of the match, and skip: (which only ever sees
+      # matched text, never surrounding context) drops it there instead.
+      pattern: /\b(?:(?:wall|column|beam|post|pillar|joist|stud|masonry|partition|
+                        structure|frame|footing|foundation|member)s?\s+
+                     (?:is|are|was|were)\s+)?
+                load[-\s]?bearing\b
+                (?!\s+(?:wall|column|beam|post|pillar|joist|stud|masonry|partition|
+                         structure|frame|footing|foundation|member)s?\b)/ix,
+      skip: [/\A(?:wall|column|beam|post|pillar|joist|stud|masonry|partition|
+                   structure|frame|footing|foundation|member)s?\s+
+                (?:is|are|was|were)\s+load/ix],
+      message: '"load-bearing" outside construction is a borrowed metaphor.',
+      suggestion: "Say what the thing holds up, or what breaks without it.",
+      examples_bad: [
+        "That comma is load-bearing.",
+        "The load-bearing assumption is that users read the docs.",
+        "Half the argument rests on one load-bearing word.",
+        "This paragraph is the load-bearing part of the essay.",
+        "Trust was the load-bearing element of the whole deal.",
+        "The qualifier is doing load bearing work here."
+      ],
+      examples_ok: [
+        "They knocked out a load-bearing wall during the remodel.",
+        "The inspector flagged a cracked load-bearing column.",
+        "Steel load-bearing beams replaced the old timber.",
+        "The load-bearing masonry dates to 1890.",
+        "Those columns are load-bearing.",
+        "The interior wall is load-bearing, so it stays.",
+        "The beam is load-bearing.",
+        "That stud was load-bearing, so removing it needed a header beam.",
+        "Those joists were load-bearing, engineers confirmed after inspection.",
+        "The masonry was load-bearing in the original 1890 structure."
+      ],
+      rationale: "'Load-bearing' is a construction term for a wall or column that holds up the " \
+                 "structure. Models borrow it as a metaphor for anything important, which just " \
+                 "restates the sentence's importance without saying what actually holds it up."
+    ),
+    Rule.new(
       id: "thats-how-x",
       category: "rhetorical-tic",
       severity: "warning",

@@ -5,6 +5,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- New rule `load-bearing` (`rhetorical-tic`, `warning`): "load-bearing" used
+  as a borrowed metaphor for anything important, outside its literal
+  construction sense (a wall, a column, a beam). Guards on both sides —
+  a building noun right after it, or the predicate form ("the wall is
+  load-bearing") — leave the construction sense clean.
 - New rule `is-is` (`rhetorical-tic`, `warning`): the doubled copula, "what it
   is is a mistake" / "the thing is, is that...". No anchor needed -- the bare
   pattern scored 0 hits across ~1.9M words of public-domain and modern prose.
