@@ -212,15 +212,58 @@ module Sloplint
                  "which sense it's in."
     ),
     Rule.new(
-      id: "thats-not-nothing",
+      id: "not-nothing",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /\b(?:that|this|it|which)(?:'s| is)\s+not\s+nothing\b/i,
-      message: '"…that\'s not nothing" is a stock LLM understatement.',
+      # Two branches: spelled-out copula with an optional captured subject, and
+      # the contracted "X's not nothing". The optional subject + skip: is the
+      # load-bearing idiom -- skip: only sees matched text, so the personal
+      # subjects a human litotes takes (I/he/she/we/you/they) must be inside
+      # the match to be dropped there. The contracted branch captures the word
+      # before 's for the same reason ("she's not nothing" must reach the
+      # skip). "there" is guarded too: "there is/there's not nothing" is the
+      # philosophy frame or dialect, not the closer. "not for nothing" and
+      # "something and not nothing" never match at all -- the copula must sit
+      # adjacent to "not nothing". Token gaps cross a hard-wrapped line but
+      # never a paragraph break, so a paragraph ending "...was not" cannot weld
+      # onto one starting "Nothing ...".
+      pattern: /\b(?:(?:i|he|she|we|you|they|there)(?:[ \t]|\r?\n(?![ \t]*\r?\n))+)?
+                 (?:am|is|are|was|were)(?:[ \t]|\r?\n(?![ \t]*\r?\n))+
+                 not(?:[ \t]|\r?\n(?![ \t]*\r?\n))+nothing\b
+                |\b[\w-]+['’]s(?:[ \t]|\r?\n(?![ \t]*\r?\n))+
+                 not(?:[ \t]|\r?\n(?![ \t]*\r?\n))+nothing\b/ix,
+      skip: [/\A(?:i|he|she|we|you|they|there)\b/i],
+      message: '"…is not nothing" is a stock LLM understatement.',
       suggestion: "State the magnitude directly instead of the litotes.",
-      examples_bad: ["We cut latency in half, and that's not nothing."],
-      examples_ok: ["That is not enough to matter."],
-      rationale: "The 'not nothing' litotes is a recognizable model closer."
+      examples_bad: [
+        "We cut latency in half, and that's not nothing.",
+        "Fifty basis points is not nothing.",
+        "Three years of runway is not nothing.",
+        "A million users is not nothing.",
+        "The margin was not nothing.",
+        # Hard-wrapped Markdown: same paragraph, still the tell.
+        "The gain was not\nnothing, the report said."
+      ],
+      examples_ok: [
+        "That is not enough to matter.",
+        # Personal-subject litotes is a human literary move, not the closer
+        # tic -- spelled out and contracted.
+        "She told him he was not nothing to her.",
+        "She's not nothing to me, whatever they say.",
+        # "not for nothing": the intervening word breaks adjacency.
+        "It was not for nothing that he trained all winter.",
+        # The philosophy frame, both shapes it takes.
+        "Why is there something and not nothing?",
+        "There is not nothing; being persists.",
+        # Dialect double negative, not the litotes.
+        "There's not nothing we can do.",
+        # A paragraph break never welds a match.
+        "The answer was not\n\nNothing prepared us for it."
+      ],
+      rationale: "The 'not nothing' litotes is a recognizable model closer; the subject " \
+                 "varies ('that's not nothing', 'fifty basis points is not nothing') but " \
+                 "the move is the same. Personal subjects are carved out: 'he was not " \
+                 "nothing to her' is a human literary litotes, not the closer."
     ),
 
     Rule.new(

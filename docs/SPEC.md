@@ -275,7 +275,7 @@ false-positive risk, which none has demonstrated.
 | `is-real-and-not` | "the X is real, and/not…", "is the real … and it" | skip "real estate/time"; `info` |
 | `the-punchline-is` | "the punchline is/:/?" | |
 | `worth-naming` | "worth naming", "it's worth naming that…", "Worth naming:" | skip "naming names"; `info` |
-| `thats-not-nothing` | "that/this/it/which is not nothing" | |
+| `not-nothing` | copula + "not nothing" litotes, any subject | skip personal/there subjects |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)
