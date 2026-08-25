@@ -125,6 +125,33 @@ module Sloplint
       rationale: "The 'sit with X' imperative is a model comfort tic, rare in real argument."
     ),
     Rule.new(
+      id: "hold-onto-that",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Sentence-initial imperative only. Past tense and subordinate clauses
+      # ("she held on to that letter", "if you hold onto that phrase") are a
+      # different construction, not the tell. Everything AFTER that/this is
+      # unconstrained on purpose, which does flag the concrete-object
+      # imperative ("Hold on to that rope") -- accepted, hence warning.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:but\s+|and\s+|now\s+|so\s+)?hold\s+(?:on\s+to|onto)\s+(?:that|this)\b/i,
+      message: '"Hold onto that…" is a stock LLM attention cue.',
+      suggestion: "Cut it; if the detail matters, use it where it matters.",
+      examples_bad: [
+        "Hold onto that second half, because it does more work than the first.",
+        "Hold on to that for a moment.",
+        "The table looked fine. Now hold onto this last figure; it changes everything."
+      ],
+      examples_ok: [
+        "Hold that thought while I check the log.",
+        "If you hold onto that phrase too long, the sentence sags.",
+        "She held on to that letter for years."
+      ],
+      rationale: "The imperative parks a fragment against a payoff the writer has promised " \
+                 "but not delivered. It fits in front of any sentence in any document, and " \
+                 "real argument uses the detail again where it matters instead of asking " \
+                 "the reader to carry it."
+    ),
+    Rule.new(
       id: "you-already-know",
       category: "rhetorical-tic",
       severity: "warning",
