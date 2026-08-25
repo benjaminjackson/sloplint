@@ -117,12 +117,33 @@ module Sloplint
       id: "sit-with-that",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /\bsit\s+with\s+(?:that|this|it|the\s+\w+)\b/i,
+      # Two branches. The deictic object is the tic anywhere in a sentence, so
+      # "sit with that/this/it" needs no anchor. Anything else needs the
+      # sentence-initial imperative, which is where the tic lives and where the
+      # ordinary companion sense ("come and sit with me") mostly is not.
+      # Widened from that|this|it|the+word, which both missed the bare abstract
+      # object ("sit with uncertainty") and flagged "sit with the baby".
+      pattern: /\bsit\s+with\s+(?:that|this|it)\b
+                |(?:\A|[.!?]\s+|\n\s*\n)\s*(?:but\s+|and\s+|now\s+|so\s+|just\s+)?
+                 sit\s+with\s+\S/ix,
       message: '"Sit with that/the discomfort" is therapized LLM filler.',
       suggestion: "Cut it, or say what you actually want the reader to do.",
-      examples_bad: ["Just sit with that for a moment."],
-      examples_ok: ["Sit with your family at dinner."],
-      rationale: "The 'sit with X' imperative is a model comfort tic, rare in real argument."
+      examples_bad: [
+        "Just sit with that for a moment.",
+        "Sit with uncertainty for a while.",
+        "Sit with the discomfort before you answer.",
+        "The numbers were worse than that. Sit with what they imply."
+      ],
+      examples_ok: [
+        "They sit with their families at dinner.",
+        "Come and sit with me on the porch.",
+        "I sat with the baby until she slept."
+      ],
+      rationale: "The 'sit with X' imperative is a model comfort tic, rare in real argument. " \
+                 "The object does not matter: the tic is telling the reader to dwell instead " \
+                 "of giving them something to dwell on. The sentence-initial imperative does " \
+                 "flag the plain companion sense (\"Sit with the baby while I run out\"), " \
+                 "which is accepted -- hence warning, not error."
     ),
     Rule.new(
       id: "hold-onto-that",
