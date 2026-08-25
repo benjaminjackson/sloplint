@@ -212,6 +212,33 @@ module Sloplint
                  "which sense it's in."
     ),
     Rule.new(
+      id: "worth-saying-plainly",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Three slots, all required: an evaluative adjective, a speech verb, and
+      # a manner adverb. Any two of them occur in ordinary prose ("worth saying
+      # yes to", "said plainly that"); the full stack is the signpost.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:it'?s\s+|that'?s\s+)?(?:worth|better|best|easier|simpler|fairer|clearer)\s+(?:saying|stating|putting|naming|said|stated|put|spelling\s+(?:it\s+)?out)\s+(?:it\s+|this\s+|that\s+)?(?:plainly|clearly|bluntly|directly|simply|outright|flatly|straight|up\s+front|out\s+loud)\b/i,
+      message: '"Worth saying plainly…" rates the sentence before the reader can.',
+      suggestion: "Say the thing; if it lands plainly, the reader will notice.",
+      examples_bad: [
+        "Worth saying plainly, the ceiling is set by the first report.",
+        "It's worth stating clearly: the data never arrived.",
+        "The batch failed. Worth putting it bluntly, we lost a week."
+      ],
+      examples_ok: [
+        "It's worth reading twice.", "The contract is worth saying yes to.",
+        "She said plainly that the plan had failed.",
+        "He put it bluntly and everyone understood.",
+        # Hard-wrapped mid-sentence: a line break is not a paragraph break.
+        "the argument started long before that and\nworth saying plainly is not how it opened."
+      ],
+      rationale: "The sentence is about the sentence: an unsourced claim that what follows " \
+                 "deserves attention, made before the reader has anything to weigh it " \
+                 "against. It is also subjectless -- worth it to whom? -- and fits in front " \
+                 "of any claim in any document, which is why it says nothing about this one."
+    ),
+    Rule.new(
       id: "not-nothing",
       category: "rhetorical-tic",
       severity: "warning",
