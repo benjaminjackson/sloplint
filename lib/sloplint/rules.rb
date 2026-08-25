@@ -152,6 +152,119 @@ module Sloplint
                  "the reader to carry it."
     ),
     Rule.new(
+      id: "cleanly",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # No verb list. The engineering idioms -- a patch applies cleanly, a
+      # branch merges cleanly, a build compiles cleanly -- are the same move
+      # and get flagged too, on purpose. The word survives in a 19th-century
+      # adjective sense ("cleanly dressed", "a cleanly laid table") that the
+      # rule also catches, which costs nothing: nobody writes that today.
+      pattern: /\bcleanly\b/i,
+      message: '"Cleanly" rates the fit instead of showing it.',
+      suggestion: "Cut the adverb, or say what actually lined up.",
+      examples_bad: [
+        "The argument splits cleanly into two parts.",
+        "The patch applies cleanly to main.",
+        "The new taxonomy maps cleanly onto the old one.",
+        "The objection breaks down cleanly, and neither half survives."
+      ],
+      examples_ok: [
+        "The branch merged without conflicts.",
+        "She wiped the counter clean.",
+        "The build finished with no warnings."
+      ],
+      rationale: "The adverb rates the join instead of showing it, and it rates before the " \
+                 "reader has anything to check. Real material resists -- the leftover case, " \
+                 "the item in both buckets. A writer who has met the leftovers names them."
+    ),
+    Rule.new(
+      id: "clean-count",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Needs a partition noun. The bare count reaches the laundry: Ulysses
+      # has "four clean strokes", Jane Eyre "two clean tuckers".
+      pattern: /\b(?:two|three|four|five|six|seven|2|3|4|5|6|7)\s+
+                 (?:very\s+|fairly\s+|reasonably\s+|pretty\s+)?clean\s+(?:\w+\s+)?
+                 (?:parts|halves|pieces|buckets|categories|groups|chunks|sections|layers
+                   |camps|cases|classes|clusters|splits|steps|stages|phases|tiers|bands
+                   |lanes|axes|dimensions|questions|claims|ideas|moves|jobs|roles)\b/ix,
+      message: '"Two clean parts" claims a tidier division than it shows.',
+      suggestion: "Name the parts and let the reader see whether they hold.",
+      examples_bad: [
+        "That leaves two clean buckets for the rest of the work.",
+        "The job falls into three clean stages.",
+        "You end up with two clean categories and a remainder nobody mentions."
+      ],
+      examples_ok: [
+        "She wore two clean shirts that week.",
+        "He cut it in four clean strokes.",
+        "The kitchen had three clean plates left."
+      ],
+      rationale: "The count and the adjective do the same work twice: the number says the " \
+                 "division is settled, the adjective says it was easy. Neither is evidence, " \
+                 "and prose that has met the awkward third case rarely offers both."
+    ),
+    Rule.new(
+      id: "cleanest-x",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Noun list only. "The cleanest way to install the driver" and "the
+      # cleanest cut of meat" are ordinary English, so "way" is admitted only
+      # in front of a speech verb, and the concrete-capable nouns (cut, line,
+      # version, split) are left out entirely.
+      pattern: /\bcleanest\s+(?:\w+\s+){0,2}
+                 (?:framing|formulation|statement|account|argument|idea|definition|summary
+                   |reading|take|point|story|explanation|distinction|comparison|mapping
+                   |abstraction)\b
+                |\bcleanest\s+way\s+to\s+(?:say|put|frame|state|describe|phrase|express
+                   |think\s+about)\b/ix,
+      message: '"The cleanest framing/way to put it…" ranks your own claim for the reader.',
+      suggestion: "Drop the ranking and make the claim; the reader grades it.",
+      examples_bad: [
+        "The cleanest framing is that nobody was in charge.",
+        "That is the cleanest way to put it.",
+        "The cleanest organizing idea here is scarcity."
+      ],
+      examples_ok: [
+        "This is the cleanest way to install the driver.",
+        "She picked the cleanest room in the house.",
+        "The cleanest energy source is still hydro."
+      ],
+      rationale: "Self-ranking: the writer tells the reader which of their own claims is " \
+                 "the good one, which is the reader's job and costs nothing to assert."
+    ),
+    Rule.new(
+      id: "clean-x",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The quiet half of cleanest-x, at info because the positive degree is
+      # where ordinary usage lives. "A clean separation of concerns" is
+      # standard engineering English, so "separation" stays out of the list;
+      # "break" is admitted only in "clean break between", never bare, because
+      # "make a clean break with the past" is an idiom and not a tell.
+      pattern: /\b(?:a|the|one)\s+(?:\w+\s+)?clean\s+(?:\w+\s+)?
+                 (?:abstraction|distinction|framing|formulation|mapping|through-line
+                   |story|answer|argument|split|divide)\b
+                |\bclean\s+(?:line|break|split)\s+between\b/ix,
+      message: '"A clean abstraction / clean framing" praises the idea instead of showing it.',
+      suggestion: "Cut the adjective; if it is tidy, the reader will see that.",
+      examples_bad: [
+        "That gives us a clean abstraction over the queue.",
+        "The clean framing is that both sides were guessing.",
+        "There is a clean line between advice and instruction."
+      ],
+      examples_ok: [
+        "The design has a clean separation of concerns.",
+        "He made a clean break with the past.",
+        "They ran a clean campaign.",
+        "The report gives a clean bill of health."
+      ],
+      rationale: "'Clean' in front of an idea is evaluation, not description -- it says the " \
+                 "writer approves, and nothing about the idea. It ships at info because the " \
+                 "same words carry a plain sense a regex cannot separate from the tic."
+    ),
+    Rule.new(
       id: "you-already-know",
       category: "rhetorical-tic",
       severity: "warning",
