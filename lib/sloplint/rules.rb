@@ -977,6 +977,31 @@ module Sloplint
                  "nominally free -- and nothing in the sentence marks which use is which, " \
                  "which is why this one runs only when you ask for it."
     ),
+    Rule.new(
+      id: "and-thats-fine",
+      category: "rhetorical-tic",
+      severity: "info",
+      # Three narrowings, and the rule needs all of them. "and" is required:
+      # bare "that's fine" is a reply people write constantly. The match must
+      # open a sentence and close it, so the concessive clause -- "and that's
+      # fine, but the cost is real" -- never matches.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*and\s+that['’]?s\s+(?:fine|okay|ok)\s*[.!]/i,
+      message: '"And that\'s fine." grants permission nobody asked for.',
+      suggestion: "Cut the closer, or say who objected and why they're wrong.",
+      examples_bad: [
+        "The essay is short. And that's fine.",
+        "Nobody reads the appendix. And that's okay.",
+        "It only handles one case. And that's fine!"
+      ],
+      examples_ok: [
+        "That's fine. Ship it whenever.",
+        "The tests are slow and that's fine for now.",
+        "And that's fine, but the cost is real."
+      ],
+      rationale: "The closer concedes an objection instead of answering it, and the objection " \
+                 "was never raised. It reads as reassurance addressed to nobody, and the " \
+                 "paragraph is the same without it."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",

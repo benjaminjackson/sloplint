@@ -299,6 +299,7 @@ false-positive risk, which none has demonstrated.
 | `none-of-this-is-to-say` | "none of this/that/the above is to say" | every other "not to say" phrasing excluded |
 | `if-im-being-honest` | "if I'm/we're (being) honest", "honestly, the answer/truth" | plain "to be honest" and "I'll be honest" excluded |
 | `genuinely` | any "genuinely" | off by default; no narrowing holds |
+| `and-thats-fine` | "And that's fine/okay." as a whole sentence | "and" required; must open and close the sentence |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)
