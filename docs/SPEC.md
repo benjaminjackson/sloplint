@@ -296,6 +296,7 @@ false-positive risk, which none has demonstrated.
 | `two-things-true` | "two/both things can be/are true" | count fixed at two |
 | `notice-what-there` | "notice what X did there", "read that again" | sentence-initial |
 | `notice-what` | bare sentence-initial "Notice what…" | yields the "there" frame to the rule above; "how" excluded; `info` |
+| `none-of-this-is-to-say` | "none of this/that/the above is to say" | every other "not to say" phrasing excluded |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)

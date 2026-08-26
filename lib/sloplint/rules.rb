@@ -896,6 +896,33 @@ module Sloplint
                  "a list -- which is why this is the quiet half of the pair. Treat a flag " \
                  "here as a question: is there anything to see?"
     ),
+    Rule.new(
+      id: "none-of-this-is-to-say",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Only the "none of" form. Every neighbouring phrasing is ordinary
+      # English by an order of magnitude -- "which is not to say", "this is
+      # not to say", "that's not to say" -- and admitting any of them would
+      # sink the rule. The sweeping subject is the tell: not this sentence
+      # but everything above it.
+      pattern: /\bnone\s+of\s+(?:this|that|the\s+above)\s+is\s+to\s+say\b/i,
+      message: '"None of this is to say…" retracts an argument nobody made.',
+      suggestion: "State the limit of the claim, or drop the disclaimer.",
+      examples_bad: [
+        "None of this is to say the approach is wrong.",
+        "None of that is to say the numbers are wrong.",
+        "The evidence points one way. None of the above is to say it is settled."
+      ],
+      examples_ok: [
+        "That's not to say it was easy.",
+        "Which is not to say the report was wrong.",
+        "None of this means the project failed."
+      ],
+      rationale: "The sentence guards against a reading the text never invited, which lets " \
+                 "the writer sound careful without giving anything up. The sweeping subject " \
+                 "is what separates it from the ordinary hedge: it disclaims everything " \
+                 "above it at once, so it can be written without knowing what that was."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
