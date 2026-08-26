@@ -91,9 +91,16 @@ RSpec.describe "Sloplint::RULES" do
   # rule can still trip a DIFFERENT rule in the catalog -- this runs every
   # examples_ok against the full default catalog to catch that.
   describe "cross-rule false positives" do
-    # em-dash flags every dash by design, so em-dash-overuse's ok-fixtures (one
-    # or two dashes -- clean for *overuse*) legitimately trip it. Only this pair.
-    overlaps = { "em-dash-overuse" => %w[em-dash] }
+    # Two confident/ambiguous pairs where the quiet half legitimately fires on
+    # the loud half's ok-fixtures. em-dash flags every dash by design, so
+    # em-dash-overuse's ok-fixtures (one or two dashes -- clean for *overuse*)
+    # trip it. notice-what flags every sentence-initial "Notice what", so
+    # notice-what-there's ok-fixtures (pointing at something real, clean for
+    # the self-referential frame) trip it at info. Only these two.
+    overlaps = {
+      "em-dash-overuse" => %w[em-dash],
+      "notice-what-there" => %w[notice-what]
+    }
 
     Sloplint::RULES.each do |owner|
       owner.examples_ok.each do |example|

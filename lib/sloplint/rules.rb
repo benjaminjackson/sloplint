@@ -864,6 +864,38 @@ module Sloplint
                  "move before the reader has judged it. Where a human writes it, they are " \
                  "usually pointing at something outside the text -- a chart, a screen, a list."
     ),
+    Rule.new(
+      id: "notice-what",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The ambiguous half of the pair, and it ships at info because the
+      # sentence-initial imperative is also how people point at something
+      # real: "Notice what happens around Q3", "Notice what is not on the
+      # list". The lookahead hands the self-referential frame to
+      # notice-what-there so one span never draws two notes.
+      #
+      # "how" is left out. "Notice how" draws ten times the volume and half
+      # of it is the imperative -- that is ordinary argument, not a tell.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*notice\s+what\b
+                (?![^.!?\n]{0,40}\b(?:did|does|just\s+did)\s+there\b)/ix,
+      message: '"Notice what…" tells the reader to look instead of showing them.',
+      suggestion: "Point at the thing itself, or cut the instruction.",
+      examples_bad: [
+        "Notice what the second paragraph leaves out.",
+        "The numbers were flat all year. Notice what the summary claims instead.",
+        "Notice what nobody is willing to say."
+      ],
+      examples_ok: [
+        "Notice how the cache warms on the second request.",
+        "I did not notice what he said.",
+        "You will notice what is missing soon enough."
+      ],
+      rationale: "The imperative directs attention without carrying any, so the reader is " \
+                 "told to look before being given anything to look at. Human writers use the " \
+                 "same sentence to point at something outside the text -- a chart, a screen, " \
+                 "a list -- which is why this is the quiet half of the pair. Treat a flag " \
+                 "here as a question: is there anything to see?"
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",

@@ -128,16 +128,16 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## The rule catalog
 
-42 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+43 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
-- **rhetorical-tic** (31) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exact-exactly`, `load-bearing`, `you-already-know`, `sit-with-that`, `hold-onto-that`, `cleanly`, `clean-count`, `cleanest-x`, `clean-x`, `not-nothing`, `is-is` (doubled copula), and more.
+- **rhetorical-tic** (32) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exact-exactly`, `load-bearing`, `you-already-know`, `sit-with-that`, `hold-onto-that`, `cleanly`, `clean-count`, `cleanest-x`, `clean-x`, `not-nothing`, `is-is` (doubled copula), and more.
 - **puffery** (5) Wikipedia's "signs of AI writing": `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`.
 - **structure** (5) `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
 
 Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.
 
-Some tells come in a confident form and an ambiguous one, and those ship as a pair rather than as one rule stretched over both. `no-x-no-y` wants the comma chain a writer clearly authored; `no-x-no-y-frag` takes the same cadence built from sentence fragments, which ordinary prose also produces, and ships at `info`. Same with `not-just-x-but-y` and `not-x-but-y`. The quiet half is still worth flagging — an agent that reads the rationale can judge — but it should not carry the same weight as the half we're sure about.
+Some tells come in a confident form and an ambiguous one, and those ship as a pair rather than as one rule stretched over both. `no-x-no-y` wants the comma chain a writer clearly authored; `no-x-no-y-frag` takes the same cadence built from sentence fragments, which ordinary prose also produces, and ships at `info`. Same with `not-just-x-but-y` and `not-x-but-y`, and with `notice-what-there` and `notice-what`. The quiet half is still worth flagging — an agent that reads the rationale can judge — but it should not carry the same weight as the half we're sure about.
 
 One rule ships **off by default**: `rule-of-three` flags three parallel comma items closing a sentence, which humans do all the time, so it false-positives. It runs only when you name it: `sloplint check --select rule-of-three -`.
 
