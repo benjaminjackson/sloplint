@@ -292,6 +292,7 @@ false-positive risk, which none has demonstrated.
 | `does-a-lot-of-work` | "does a lot of work here/in that sentence", "a lot of heavy lifting" | plain "the heavy lifting" excluded |
 | `failure-mode-here` | "the failure mode here is" | deictic required; bare "the failure mode is" excluded |
 | `thats-the-tension` | sentence-initial "that's the tension/bet" as a closer | noun must end the clause; "tradeoff"/"catch" excluded |
+| `right-up-until` | "right up until it doesn't/isn't/stops/breaks" | bare "until it doesn't" excluded |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)

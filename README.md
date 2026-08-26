@@ -128,9 +128,9 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## The rule catalog
 
-39 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+40 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
-- **rhetorical-tic** (28) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exact-exactly`, `load-bearing`, `you-already-know`, `sit-with-that`, `hold-onto-that`, `cleanly`, `clean-count`, `cleanest-x`, `clean-x`, `not-nothing`, `is-is` (doubled copula), and more.
+- **rhetorical-tic** (29) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exact-exactly`, `load-bearing`, `you-already-know`, `sit-with-that`, `hold-onto-that`, `cleanly`, `clean-count`, `cleanest-x`, `clean-x`, `not-nothing`, `is-is` (doubled copula), and more.
 - **puffery** (5) Wikipedia's "signs of AI writing": `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`.
 - **structure** (5) `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."

@@ -783,6 +783,32 @@ module Sloplint
                  "but not what pulls against what. It is the closer half of the same move as " \
                  "'that's the whole point', with the noun swapped for a state of play."
     ),
+    Rule.new(
+      id: "right-up-until",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The intensifier is the tell, not the reversal. "It works until it
+      # doesn't" is an old human idiom and stays clean; stacking "right up"
+      # in front of it is the model's version, and the two together are two
+      # orders of magnitude rarer than either half.
+      pattern: /\bright\s+up\s+until\s+it\s+(?:doesn'?t|isn'?t|stops|breaks)\b/i,
+      message: '"Right up until it doesn\'t" is a stock reversal closer.',
+      suggestion: "Name the point where it stops working.",
+      examples_bad: [
+        "The approach works, right up until it doesn't.",
+        "The cache stays warm right up until it isn't.",
+        "It scales fine right up until it breaks."
+      ],
+      examples_ok: [
+        "It works until it doesn't.",
+        "She stayed right up until the end.",
+        "The pattern held right up until Tuesday."
+      ],
+      rationale: "The closer promises a reversal and withholds it: the reader is told the " \
+                 "thing fails without being told when, why, or how far in. The bare idiom " \
+                 "does the same, which is why only the intensified stack is flagged -- a " \
+                 "writer who reaches for the longer form is reaching for the cadence."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
