@@ -1279,6 +1279,33 @@ module Sloplint
                  "habit than most human writing settles into."
     ),
 
+    Rule.new(
+      id: "question-isnt",
+      category: "structure",
+      severity: "info",
+      # The resolving clause is required, so a plain rhetorical question never
+      # matches. "The real question is" is ordinary English and is excluded by
+      # the adjacency of "question" to the negated copula.
+      pattern: /\bthe\s+question\s+is(?:n['’]?t|\s+not)\s+
+                (?:whether|if|how|what|why|who)\b
+                [^.!?\n]{0,80}?,\s*(?:it['’]?s|but)\b/ix,
+      message: "The question isn't X, it's Y -- a correction of a question nobody asked.",
+      suggestion: "Ask the question you mean to ask, and drop the discarded one.",
+      examples_bad: [
+        "The question isn't whether the model works, it's whether anyone trusts it.",
+        "The question is not how fast it runs, but how often it fails.",
+        "The question isn't what we build, it's who we build it for."
+      ],
+      examples_ok: [
+        "The real question is whether the funding arrives.",
+        "The question is whether the court will hear the appeal.",
+        "The question isn't settled."
+      ],
+      rationale: "This is the corrective frame in interrogative dress: a question is raised " \
+                 "only to be swapped for a better one, so the writer scores a point against " \
+                 "nobody. The discarded question is usually the reasonable one, and stating " \
+                 "the second question alone loses nothing."
+    ),
     # ── hedging ───────────────────────────────────────────────────────────
     Rule.new(
       id: "vague-attribution",
