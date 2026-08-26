@@ -6,10 +6,12 @@ the regex is wrong, not that the engine needs a feature.
 
 ## Docs mirror the catalog
 
-`README.md` quotes the catalog size and a per-category breakdown, and nothing
-regenerates them. Adding or removing a rule stales both. `spec/rules_spec.rb`
-asserts them against `RULES`, so update the README in the same commit. The same
-goes for any other doc that restates what's in the catalog.
+`README.md` quotes the catalog size and a per-category breakdown, and
+`docs/SPEC.md` lists every rule by id. Nothing regenerates either one, so
+adding or removing a rule stales both. `spec/rules_spec.rb` asserts both
+against `RULES` — the counts for the README, the ids for the SPEC — so update
+them in the same commit. The same goes for any other doc that restates what's
+in the catalog.
 
 ## New rules ship narrowed
 

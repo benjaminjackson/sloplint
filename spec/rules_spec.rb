@@ -54,6 +54,19 @@ RSpec.describe "Sloplint::RULES" do
     end
   end
 
+  # docs/SPEC.md lists the catalog too, and had drifted ten rules behind the
+  # code before anyone noticed. Nothing regenerates it either, so pin it the
+  # same way as the README: every id must be named somewhere in the doc.
+  describe "the SPEC rule catalog" do
+    spec_doc = File.read(File.expand_path("../docs/SPEC.md", __dir__), encoding: "UTF-8")
+
+    Sloplint::RULES.each do |rule|
+      it "lists #{rule.id}" do
+        expect(spec_doc).to include("`#{rule.id}`")
+      end
+    end
+  end
+
   describe "count_group rules" do
     it "counts items in a no-x-no-y chain" do
       note = Sloplint::Engine.scan("No fluff, no filler, no jargon.").find { |n| n.rule == "no-x-no-y" }

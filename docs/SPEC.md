@@ -56,6 +56,8 @@ a specimen of slop, which is reason enough on its own.
 - **proselint** — subcommand CLI (`check`, `version`, `dump-config`), `--output-format full|json|compact`, LSP-style diagnostics (line/column/severity/code/message), config file, clean exit codes. We copy this shape.
 - **vale** — markup-aware (skips code blocks, knows Markdown). We do a lighter version: optional `--markdown` to skip fenced code and inline code.
 - **write-good / alex** — naive regex rules, one module per rule. We keep rules as data, not code, so they're trivial to add.
+- **Wikipedia's [Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing)** — the puffery category comes from its "words to watch" boxes, and its habit of grouping tells by the move they make rather than by word is the shape our categories follow.
+- **[slopwash.com](https://slopwash.com)'s anti-slop ruleset** — a prompt-shaped catalogue of AI writing tells, and the prompt for the review that produced the current chat-register rules. We take its method, not its inventory: its vocabulary list (delve, tapestry, "nestled in the heart of") is calibrated to 2023–24 model output and didn't survive probing against writing since, so none of it ships. One family did, the false-intimacy preamble behind `if-im-being-honest`.
 
 ## Why build fresh instead of extending proselint
 
@@ -269,13 +271,23 @@ false-positive risk, which none has demonstrated.
 | `did-not-x-did-not-y` | 2+ "did not …"/"didn't …" in a row | counts items |
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
+| `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |
+| `cleanly` | "cleanly" anywhere | no verb list; the engineering idiom counts too |
+| `clean-count` | "two/three clean parts/buckets/categories…" | needs a partition noun |
+| `cleanest-x` | "the cleanest framing/formulation", "cleanest way to put it" | noun list only |
+| `clean-x` | "a clean abstraction/distinction/framing", "clean line between" | `info` |
 | `you-already-know` | "you already know" (+ the answer / standalone) | |
 | `is-the-entire` | "X is the entire point/game/business model" | |
 | `the-entire-is` | "the entire point/game/… is" (flip of above) | |
 | `is-real-and-not` | "the X is real, and/not…", "is the real … and it" | skip "real estate/time"; `info` |
 | `the-punchline-is` | "the punchline is/:/?" | |
 | `worth-naming` | "worth naming", "it's worth naming that…", "Worth naming:" | skip "naming names"; `info` |
+| `worth-saying-plainly` | "it's worth saying plainly / better put bluntly…" | sentence-initial |
 | `not-nothing` | copula + "not nothing" litotes, any subject | skip personal/there subjects |
+| `exact-exactly` | "exact"/"exactly" | allowlist for the checkable uses; `info` |
+| `load-bearing` | "load-bearing" outside its construction sense | skip building nouns either side |
+| `thats-how-x` | sentence-initial "that's how…" | |
+| `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)
