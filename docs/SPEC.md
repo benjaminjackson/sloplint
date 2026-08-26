@@ -289,6 +289,7 @@ false-positive risk, which none has demonstrated.
 | `thats-how-x` | sentence-initial "that's how…" | |
 | `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
 | `earns-its-place` | "earns its place/keep" (any possessive) | possessive required; `warning` |
+| `does-a-lot-of-work` | "does a lot of work here/in that sentence", "a lot of heavy lifting" | plain "the heavy lifting" excluded |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)

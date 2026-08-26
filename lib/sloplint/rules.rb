@@ -689,6 +689,39 @@ module Sloplint
                  "against. It belongs to the same borrowed-load family as 'load-bearing': " \
                  "a building metaphor applied to a sentence."
     ),
+    Rule.new(
+      id: "does-a-lot-of-work",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Two arms, both narrowed away from the ordinary sense.
+      #
+      # "a lot of work" needs a locative ("here", "in that sentence") because
+      # the bare phrase is just a statement about effort -- she does a lot of
+      # work for the shelter. The locative is what turns it into a remark
+      # about a word on the page.
+      #
+      # "the heavy lifting" is left out entirely and only "a lot of heavy
+      # lifting" is admitted: "the GPU does the heavy lifting" is ordinary
+      # technical English and far commoner than the prose-criticism sense.
+      pattern: /\b(?:does|do|doing|did)\s+a\s+lot\s+of\s+
+                 (?:heavy\s+lifting\b|work\s+(?:here|in\s+th(?:at|is))\b)/ix,
+      message: '"Does a lot of work here" grades the word instead of reading it.',
+      suggestion: "Say what the word is doing, or what it hides.",
+      examples_bad: [
+        "That qualifier does a lot of work here.",
+        "The word \"mostly\" is doing a lot of heavy lifting.",
+        "\"Reasonable\" does a lot of work in that sentence."
+      ],
+      examples_ok: [
+        "The GPU does the heavy lifting.",
+        "She does a lot of work for the shelter.",
+        "They did the heavy lifting on the migration."
+      ],
+      rationale: "The remark points at a word and rates its load without saying what the load " \
+                 "is, so the reader learns that something is being smuggled but never what. " \
+                 "It is the same borrowed-load metaphor as 'load-bearing', one step further " \
+                 "from the building."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
