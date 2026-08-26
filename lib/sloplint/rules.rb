@@ -722,6 +722,33 @@ module Sloplint
                  "It is the same borrowed-load metaphor as 'load-bearing', one step further " \
                  "from the building."
     ),
+    Rule.new(
+      id: "failure-mode-here",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # "here" is the whole narrowing, and it is doing a lot -- the bare "the
+      # failure mode is" is ordinary engineering writing about real systems,
+      # where the phrase means what it says. The deictic is what marks the
+      # borrowed sense: an argument, a draft or a person named as a mechanism
+      # with a characteristic way of breaking.
+      pattern: /\bthe\s+failure\s+mode\s+here\s+is\b/i,
+      message: '"The failure mode here is…" borrows an engineering term for an argument.',
+      suggestion: "Say what goes wrong and when, without the mechanism framing.",
+      examples_bad: [
+        "The failure mode here is that nobody reads past the first paragraph.",
+        "It reads well enough. The failure mode here is trusting the summary.",
+        "The failure mode here is social, not technical."
+      ],
+      examples_ok: [
+        "The failure mode is a stuck relay.",
+        "We documented every failure mode in the valve assembly.",
+        "The common failure mode here was corrosion."
+      ],
+      rationale: "The phrase treats a piece of writing or a person as a mechanism with a " \
+                 "characteristic breakage, which sounds diagnostic and commits to nothing: " \
+                 "no conditions, no frequency, nothing to check. In its home discipline the " \
+                 "term earns its precision from a part that actually fails."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",

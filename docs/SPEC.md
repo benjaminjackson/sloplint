@@ -290,6 +290,7 @@ false-positive risk, which none has demonstrated.
 | `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
 | `earns-its-place` | "earns its place/keep" (any possessive) | possessive required; `warning` |
 | `does-a-lot-of-work` | "does a lot of work here/in that sentence", "a lot of heavy lifting" | plain "the heavy lifting" excluded |
+| `failure-mode-here` | "the failure mode here is" | deictic required; bare "the failure mode is" excluded |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)
