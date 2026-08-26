@@ -288,6 +288,7 @@ false-positive risk, which none has demonstrated.
 | `load-bearing` | "load-bearing" outside its construction sense | skip building nouns either side |
 | `thats-how-x` | sentence-initial "that's how…" | |
 | `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
+| `earns-its-place` | "earns its place/keep" (any possessive) | possessive required; `warning` |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)

@@ -664,6 +664,31 @@ module Sloplint
                  "copula and a spoken disfluency. The third is a typo."
     ),
 
+    Rule.new(
+      id: "earns-its-place",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The possessive is the narrowing. "earned a place on the team" and
+      # "earn a place in the final" are ordinary; "earns its place" is the
+      # metaphor, a thing paying for the room it takes up.
+      pattern: /\b(?:earns?|earned|earning)\s+(?:its|their|his|her)\s+(?:place|keep)\b/i,
+      message: '"Earns its place/keep" prices the thing instead of showing it.',
+      suggestion: "Say what it does; the reader decides whether it was worth the room.",
+      examples_bad: [
+        "Every paragraph here earns its place.",
+        "The third example earns its keep and the other two do not.",
+        "That flag earned its place in the interface."
+      ],
+      examples_ok: [
+        "She earned a place on the team that year.",
+        "He earned enough to keep the lights on.",
+        "The tenant paid the rent on time."
+      ],
+      rationale: "The phrase grades the material against an unstated budget the reader never " \
+                 "saw, and it grades before showing the work, so there is nothing to check it " \
+                 "against. It belongs to the same borrowed-load family as 'load-bearing': " \
+                 "a building metaphor applied to a sentence."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
