@@ -809,6 +809,32 @@ module Sloplint
                  "does the same, which is why only the intensified stack is flagged -- a " \
                  "writer who reaches for the longer form is reaching for the cadence."
     ),
+    Rule.new(
+      id: "two-things-true",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Closed phrase, no anchor needed. The optional "both" and the optional
+      # "at once" tail are the two ways the sentence is padded; the count word
+      # is fixed at two, because "three things can be true" is someone
+      # actually counting.
+      pattern: /\b(?:two|both)\s+things\s+(?:can\s+(?:both\s+)?be|are)\s+true\b/i,
+      message: '"Two things can be true" concedes the shape without conceding anything.',
+      suggestion: "Say which two, and which one you think weighs more.",
+      examples_bad: [
+        "Two things can be true at once.",
+        "Both things can be true here.",
+        "Two things are true, and the second is the awkward one."
+      ],
+      examples_ok: [
+        "Three things can be true at the same time.",
+        "Two things went wrong that morning.",
+        "Both statements are true and the report says so."
+      ],
+      rationale: "The sentence performs even-handedness and supplies none: it asserts that a " \
+                 "contradiction is only apparent without naming either half or saying which " \
+                 "one carries more weight. A writer who has held both claims at once can say " \
+                 "what they are."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
