@@ -1331,6 +1331,33 @@ module Sloplint
                  "nobody. The discarded question is usually the reasonable one, and stating " \
                  "the second question alone loses nothing."
     ),
+    Rule.new(
+      id: "less-about-more-about",
+      category: "structure",
+      severity: "info",
+      # The full frame is required at both ends. Bare "less about" and bare
+      # "more about" are ordinary English on their own, and the subject slot
+      # is limited to the pronouns so that a sentence with a real subject --
+      # "the dispute is less about money" -- stays clean.
+      pattern: /\b(?:it['’]?s|it\s+is|this\s+is|that['’]?s|that\s+is)\s+less\s+about\s+
+                [^.!?\n]{1,60}?\b(?:(?:and\s+|,\s*)?more\s+about|than\s+about)\b/ix,
+      message: "Less about X, more about Y -- a reframe that discards a reading nobody offered.",
+      suggestion: "Say what it is about. The discarded half is usually filler.",
+      examples_bad: [
+        "It's less about the tooling and more about the habit.",
+        "This is less about speed, more about consistency.",
+        "That's less about money than about trust."
+      ],
+      examples_ok: [
+        "It's less about the tooling than I expected.",
+        "Tell me more about the delay.",
+        "We care less about speed these days."
+      ],
+      rationale: "The reframe pairs a rejected description with an accepted one, so the " \
+                 "sentence sounds like a correction while correcting nobody. The rejected " \
+                 "half is chosen for the contrast, not because a reader proposed it, and " \
+                 "the second half stands on its own."
+    ),
     # ── hedging ───────────────────────────────────────────────────────────
     Rule.new(
       id: "vague-attribution",

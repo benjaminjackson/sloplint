@@ -252,7 +252,7 @@ Categories (for `--select`/`--ignore` by group):
 
 - `rhetorical-tic` — the cadence patterns (the user's list below)
 - `puffery` — Wikipedia "words to watch" (boasts, vibrant, nestled, tapestry…)
-- `structure` — rule-of-three, "not just X but Y", "the question isn't X, it's Y", em dash, em-dash overuse
+- `structure` — rule-of-three, "not just X but Y", "the question isn't X, it's Y", "less about X more about Y", em dash, em-dash overuse
 - `hedging` — vague attribution ("some critics argue", "it is widely regarded")
 
 Severities: `warning` for strong tells, `info` for weak/contextual ones. No
@@ -317,6 +317,7 @@ Single flat rule per word-cluster, matched as whole words:
 - `not-just-x-but-y` — copula + "not just/only/merely/simply/solely X … but (also) Y", plus "not because X, but because Y". Requires the escalation word.
 - `not-x-but-y` — the bare corrective "is not X but Y" with no escalation word; `info`, because the corrective/concession distinction is syntactic and the pattern can only approximate it.
 - `question-isnt` — "the question isn't/is not (whether|if|how|what|why|who) X, it's/but Y"; `info`. The resolving clause is required, so a plain rhetorical question never matches; "the real question is" is excluded.
+- `less-about-more-about` — "it's/this is/that's less about X (and) more about Y", also "… than about Y"; `info`. Both halves of the frame are required, and the subject slot is limited to the pronouns.
 - `rule-of-three` — three parallel comma items ending a sentence (heuristic; `info` severity, off by default via `--select` since it false-positives).
 - `em-dash` — any em dash; `info`.
 - `em-dash-overuse` — 3+ em dashes in one paragraph; `warning`.
