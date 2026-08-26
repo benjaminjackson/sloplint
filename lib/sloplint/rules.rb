@@ -948,6 +948,35 @@ module Sloplint
                  "promises a confession that the sentence after it rarely delivers. It " \
                  "costs the writer nothing and reads as intimacy the reader did not earn."
     ),
+    Rule.new(
+      id: "genuinely",
+      category: "rhetorical-tic",
+      severity: "info",
+      # Off by default. There is no narrowing here: the word is ordinary
+      # English at every frequency we measured, and the difference between
+      # the tell and the real use is whether a contrast exists in the
+      # surrounding argument, which no regex can see. Selectable when a
+      # writer wants every occurrence listed back to them.
+      default_on: false,
+      pattern: /\bgenuinely\b/i,
+      message: '"Genuinely" asserts sincerity instead of earning it (heuristic; high false-positive).',
+      suggestion: "Cut the adverb. If the sentence needs it, the claim is doing the work.",
+      examples_bad: [
+        "This is a genuinely hard problem.",
+        "The result was genuinely surprising.",
+        "It's genuinely useful, and that's rare."
+      ],
+      examples_ok: [
+        "The signature was authentic.",
+        "She was pleased with the outcome.",
+        "The offer turned out to be real."
+      ],
+      rationale: "As an intensifier the word rates the writer's sincerity rather than the " \
+                 "thing described, and it can be dropped from most sentences without loss. " \
+                 "It still does real work when it draws a contrast -- genuinely free against " \
+                 "nominally free -- and nothing in the sentence marks which use is which, " \
+                 "which is why this one runs only when you ask for it."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
