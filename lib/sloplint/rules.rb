@@ -923,6 +923,31 @@ module Sloplint
                  "is what separates it from the ordinary hedge: it disclaims everything " \
                  "above it at once, so it can be written without knowing what that was."
     ),
+    Rule.new(
+      id: "if-im-being-honest",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The "being honest" frame only. Plain "to be honest" and "I'll be
+      # honest" are how people talk and are excluded. info, not warning:
+      # writers really do say this out loud.
+      pattern: /\bif\s+(?:I['’]?m|I\s+am|we['’]?re|we\s+are)\s+(?:being\s+)?honest\b
+                |\bhonestly,\s+the\s+(?:answer|truth)\b/ix,
+      message: '"If I\'m being honest…" buys candor without spending anything.',
+      suggestion: "Delete the preamble and say the honest thing.",
+      examples_bad: [
+        "If I'm being honest, the design never worked.",
+        "If we're being honest, nobody read the report.",
+        "Honestly, the answer is that we guessed."
+      ],
+      examples_ok: [
+        "To be honest, I liked the first draft better.",
+        "I'll be honest, the meeting ran long.",
+        "Honestly, I forgot the deadline."
+      ],
+      rationale: "The preamble implies the surrounding text was less than honest, and it " \
+                 "promises a confession that the sentence after it rarely delivers. It " \
+                 "costs the writer nothing and reads as intimacy the reader did not earn."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
