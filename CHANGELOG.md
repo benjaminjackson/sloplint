@@ -5,6 +5,79 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-26
+
+The catalog grows from 29 rules to 49. Every new rule was probed against
+pre-2022 Hacker News comments or Project Gutenberg texts before shipping,
+and each narrowing is pinned by an `examples_ok` fixture.
+
+### New rules
+
+- `worth-saying-plainly` (`rhetorical-tic`, `warning`): the self-rating
+  opener, "Worth saying plainly, ...". Needs all three slots -- evaluative
+  adjective, speech verb, manner adverb -- at a sentence or paragraph start.
+- `hold-onto-that` (`rhetorical-tic`, `warning`): the sentence-initial
+  reader directive "Hold onto that" / "Hold on to this".
+- `cleanly` (`rhetorical-tic`, `warning`): the bare manner adverb, "splits
+  cleanly into", "maps cleanly onto".
+- `clean-count` (`rhetorical-tic`, `warning`): a number plus "clean" plus a
+  partition noun, "two clean buckets".
+- `cleanest-x` (`rhetorical-tic`, `warning`): the superlative used to rank
+  one's own claim, "the cleanest framing is".
+- `clean-x` (`rhetorical-tic`, `info`): "clean" in front of an idea as
+  praise, "a clean abstraction".
+- `earns-its-place` (`rhetorical-tic`, `warning`): "earns its place" and
+  "earns its keep", the metaphor of a sentence or feature paying rent.
+- `does-a-lot-of-work` (`rhetorical-tic`, `warning`): the remark that points
+  at a word and rates its load, "that qualifier does a lot of work here".
+- `failure-mode-here` (`rhetorical-tic`, `warning`): "the failure mode here
+  is", the engineering term borrowed for an argument or a person. The
+  deictic "here" is the whole narrowing.
+- `thats-the-tension` (`rhetorical-tic`, `warning`): the sentence-initial
+  closer "That's the tension." and "That's the bet:".
+- `right-up-until` (`rhetorical-tic`, `warning`): "right up until it
+  doesn't". The intensifier is the narrowing -- the plain "until it doesn't"
+  is an old human idiom and stays clean.
+- `two-things-true` (`rhetorical-tic`, `warning`): "two things can be true",
+  the concession that names neither half.
+- `notice-what-there` (`rhetorical-tic`, `warning`): the self-referential
+  attention cue, "Notice what that argument did there", "Read that again".
+- `notice-what` (`rhetorical-tic`, `info`): the bare sentence-initial
+  "Notice what ...", the quiet half of the pair above.
+- `none-of-this-is-to-say` (`rhetorical-tic`, `warning`): the sweeping
+  concession that retracts an argument nobody made.
+- `if-im-being-honest` (`rhetorical-tic`, `info`): the candor preamble.
+  Plain "to be honest" and "I'll be honest" stay clean.
+- `genuinely` (`rhetorical-tic`, `info`, off by default): every
+  "genuinely". No allowlist separates the intensifier from the contrastive
+  use, so the rule runs only when named in `--select`, beside
+  `rule-of-three`.
+- `question-isnt` (`structure`, `info`): the corrective frame in
+  interrogative dress, "The question isn't whether X, it's whether Y".
+  Requires the resolving clause.
+- `and-thats-fine` (`rhetorical-tic`, `info`): the permission-granting
+  closer. The match must open and close a sentence.
+- `less-about-more-about` (`structure`, `info`): the comparative
+  reframe, "It's less about X and more about Y". Both halves required.
+
+### Changed rules
+
+- `sit-with-that` broadened to any object. Two branches: the deictic object
+  needs no anchor, any other object needs the sentence-initial imperative.
+- `the-punchline-is` widened to take "the honest answer is" and "the honest
+  version is".
+- `worth-naming` and `worth-saying-plainly` widened together and stopped
+  double-flagging. Both take more verbs; `worth-naming` now yields the
+  adverb-bearing form to `worth-saying-plainly`.
+
+### Docs
+
+- `docs/SPEC.md` credits Wikipedia's "Signs of AI writing" and slopwash.com's
+  anti-slop ruleset, next to proselint, vale and write-good.
+- The SPEC rule catalog had drifted ten rules behind the code. It is resynced,
+  and `spec/rules_spec.rb` now asserts every rule id appears in `docs/SPEC.md`,
+  the same way it already asserts the README counts.
+
 ## [0.3.0] - 2026-08-02
 
 - New rule `load-bearing` (`rhetorical-tic`, `warning`): "load-bearing" used
