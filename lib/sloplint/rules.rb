@@ -344,12 +344,27 @@ module Sloplint
       id: "the-punchline-is",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /\bthe\s+punchline\s*(?:is\b|[:?])/i,
-      message: '"The punchline is…" is a stock LLM reveal.',
-      suggestion: "Deliver the point without announcing a punchline.",
-      examples_bad: ["The punchline is that nobody noticed."],
-      examples_ok: ["The punchline landed perfectly."],
-      rationale: "Announcing 'the punchline' is a model framing device, rare in real prose."
+      # Same reveal, three nouns. "honest answer" and "honest version" join
+      # "punchline" because they do the identical job: rate the sentence as
+      # the candid one before the reader gets it. "short version" was tried
+      # and left out -- people really do offer a short version, and both the
+      # "is" and the colon form of it are ordinary writing.
+      pattern: /\bthe\s+(?:punchline|honest\s+(?:answer|version))\s*(?:is\b|[:?])/i,
+      message: '"The punchline/honest answer is…" is a stock LLM reveal.',
+      suggestion: "Deliver the point without announcing it first.",
+      examples_bad: [
+        "The punchline is that nobody noticed.",
+        "The honest answer is that we never checked.",
+        "The honest version: the deadline was never real."
+      ],
+      examples_ok: [
+        "The punchline landed perfectly.",
+        "The short version is that the cache was cold.",
+        "She gave the honest answer without being asked."
+      ],
+      rationale: "Announcing 'the punchline', or grading your own next sentence as the honest " \
+                 "one, is a model framing device, rare in real prose. The honest-answer form " \
+                 "carries a second claim on top: that the sentences around it were less so."
     ),
     Rule.new(
       id: "worth-naming",

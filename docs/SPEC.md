@@ -280,7 +280,7 @@ false-positive risk, which none has demonstrated.
 | `is-the-entire` | "X is the entire point/game/business model" | |
 | `the-entire-is` | "the entire point/game/… is" (flip of above) | |
 | `is-real-and-not` | "the X is real, and/not…", "is the real … and it" | skip "real estate/time"; `info` |
-| `the-punchline-is` | "the punchline is/:/?" | |
+| `the-punchline-is` | "the punchline is/:/?", "the honest answer/version is" | "short version" left out; ordinary writing |
 | `worth-naming` | "worth naming/flagging/separating/spelling out" | skip "naming names"; yields to the rule below when a manner adverb follows; `info` |
 | `worth-saying-plainly` | "it's worth saying plainly / better put bluntly…", plus the bare "Put plainly," / "Said bluntly," | sentence-initial; the bare branch drops "simply"/"clearly" so "put simply" and "simply put" stay clean |
 | `not-nothing` | copula + "not nothing" litotes, any subject | skip personal/there subjects |
