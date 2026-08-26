@@ -835,6 +835,35 @@ module Sloplint
                  "one carries more weight. A writer who has held both claims at once can say " \
                  "what they are."
     ),
+    Rule.new(
+      id: "notice-what-there",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The self-referential half of the attention cue: the sentence points
+      # at the writing rather than at anything in the world. Two frames, both
+      # sentence-initial -- "notice what X did there" and the bare "read that
+      # again". The bare imperative without the "there" frame is the quieter
+      # half and lives in notice-what, at info.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*
+                (?:notice\s+what\b[^.!?\n]{0,40}\b(?:did|does|just\s+did)\s+there\b
+                  |read\s+that\s+again\b)/ix,
+      message: '"Notice what it did there" points at the writing, not the world.',
+      suggestion: "Make the point; the reader saw the same sentence you did.",
+      examples_bad: [
+        "Notice what that argument did there.",
+        "The claim moved while nobody was looking. Notice what the second clause does there.",
+        "Read that again."
+      ],
+      examples_ok: [
+        "Notice what happens when the cache is cold.",
+        "I did not notice what he did there.",
+        "You should read that again before signing."
+      ],
+      rationale: "The cue asks the reader to admire a move the sentence has just made, which " \
+                 "puts the writing in the frame instead of the subject, and it grades the " \
+                 "move before the reader has judged it. Where a human writes it, they are " \
+                 "usually pointing at something outside the text -- a chart, a screen, a list."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",

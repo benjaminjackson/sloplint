@@ -294,6 +294,7 @@ false-positive risk, which none has demonstrated.
 | `thats-the-tension` | sentence-initial "that's the tension/bet" as a closer | noun must end the clause; "tradeoff"/"catch" excluded |
 | `right-up-until` | "right up until it doesn't/isn't/stops/breaks" | bare "until it doesn't" excluded |
 | `two-things-true` | "two/both things can be/are true" | count fixed at two |
+| `notice-what-there` | "notice what X did there", "read that again" | sentence-initial |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)
