@@ -359,13 +359,30 @@ module Sloplint
       # names" idiom is part of the matched text -- skip: checks the matched
       # text itself, and the tighter /\bworth\s+naming\b/ never captured
       # enough of "worth naming names" for the skip to ever reach it.
-      pattern: /\bworth\s+naming(?:\s+names)?\b/i,
-      message: '"Worth naming…" is a stock LLM signposting phrase.',
+      #
+      # The trailing lookahead hands the adverb-bearing form to
+      # worth-saying-plainly, which is the same construction with a manner
+      # adverb on the end and reports it at warning. Without it both rules
+      # fire on one span. Cost: a mid-sentence "worth naming plainly", which
+      # the other rule's sentence anchor won't reach, now goes unflagged.
+      pattern: /\bworth\s+(?:naming(?:\s+names)?|flagging|separating|spelling\s+(?:it\s+)?out)\b
+                (?!\s+(?:plainly|clearly|bluntly|directly|simply|outright|flatly|straight
+                        |up\s+front|out\s+loud)\b)/ix,
+      message: '"Worth naming/flagging…" is a stock LLM signposting phrase.',
       suggestion: "Just name the thing; skip the meta-announcement.",
       skip: [/naming names/i],
-      examples_bad: ["One tension is worth naming here."],
+      examples_bad: [
+        "One tension is worth naming here.",
+        "Two failures are worth flagging before we move on.",
+        "The two cases are worth separating."
+      ],
+      # The adverb-bearing form ("worth naming plainly") can't sit here: it
+      # belongs to worth-saying-plainly, which flags it, and the cross-rule
+      # check requires an ok-fixture to be clean against the whole catalog.
+      # The "worth-* pair" example in rules_spec.rb pins that hand-off.
       examples_ok: ["It's worth reading twice.", "It's worth naming names in this report."],
-      rationale: "'worth naming' collapses two senses a regex can't tell apart: the AI " \
+      rationale: "'worth naming', and its siblings 'worth flagging' and 'worth separating', " \
+                 "collapse two senses a regex can't tell apart: the AI " \
                  "meta-signpost announcing a point is coming ('One tension is worth naming " \
                  "here') and the plain sense of a thing worth calling or mentioning, which " \
                  "careful writers use too -- Emerson's 'the only thing worth naming to do that' " \
@@ -376,21 +393,47 @@ module Sloplint
       id: "worth-saying-plainly",
       category: "rhetorical-tic",
       severity: "warning",
-      # Three slots, all required: an evaluative adjective, a speech verb, and
-      # a manner adverb. Any two of them occur in ordinary prose ("worth saying
-      # yes to", "said plainly that"); the full stack is the signpost.
-      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:it'?s\s+|that'?s\s+)?(?:worth|better|best|easier|simpler|fairer|clearer)\s+(?:saying|stating|putting|naming|said|stated|put|spelling\s+(?:it\s+)?out)\s+(?:it\s+|this\s+|that\s+)?(?:plainly|clearly|bluntly|directly|simply|outright|flatly|straight|up\s+front|out\s+loud)\b/i,
+      # Two branches, both sentence-initial.
+      #
+      # First: evaluative adjective + speech verb + manner adverb, all three
+      # required. Any two occur in ordinary prose ("worth saying yes to",
+      # "said plainly that"); the full stack is the signpost.
+      #
+      # Second: the bare imperative with the adjective dropped ("Put plainly,"
+      # / "Said bluntly,"). It runs a shorter adverb list than the first
+      # branch, because the explainer openers are ordinary human writing and
+      # would swamp it -- "simply put" and "put simply" are common, so
+      # "simply", "clearly", "directly", "straight" and "up front" are all
+      # left out of this branch. "To put it bluntly" is likewise safe: the
+      # anchor puts "To" where the verb has to be, so it never matches.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*
+                (?:(?:it'?s\s+|that'?s\s+)?
+                   (?:worth|better|best|easier|simpler|fairer|clearer)\s+
+                   (?:saying|stating|putting|naming|flagging|separating|said|stated|put
+                     |spelling\s+(?:it\s+)?out)\s+
+                   (?:it\s+|this\s+|that\s+)?
+                   (?:plainly|clearly|bluntly|directly|simply|outright|flatly|straight
+                     |up\s+front|out\s+loud)
+                  |(?:put|said|stated)\s+(?:it\s+|this\s+|that\s+)?
+                   (?:plainly|bluntly|flatly|outright))\b/ix,
       message: '"Worth saying plainly…" rates the sentence before the reader can.',
       suggestion: "Say the thing; if it lands plainly, the reader will notice.",
       examples_bad: [
         "Worth saying plainly, the ceiling is set by the first report.",
         "It's worth stating clearly: the data never arrived.",
-        "The batch failed. Worth putting it bluntly, we lost a week."
+        "The batch failed. Worth putting it bluntly, we lost a week.",
+        "Put plainly, the ceiling is set by the first report.",
+        "The review ran long. Said bluntly, nobody had read the draft."
       ],
       examples_ok: [
         "It's worth reading twice.", "The contract is worth saying yes to.",
         "She said plainly that the plan had failed.",
         "He put it bluntly and everyone understood.",
+        # The explainer openers the bare branch deliberately leaves alone.
+        "Put simply, gravity pulls things down.",
+        "Simply put, the cache was never warm.",
+        "To put it bluntly, we lost a week.",
+        "He stated clearly that the plan had failed.",
         # Hard-wrapped mid-sentence: a line break is not a paragraph break.
         "the argument started long before that and\nworth saying plainly is not how it opened."
       ],

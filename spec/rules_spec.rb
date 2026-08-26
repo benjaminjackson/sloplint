@@ -67,6 +67,17 @@ RSpec.describe "Sloplint::RULES" do
     end
   end
 
+  # worth-naming and worth-saying-plainly are one construction with and
+  # without a manner adverb, and both used to fire on the adverb-bearing
+  # form. worth-naming now yields. The cross-rule check above only scans
+  # examples_ok, so it would never have caught the overlap.
+  describe "the worth-* pair" do
+    it "reports the adverb-bearing form once, at warning" do
+      notes = Sloplint::Engine.scan("It's worth naming plainly what went wrong.")
+      expect(notes.map(&:rule)).to eq(%w[worth-saying-plainly])
+    end
+  end
+
   describe "count_group rules" do
     it "counts items in a no-x-no-y chain" do
       note = Sloplint::Engine.scan("No fluff, no filler, no jargon.").find { |n| n.rule == "no-x-no-y" }
