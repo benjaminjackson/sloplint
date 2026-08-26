@@ -291,6 +291,7 @@ false-positive risk, which none has demonstrated.
 | `earns-its-place` | "earns its place/keep" (any possessive) | possessive required; `warning` |
 | `does-a-lot-of-work` | "does a lot of work here/in that sentence", "a lot of heavy lifting" | plain "the heavy lifting" excluded |
 | `failure-mode-here` | "the failure mode here is" | deictic required; bare "the failure mode is" excluded |
+| `thats-the-tension` | sentence-initial "that's the tension/bet" as a closer | noun must end the clause; "tradeoff"/"catch" excluded |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)

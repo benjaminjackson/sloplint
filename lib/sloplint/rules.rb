@@ -749,6 +749,40 @@ module Sloplint
                  "no conditions, no frequency, nothing to check. In its home discipline the " \
                  "term earns its precision from a part that actually fails."
     ),
+    Rule.new(
+      id: "thats-the-tension",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Sentence-initial, only two nouns, and the noun must end the clause.
+      #
+      # "tradeoff" and "catch" were tried and cut: both are ordinary English
+      # in this exact frame, and the anchor removes only 60% of their volume,
+      # which is not enough. The surviving pair names a state of the argument
+      # rather than a thing in the world, which is what makes it the tic.
+      #
+      # The clause-final guard is what separates the closer from an ordinary
+      # sentence that happens to start the same way -- "This is the bet we
+      # placed in March" keeps going, and so is not the move.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:and\s+|so\s+|but\s+)?
+                 (?:that|this)(?:'s|’s|\s+is)\s+the\s+(?:tension|bet)
+                 \s*(?:[.!?:;—]|\z)/ix,
+      message: '"That\'s the tension/bet." names the shape instead of the thing.',
+      suggestion: "State the two things pulling against each other.",
+      examples_bad: [
+        "That's the tension.",
+        "Both readings are defensible. That's the tension.",
+        "So that's the bet: cheaper now, slower later."
+      ],
+      examples_ok: [
+        "That's the trade-off.",
+        "The rope went slack and that's the tension gone.",
+        "This is the bet we placed in March."
+      ],
+      rationale: "The sentence labels the argument's shape and stops, which reads as a " \
+                 "conclusion while resolving nothing -- the reader is told a tension exists " \
+                 "but not what pulls against what. It is the closer half of the same move as " \
+                 "'that's the whole point', with the noun swapped for a state of play."
+    ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
