@@ -301,8 +301,13 @@ false-positive risk, which none has demonstrated.
 | `notice-what` | bare sentence-initial "Notice what…" | yields the "there" frame to the rule above; "how" excluded; `info` |
 | `none-of-this-is-to-say` | "none of this/that/the above is to say" | every other "not to say" phrasing excluded |
 | `if-im-being-honest` | "if I'm/we're (being) honest", "honestly, the answer/truth" | plain "to be honest" and "I'll be honest" excluded |
+| `honestly` | a word, then "honestly", then a full stop or comma | terminal position required; discourse-marker slot guarded ("and/quite/but honestly,"); no animacy test |
+| `honest-x` | "an honest comparison", "the honest framing" | short noun list; "answer", "assessment", "account" excluded as ordinary; superlative yielded to the rule below |
+| `most-honest-x` | "the most honest framing", "the most honest way to put it" | wider noun list than `honest-x`; no human nouns, so "the most honest person" stays out |
 | `genuinely` | any "genuinely" | off by default; no narrowing holds |
 | `and-thats-fine` | "And that's fine/okay." as a whole sentence | "and" required; must open and close the sentence |
+| `and-nothing-else` | trailing ", and nothing else/more/further", ", and no more" | tail must close the sentence; comma required; bare "no more" needs "and"; "?" excluded |
+| `nothing-else-frag` | the same exclusion as a fragment: "Nothing else." | sentence-initial capital; semicolon excluded; must be the whole sentence; "No more." left out |
 | `is-is` | doubled copula: "what it is is …", "the thing is, is that …" | comma optional |
 
 ### puffery (Wikipedia: Signs of AI writing)

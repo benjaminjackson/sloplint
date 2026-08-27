@@ -949,6 +949,136 @@ module Sloplint
                  "costs the writer nothing and reads as intimacy the reader did not earn."
     ),
     Rule.new(
+      id: "honestly",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The manner adverb, the way "cleanly" is the manner adverb: hung on a
+      # subject that cannot be honest. Two guards, no verb list.
+      #
+      # Terminal position does most of the work. The adverb must close on a
+      # full stop, comma, semicolon or exclamation mark, which is what keeps
+      # the ordinary intensifier out -- "I honestly think", "I honestly don't
+      # know" have the word mid-clause and never match. Sentence-initial
+      # "Honestly," needs no guard of its own: a full stop cannot match \w+,
+      # so the sentence before it can never donate its last word.
+      #
+      # The guard list covers the slot immediately before the adverb, which is
+      # where the discourse marker lives. "And honestly," and "Quite honestly,"
+      # are how people write, and both die there.
+      #
+      # There is no animacy test, because no regex sees animacy. "She answered
+      # honestly." matches, and so does the sentence-final hedge people write
+      # in casual comments ("it's beyond boring honestly"). Both are the known
+      # cost of anchoring on position alone; see rationale for the rate.
+      pattern: /\b(?!(?:and|but|or|nor|yet|so|then|though|although|because|if
+                     |quite|more|most|very|really|pretty|fairly|too|also|just
+                     |only|now|again|well|i|we|you|he|she|they|it)\b)
+                \w+\b[ \t]+honestly[ \t]*(?=[.,;!])/ix,
+      message: '"Honestly" in the manner slot claims good faith the reader cannot check.',
+      suggestion: "Cut the adverb, or show the thing that makes it honest.",
+      examples_bad: [
+        "These two rows compare honestly.",
+        "The numbers add up honestly.",
+        "The taxonomy maps honestly, which is what the table is for.",
+        "The benchmark reports honestly, which is the whole point.",
+        "It reads honestly; that is what carries the piece."
+      ],
+      examples_ok: [
+        # Mid-clause: the ordinary intensifier, and the terminal guard drops it.
+        "I honestly do not know.",
+        "She honestly believes it will work.",
+        # The discourse marker, which the guard list drops.
+        "And honestly, I forgot the deadline.",
+        "Quite honestly, the meeting ran long.",
+        "But honestly, nobody minded."
+      ],
+      rationale: "The adverb rates the good faith of the writing instead of showing anything " \
+                 "the reader can check, and a table or a benchmark has no good faith to rate. " \
+                 "Position is the only anchor, so ordinary English gets caught too: a dialogue " \
+                 "tag (\"said Isabel honestly\") and the sentence-final hedge of casual speech " \
+                 "(\"it's beyond boring honestly\"). Both are rare -- twice in 3.65M words of " \
+                 "public-domain prose, ten times in 6.07M words of pre-2022 Hacker News."
+    ),
+    Rule.new(
+      id: "honest-x",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The noun list is short on purpose, and the words left out are the
+      # point. "An honest answer", "an honest assessment" and "an honest
+      # account" are ordinary English about people -- six hits between them in
+      # 6.07M words of Hacker News, every one of them a person being truthful
+      # rather than a writer praising their own framing -- so they are out.
+      # "man", "mistake", "living", "work" and "opinion" never went in.
+      #
+      # What ships is the set that only ever appears in front of the writer's
+      # own construction, and none of it appears in 9.7M words of either
+      # corpus. "most" and "more" are excluded from the modifier slot so the
+      # superlative belongs to most-honest-x alone.
+      pattern: /\b(?:an|the|one|this|that)[ \t]+(?:(?!most\b|more\b)\w+[ \t]+)?
+                honest[ \t]+(?:\w+[ \t]+)?
+                (?:comparison|framing|formulation|accounting|abstraction|mapping
+                  |through-line)\b/ix,
+      message: '"An honest comparison / the honest framing" praises the writing, not the thing.',
+      suggestion: "Cut the adjective and make the comparison; the reader decides if it is honest.",
+      examples_bad: [
+        "That gives us an honest comparison of the two.",
+        "The honest framing is that nobody knew.",
+        "This is an honest accounting of what the delay cost.",
+        "What we want is an honest mapping from one schema to the other."
+      ],
+      examples_ok: [
+        # The idioms, which is where "honest" lives in ordinary prose.
+        "He was an honest man.",
+        "It was an honest mistake.",
+        "She made an honest living.",
+        "That is an honest day's work.",
+        # A person being truthful, which is not a claim about the writing.
+        "How could you expect an honest answer to a question like that?",
+        # The superlative belongs to most-honest-x.
+        "The most honest framing is that we guessed."
+      ],
+      rationale: "\"Honest\" in front of a framing or a comparison is the writer approving " \
+                 "their own work, the same move \"clean\" makes one shelf over. The reader " \
+                 "cannot check it and it costs nothing to assert. The narrow noun list is what " \
+                 "separates it from the ordinary sense: the shipped pattern flags nothing in " \
+                 "3.65M words of public-domain prose or 6.07M words of pre-2022 Hacker News."
+    ),
+    Rule.new(
+      id: "most-honest-x",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The superlative frame carries the tell on its own, so this noun list is
+      # wider than honest-x's -- "the most honest assessment" is self-ranking
+      # in a way "an honest assessment" is not. The list still has to keep out
+      # the ordinary superlative about a person, which is what "the most honest
+      # politician" is, so no human nouns go in. Nothing in either corpus
+      # matches. "way to" gets its own branch, mirroring cleanest-x.
+      pattern: /\bmost[ \t]+honest[ \t]+(?:(?!way\b)\w+[ \t]+){0,2}
+                (?:comparison|framing|formulation|accounting|assessment|appraisal
+                  |reading|account|answer|version|summary|take|signal|abstraction
+                  |mapping|through-line)\b
+               |\bmost[ \t]+honest[ \t]+way[ \t]+to[ \t]+
+                (?:say|put|frame|state|describe|phrase|think[ \t]+about)\b/ix,
+      message: '"The most honest framing…" ranks your own claim for the reader.',
+      suggestion: "Drop the ranking and make the claim; the reader grades it.",
+      examples_bad: [
+        "The most honest framing is that we guessed.",
+        "That is the most honest way to put it.",
+        "The most honest reading of the data is duller than the headline.",
+        "This is the most honest summary anyone offered."
+      ],
+      examples_ok: [
+        # The ordinary superlative, about a person.
+        "He is the most honest person I know.",
+        "She is the most honest politician in the state.",
+        # "way to" outside the speech verbs.
+        "This is the most honest way to earn a living."
+      ],
+      rationale: "Self-ranking: the writer tells the reader which of their own claims is the " \
+                 "candid one, which is the reader's job. The superlative also implies the rest " \
+                 "of the piece was less honest, and the sentence after it never says which part."
+    ),
+    Rule.new(
       id: "genuinely",
       category: "rhetorical-tic",
       severity: "info",
@@ -1001,6 +1131,111 @@ module Sloplint
       rationale: "The closer concedes an objection instead of answering it, and the objection " \
                  "was never raised. It reads as reassurance addressed to nobody, and the " \
                  "paragraph is the same without it."
+    ),
+    Rule.new(
+      id: "and-nothing-else",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # This rule is deliberately wide, and the cost is known. There is no verb
+      # list and no imperative requirement, so the only narrowing is structural
+      # -- which means the pattern cannot tell a leaked instruction from the
+      # ordinary English construction it borrows. "Darkness there, and nothing
+      # more!" matches, and so does any sentence built the same way. That is a
+      # recall-over-precision choice, not an oversight; see rationale.
+      #
+      # Three structural guards, each pinned by an examples_ok fixture. The
+      # tail must CLOSE the sentence, so "nothing more than a rumour" and
+      # "nothing else could explain it" never match. A comma must introduce
+      # it, which keeps "there was nothing more to say" out. And the bare
+      # "no more" branch additionally requires "and": a large share of the
+      # ordinary-prose hits are the amount sense ("two years, no more",
+      # "no less, no more"), and requiring the conjunction drops them without
+      # losing the closer the rule is after.
+      #
+      # A closing quote or bracket may sit between the tail and the period so
+      # a quoted sentence still matches. "?" is not accepted as the terminal
+      # mark -- "and nothing more?" asks a question, a different act. Token
+      # gaps cross a hard-wrapped line but never a paragraph break.
+      pattern: /,(?:[ \t]|\r?\n(?![ \t]*\r?\n))+
+                (?:(?:and(?:[ \t]|\r?\n(?![ \t]*\r?\n))+)?
+                   nothing(?:[ \t]|\r?\n(?![ \t]*\r?\n))+(?:else|more|further)
+                  |and(?:[ \t]|\r?\n(?![ \t]*\r?\n))+no(?:[ \t]|\r?\n(?![ \t]*\r?\n))+more)
+                [ \t]*(?=["'”’)\]]*[.!])/ix,
+      message: "Trailing \"and nothing else\" restates what the sentence already said.",
+      suggestion: "Cut the tail. If the exclusion is the point, say what was excluded.",
+      examples_bad: [
+        "Return the JSON, and nothing else.",
+        "The endpoint gives back the id, and nothing more.",
+        "Reply with the number, nothing else.",
+        "Print the filename, nothing further.",
+        "Hand over the receipt, and no more."
+      ],
+      examples_ok: [
+        # The tail does not close the sentence.
+        "It was nothing more than a rumour.",
+        "The delay was down to the weather, and nothing else could explain it.",
+        # No comma introduces it.
+        "There was nothing more to say after that.",
+        "Nothing else matters once the deadline passes.",
+        # The amount sense, which is why bare "no more" needs the conjunction.
+        "The lease runs two years, no more.",
+        "He asked for a fair share, no more.",
+        # A question is a different act.
+        "Is there anything else, or nothing more?"
+      ],
+      rationale: "A model told to return one thing and nothing else carries the phrasing into " \
+                 "the prose it writes afterwards, where the exclusion adds nothing -- the " \
+                 "sentence already named what it covers. The catch is that English has always " \
+                 "used this tail, so the rule fires on careful writing too: twice in 1.92M " \
+                 "words of public-domain prose, once in 461k words of pre-2022 Hacker News, and " \
+                 "on every refrain in \"The Raven\". Expect to dismiss it on fiction and on " \
+                 "quoted verse."
+    ),
+    Rule.new(
+      id: "nothing-else-frag",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The same exclusion as its own sentence: "Return the JSON. Nothing
+      # else." Built on the no-x-no-y-frag template -- the fragment must start
+      # at a sentence boundary and the separator is at most two spaces or one
+      # hard-wrapped newline, so a blanked code span under --markdown cannot
+      # weld two distant sentences together, and a paragraph break stops it.
+      #
+      # Two guards past that. The fragment must open with a capital letter,
+      # and the preceding mark cannot be a semicolon: both keep out the
+      # continuation sense
+      # ("keep pulling; nothing more"), which is one clause, not a closer.
+      # And the fragment must be the whole sentence -- "Nothing else mattered."
+      # has a verb and never matches. "No more." is left out entirely; as a
+      # standalone sentence it is ordinary speech, and no-x-no-y-frag already
+      # takes the chained form.
+      pattern: /(?<=[.!?])(?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]*)\K
+                (?:And[ \t]+nothing|Nothing)[ \t]+(?:else|more|further)[ \t]*[.!]/x,
+      message: "\"Nothing else.\" as a closer restates what the sentence already said.",
+      suggestion: "Cut the fragment, or fold the exclusion into the sentence before it.",
+      examples_bad: [
+        "Return the JSON. Nothing else.",
+        "Give me the number. Nothing more.",
+        "Answer with the file name. And nothing else.",
+        "Print the total. Nothing further."
+      ],
+      examples_ok: [
+        # A verb follows, so the fragment is a sentence about something.
+        "The tests passed. Nothing else mattered that afternoon.",
+        # The continuation sense: one clause, joined by a semicolon.
+        "Keep pulling; nothing more.",
+        # A paragraph break is not a sentence separator.
+        "The kiln runs hot.\n\nNothing more.",
+        # Moby-Dick (public domain): the lower-case continuation the capital
+        # letter guard is there to exclude.
+        "and so on; nothing more."
+      ],
+      rationale: "The fragment form of the same leaked instruction, and it reads the same way: " \
+                 "a second sentence that only says the first one was complete. It ships at " \
+                 "warning rather than info because the capital letter and the whole-sentence " \
+                 "requirement keep it off the continuation sense, which is where ordinary prose " \
+                 "puts the phrase: one hit in 1.92M words of public-domain prose and one in " \
+                 "461k words of pre-2022 Hacker News."
     ),
     # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(

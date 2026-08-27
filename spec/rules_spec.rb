@@ -96,10 +96,13 @@ RSpec.describe "Sloplint::RULES" do
     # em-dash-overuse's ok-fixtures (one or two dashes -- clean for *overuse*)
     # trip it. notice-what flags every sentence-initial "Notice what", so
     # notice-what-there's ok-fixtures (pointing at something real, clean for
-    # the self-referential frame) trip it at info. Only these two.
+    # the self-referential frame) trip it at info. honest-x yields the
+    # superlative degree to most-honest-x, so its fixture pinning that
+    # exclusion is by definition text most-honest-x owns. Only these three.
     overlaps = {
       "em-dash-overuse" => %w[em-dash],
-      "notice-what-there" => %w[notice-what]
+      "notice-what-there" => %w[notice-what],
+      "honest-x" => %w[most-honest-x]
     }
 
     Sloplint::RULES.each do |owner|

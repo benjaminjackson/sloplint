@@ -5,6 +5,37 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### New rules
+
+- `and-nothing-else` (rhetorical-tic, warning) flags a sentence that closes on
+  ", and nothing else", ", nothing more", ", nothing further" or ", and no
+  more". A model told to return one thing and nothing else carries the phrasing
+  into the prose it writes afterwards, where the exclusion repeats what the
+  sentence already said.
+- `nothing-else-frag` (rhetorical-tic, warning) flags the same exclusion built
+  as a fragment: "Return the JSON. Nothing else."
+- `honestly`, `honest-x` and `most-honest-x` (rhetorical-tic, warning) answer
+  the "honest" habit the way `cleanly`, `clean-x` and `cleanest-x` answer the
+  "clean" one. `honestly` takes the manner adverb closing on a full stop or
+  comma ("these two rows compare honestly"); `honest-x` takes the adjective in
+  front of the writer's own construction ("an honest comparison", "the honest
+  framing"); `most-honest-x` takes the self-ranking superlative.
+
+  `honestly` is anchored on position alone, so a dialogue tag ("said Isabel
+  honestly") and the sentence-final hedge of casual speech ("it's beyond boring
+  honestly") both match. Both are rare: twice in 3.65M words of public-domain
+  prose and ten times in 6.07M words of pre-2022 Hacker News. The two noun
+  rules flag nothing in either corpus; "an honest answer" and "an honest
+  assessment" are left out because on Hacker News they mean a person telling
+  the truth, not a writer praising their own framing.
+
+  Both rules are wide on purpose. There is no verb list and no imperative
+  requirement, so the only narrowing is structural, and English has always used
+  this tail: the pair flags three times in 1.92M words of public-domain prose
+  and twice in 461k words of pre-2022 Hacker News, and `and-nothing-else` flags
+  every refrain in "The Raven". Expect to dismiss it on fiction and on quoted
+  verse.
+
 ## [0.5.0] - 2026-08-27
 
 The catalog grows from 49 rules to 50, and `check` becomes the default
