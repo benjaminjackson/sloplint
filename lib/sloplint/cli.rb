@@ -33,9 +33,9 @@ module Sloplint
       when "version" then out.puts(VERSION); 0
       when "help"    then out.puts(parser.help); 0
       else
-        err.puts("sloplint: unknown command #{command.inspect}")
-        err.puts(parser.help)
-        2
+        # Anything else is a path or "-": `sloplint FILE`, `sloplint -`.
+        # A mistyped command lands here too, and fails as a missing file.
+        cmd_check(argv.unshift(command), opts, out:, err:, stdin:)
       end
     rescue OptionParser::ParseError => e
       err.puts("sloplint: #{e.message}")
@@ -190,10 +190,11 @@ module Sloplint
           # exit 0 = clean, 1 = notes found, >1 = error
           # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion}
 
-          usage: sloplint [-o full|json] <command> [args]
+          usage: sloplint [-o full|json] [command] [args]
 
           commands:
             check        scan paths (or stdin) for AI-slop tells and report notes [default]
+                         a first argument that is not a command name is taken as a path
             rules        list the rule catalog (add --json for the machine-readable form)
             explain ID   print one rule's message, rationale, and a bad/ok example
             version      print the sloplint version

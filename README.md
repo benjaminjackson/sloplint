@@ -35,7 +35,7 @@ The recipe sloplint is built around, and the one an agent should use:
 cat draft.md | sloplint check --markdown -o json -
 ```
 
-`--markdown` blanks out code and URLs first, `-o json` emits the machine-readable form, and `-` reads stdin. Exit 0 means clean, 1 means notes found, anything higher is an error. A bare `sloplint` with piped stdin is the same as `sloplint check -`.
+`--markdown` blanks out code and URLs first, `-o json` emits the machine-readable form, and `-` reads stdin. Exit 0 means clean, 1 means notes found, anything higher is an error. `check` is the default command, so `sloplint draft.md`, `sloplint -`, and a bare `sloplint` with piped stdin all scan.
 
 The human-readable form drops `-o json`:
 
@@ -62,9 +62,10 @@ The brackets mark the match; the rest is there so you can see what you're fixing
 ## Commands
 
 ```
-sloplint [-o full|json] <command> [args]
+sloplint [-o full|json] [command] [args]
 
 check        scan paths (or stdin) for AI-slop tells and report notes [default]
+             anything that is not a command name is taken as a path: `sloplint draft.md`
 rules        list the rule catalog (add --json for the machine-readable form)
 explain ID   print one rule's message, rationale, and a bad/ok example
 version      print the sloplint version

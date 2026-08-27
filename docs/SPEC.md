@@ -141,8 +141,11 @@ check options:
   --ignore IDS         skip these rules
 ```
 
-Bare `sloplint` with piped stdin behaves as `sloplint check -`. This is the
-common agent path: `cat draft.md | sloplint check --markdown -o json -`.
+`check` is the default command. A first argument that is not a command name is
+taken as a path, so `sloplint draft.md` and `sloplint -` both scan; a mistyped
+command therefore fails as a missing file. Bare `sloplint` with piped stdin
+also behaves as `sloplint check -`. This is the common agent path:
+`cat draft.md | sloplint check --markdown -o json -`.
 
 Deliberately left out of v1 (add when a real need shows up, not before):
 `compact` output, `--min-severity`, `--max-notes`, color, `-q/--quiet`, and a

@@ -24,9 +24,26 @@ RSpec.describe Sloplint::CLI do
       expect(code).to eq(1)
     end
 
-    it "returns 2 on an unknown command" do
-      code, = run(["frobnicate"])
+    it "returns 2 on an unknown command, which reads as a missing file" do
+      code, _out, err = run(["frobnicate"])
       expect(code).to eq(2)
+      expect(err).to include("no such file: frobnicate")
+    end
+
+    it "treats a bare \"-\" as `check -`" do
+      code, out, = run(["-"], stdin_text: "That's the whole point.")
+      expect(code).to eq(1)
+      expect(out).to include("thats-the-whole")
+    end
+
+    it "treats a bare path as `check PATH`" do
+      Tempfile.create(["doc", ".md"]) do |f|
+        f.write("That's the whole point.")
+        f.flush
+        code, out, = run([f.path])
+        expect(code).to eq(1)
+        expect(out).to include("thats-the-whole")
+      end
     end
 
     it "returns 2 on a missing file" do

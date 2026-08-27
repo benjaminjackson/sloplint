@@ -5,6 +5,38 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-27
+
+The catalog grows from 49 rules to 50, and `check` becomes the default
+command.
+
+### Changed
+
+- A first argument that is not a command name is now taken as a path, so
+  `sloplint draft.md` and `sloplint -` scan instead of failing with
+  `unknown command`. A mistyped command fails as a missing file, still exit 2.
+
+### New rules
+
+- `trailing-significance-participle` (`structure`, `warning`): the participle
+  clause hung off the end of a sentence to say what a fact means, "the sign
+  carries both names, showcasing the range of travellers it draws". An event
+  cannot showcase anything, so the claim belongs to a narrator who never
+  appears in the text.
+
+  The verb list is closed and narrow: `highlighting`, `showcasing`,
+  `reinforcing`, `shaping`, `enhancing`, `cementing`, `solidifying`,
+  `embodying`, `fostering`, `facilitating`, `signalling`. Verbs humans write
+  in the same position -- `driving`, `representing`, `reflecting`, `marking`,
+  `contributing`, `illustrating`, `demonstrating`, `emphasising`, `echoing`,
+  `affirming` -- stay out, because they usually take a person as the subject
+  and a regex cannot see the subject. `underscoring` is left to
+  `underscores-highlights`.
+
+  Two guards drop gerund lists: a preceding -ing word means the match is a
+  middle list item, and a following comma, "and" or "or" means it is not the
+  last item. "signalling to" is the physical gesture and does not flag.
+
 ## [0.4.0] - 2026-08-26
 
 The catalog grows from 29 rules to 49. Every new rule was probed against
