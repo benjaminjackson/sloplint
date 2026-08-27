@@ -1358,6 +1358,84 @@ module Sloplint
                  "half is chosen for the contrast, not because a reader proposed it, and " \
                  "the second half stands on its own."
     ),
+    Rule.new(
+      id: "trailing-significance-participle",
+      category: "structure",
+      severity: "warning",
+      # The verb list is closed and short on purpose. Wikipedia's "signs of AI
+      # writing" names eight watch words for this construction; half of them
+      # did not survive probing. In 1.85M words of pre-2022 Hacker News and
+      # 2.66M words of public-domain prose, "driving" appears in this position
+      # 14 times, "representing" 16, "reflecting" 10, "marking" 5 -- all of it
+      # ordinary English ("driving the price down", "representing a majority of
+      # the voting power"), and all of it the same shape a model produces, so
+      # no narrowing separates the two. Those verbs are out. The ones that ship
+      # are used in both corpora but never here: "highlighting" appears 17
+      # times in the HN sample and not once after a comma. "underscoring" is
+      # left out because underscores-highlights already flags it bare.
+      #
+      # "emphasizing", "echoing" and "affirming" are out for the same reason,
+      # found late: the shipped pattern flagged four sentences in the
+      # public-domain corpus and all four had a person as the subject. A person
+      # can emphasize or echo something; an event cannot. That is the animacy
+      # distinction the construction really turns on, and a regex cannot see
+      # it, so the verbs that carry a human subject in ordinary prose stay out
+      # rather than being approximated. The narrowed list flags nothing in
+      # either corpus.
+      #
+      # "ensuring" is also out, despite scoring 1 hit in each corpus: neither
+      # corpus contains software documentation, where "the mutex is held,
+      # ensuring no two writers collide" states a real consequence rather than
+      # claiming significance.
+      #
+      # Two guards keep gerund lists out. A preceding -ing word means the match
+      # is the second item of a list ("cutting, shaping stone"), and a
+      # following comma, "and", or "or" means it is not the last ("cutting,
+      # shaping and sanding"). "signaling to" is the physical gesture.
+      pattern: /\w+(?<!ing),[ \t]+
+                (?:further[ \t]+|thereby[ \t]+|thus[ \t]+|ultimately[ \t]+)?
+                (?:highlighting|showcasing|reinforcing|shaping|enhancing|
+                   cementing|solidifying|embodying|fostering|facilitating|
+                   signall?ing(?![ \t]+to\b))
+                (?![ \t]*(?:,|and\b|or\b))
+                [ \t]+\S/ix,
+      message: "Trailing -ing clause claiming significance -- a stock AI move.",
+      suggestion: "Cut the clause, or state the consequence as its own sentence with a subject.",
+      examples_bad: [
+        "The bridge reopened in March, cementing its place in the city's skyline.",
+        "Attendance doubled that year, highlighting the appeal of the new format.",
+        "Its sign carries both languages, showcasing the range of visitors it draws.",
+        "Trade routes crossed here for centuries, shaping the food people cook.",
+        "The grant was renewed, further solidifying the lab's standing.",
+        "The team shipped every week, reinforcing the sense that momentum mattered.",
+        "The colour was mixed by hand, embodying the care the shop is known for.",
+        "The lab was refitted last year, enhancing what the group can measure.",
+        "The station sits beside the port, facilitating the movement of goods inland."
+      ],
+      examples_ok: [
+        # The verb in its ordinary position, with a person or document as subject.
+        "The report highlights the two findings that changed our minds.",
+        "She emphasises the method rather than the results.",
+        # Gerund lists: the match is a middle item, not a trailing clause.
+        "The work involves cutting, shaping and polishing the stone.",
+        "They spent the morning cutting, shaping stone for the wall.",
+        "The class covers drawing, shaping, then firing the clay.",
+        # The physical gesture, not a claim about meaning.
+        "He turned toward the bar, signaling to the waiter.",
+        # War and Peace (Maude translation, public domain): a person as the
+        # subject, which is the case the verb list cannot distinguish, so
+        # "emphasizing", "echoing" and "affirming" are excluded outright.
+        "recounted Bitski, emphasizing certain words and opening his eyes",
+        "\u201cOu-rou-rou!\u201d yelled the crowd, echoing the crash of the roof",
+        # A paragraph break is not a comma.
+        "The kiln runs hot\n\nShaping the clay comes first."
+      ],
+      rationale: "A participle hung off the end of a sentence, with a fact or an event as " \
+                 "its subject, asserts what something means without anyone having to say it. " \
+                 "An event cannot highlight or showcase anything; the claim belongs to a " \
+                 "narrator who never appears. Careful writers put the verb in its own clause " \
+                 "with a subject, or leave the significance to the reader."
+    ),
     # ── hedging ───────────────────────────────────────────────────────────
     Rule.new(
       id: "vague-attribution",
