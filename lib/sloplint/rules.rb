@@ -595,6 +595,66 @@ module Sloplint
                  "restates the sentence's importance without saying what actually holds it up."
     ),
     Rule.new(
+      id: "intersection-of",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # "at" is not load-bearing -- "explores the intersection of art and
+      # technology" is the same move -- so the anchor is "the intersection of"
+      # and the two guards carry the whole burden of separating the literal
+      # senses. A street corner names its streets, and a street name is
+      # Capitalized-then-lowercase ("Elm", "Broadway", "Highway 12"), so the
+      # positive lookahead demands the next word be lowercase or an all-caps
+      # acronym -- "AI", "UX", "HCI" are the metaphor's favourite operands and
+      # no street is spelled that way. Geometry and set arithmetic name their
+      # operands ("the two curves", "the ranges", "both key sets"), so the
+      # negative lookahead drops a literal noun found within two words of
+      # "of". Two words, not three, keeps "art and city streets" from reaching
+      # "streets" and silencing a real hit. No /i on the whole pattern: it
+      # would make [a-z] match capitals and undo the first guard, so the
+      # case-insensitive parts are inline (?i:...) groups instead.
+      pattern: /\b[Tt]he\s+intersection\s+of\b
+                (?!\s+(?:[\w-]+\s+){0,2}
+                     (?i:sets?|lines?|curves?|planes?|circles?|spheres?|axes|
+                         rays?|segments?|arcs?|orbits?|streets?|avenues?|
+                         roads?|highways?|routes?|tracks?|corridors?|paths?|
+                         boulevards?|lanes?|arrays?|lists?|ranges?|
+                         collections?|keys?|vectors?|matrices|polygons?|
+                         rectangles?|intervals?|data|datasets?)\b)
+                (?=\s+(?:[a-z]|[A-Z]{2,}\b))/x,
+      message: '"the intersection of X and Y" outside streets or geometry is borrowed positioning.',
+      suggestion: "Say what the work does, or name the two things it takes from each.",
+      examples_bad: [
+        "Her work sits at the intersection of art and technology.",
+        "Her book explores the intersection of art and technology.",
+        "We operate at the intersection of AI and healthcare.",
+        "The product lives at the intersection of design and engineering.",
+        "At the intersection of policy and practice, nothing moves quickly.",
+        "The intersection of grief and comedy is where this essay lands.",
+        "The role sits at the intersection of the marketing and product teams."
+      ],
+      examples_ok: [
+        "The accident happened at the intersection of Elm Street and Oak Avenue.",
+        "Turn left at the intersection of Main and Fifth.",
+        "The bus stops at the intersection of Broadway and 42nd Street.",
+        "A hydrant stands at the intersection of Elm and Willow.",
+        "The house sits at the intersection of Highway 12 and County Road 8.",
+        "The intersection of Elm and Willow was closed for repaving.",
+        "The solution lies at the intersection of the two curves.",
+        "Draw a point at the intersection of the lines.",
+        "The point at the intersection of two circles is equidistant.",
+        "He stood at the intersection of five streets and could not choose.",
+        "The village grew up at the intersection of several old roads.",
+        "Snow piled up at the intersection of the roads below.",
+        "Compute the intersection of the two arrays.",
+        "The query returns the intersection of both key sets.",
+        "The intersection of the ranges is empty."
+      ],
+      rationale: "A street corner and a set diagram are the phrase's literal homes. Everywhere " \
+                 "else it claims a position without doing the work of one: the writer sits " \
+                 "between two fields and says nothing about either. Models open bios and " \
+                 "pitches with it because it sounds like a thesis while committing to nothing."
+    ),
+    Rule.new(
       id: "thats-how-x",
       category: "rhetorical-tic",
       severity: "warning",

@@ -7,6 +7,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### New rules
 
+- `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
+  Y" used as positioning: a writer placed between two fields, saying nothing
+  about either. "at" is not required, so "explores the intersection of art and
+  technology" flags the same as "sits at the intersection of". Two guards keep
+  the literal senses out. A street corner names capitalised streets ("Elm",
+  "Broadway", "Highway 12"), so the word after "of" must be lowercase or an
+  all-caps acronym; "AI", "UX" and "HCI" are the metaphor's usual operands and
+  no street is spelled that way. Geometry and set arithmetic name their operands,
+  so a literal noun ("curves", "lines", "arrays", "ranges", "roads") within two
+  words of "of" drops the note.
+
 - `and-nothing-else` (rhetorical-tic, warning) flags a sentence that closes on
   ", and nothing else", ", nothing more", ", nothing further" or ", and no
   more". A model told to return one thing and nothing else carries the phrasing

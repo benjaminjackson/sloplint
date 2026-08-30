@@ -289,6 +289,7 @@ false-positive risk, which none has demonstrated.
 | `not-nothing` | copula + "not nothing" litotes, any subject | skip personal/there subjects |
 | `exact-exactly` | "exact"/"exactly" | allowlist for the checkable uses; `info` |
 | `load-bearing` | "load-bearing" outside its construction sense | skip building nouns either side |
+| `intersection-of` | "the intersection of X and Y" as positioning | skip street corners, geometry, set arithmetic |
 | `thats-how-x` | sentence-initial "that's how…" | |
 | `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
 | `earns-its-place` | "earns its place/keep" (any possessive) | possessive required; `warning` |
