@@ -290,6 +290,8 @@ false-positive risk, which none has demonstrated.
 | `exact-exactly` | "exact"/"exactly" | allowlist for the checkable uses; `info` |
 | `load-bearing` | "load-bearing" outside its construction sense | skip building nouns either side |
 | `intersection-of` | "the intersection of X and Y" as positioning | skip street corners, geometry, set arithmetic |
+| `impact-verb` | "impact" used as a verb ("the outage impacted 4,000 accounts") | needs an auxiliary or subject pronoun for the base form; skip the medical and soil sense of "impacted", the fixed compounds, and hyphenated forms |
+| `impact-noun-bare` | "the impact of X", "measure the impact" — `info` | needs a measuring verb in front or "of" behind; skip the collision sense and the fixed compounds |
 | `thats-how-x` | sentence-initial "that's how…" | |
 | `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
 | `earns-its-place` | "earns its place/keep" (any possessive) | possessive required; `warning` |
@@ -320,6 +322,7 @@ Single flat rule per word-cluster, matched as whole words:
 - `vital-role` — "plays a (vital/crucial/pivotal/significant/key) role".
 - `underscores-highlights` — "underscore(s)" + determiner and "underscored/underscoring" anywhere (the emphasis verb); "highlights/emphasizes its (importance/significance)" stays narrow.
 - `rich-tapestry` — "rich tapestry", "tapestry of".
+- `impact-noun-vague` — an intensity adjective plus "impact" (significant, real, meaningful, lasting, massive, huge, profound, big and the rest), or "make/have an impact". "positive" and "negative" stay out: they name a direction, which is more than the intensity words do. "statistically significant impact" is skipped — that one is a finding.
 
 ### structure
 

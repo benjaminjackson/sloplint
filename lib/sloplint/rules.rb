@@ -655,6 +655,179 @@ module Sloplint
                  "pitches with it because it sounds like a thesis while committing to nothing."
     ),
     Rule.new(
+      id: "impact-verb",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # "impact" and "impacts" are also nouns, so they only count as verbs
+      # behind an auxiliary or a subject pronoun. One optional pronoun may sit
+      # between the auxiliary and the verb ("does this impact the date");
+      # allowing a determiner in that slot instead would swallow "will the
+      # impact be permanent", so the copula lookahead below backs it up.
+      # "impacted"/"impacting" are verbal on their own except for the medical
+      # and soil sense: the forward lookahead catches the attributive form
+      # ("an impacted wisdom tooth"), but the predicate form ("the tooth was
+      # impacted") needs the noun and copula pulled into the match, because
+      # skip: only ever sees matched text, never surrounding context. Same
+      # reason load-bearing does it, and a lookbehind that wide trips the
+      # Onigmo bug documented there. The trailing (?!-) is load-bearing too:
+      # every other guard is spelled with \s+, so "will impact-test the
+      # housing" walks straight past them.
+      pattern: /\b(?:
+                  (?:will|would|can|could|may|might|shall|should|must|to|does|
+                     do|did|doesn't|don't|didn't|won't|helps?|helped)\s+
+                  (?:(?:it|this|that|they|we|you)\s+)?
+                  impacts?
+                | (?:it|this|that|which|he|she)\s+impacts
+                | (?:they|we|you)\s+impact
+                | (?:(?:tooth|teeth|molars?|bowels?|colon|fractures?|soils?)\s+
+                     (?:is|are|was|were)\s+)?
+                  impact(?:ed|ing)
+                )\b
+                (?!-)
+                (?!\s+(?:be|been|is|are|was|were|of|on|has|have|had)\b)
+                (?!\s+(?:tooth|teeth|molars?|wisdom|canines?|bowels?|colon|
+                         stool|feces|fecal|fractures?|soils?|snow|ice|sediment|
+                         gravel|earwax|cerumen)\b)
+                (?!\s+(?:statements?|assessments?|reports?|studies|study|
+                         analys[ie]s|evaluations?|factors?|ratings?|scores?|
+                         investing|investors?|funds?|bonds?|craters?|
+                         wrench(?:es)?|drivers?|sockets?|printers?|sprinklers?|
+                         resistan(?:t|ce)|tested|testing|velocit(?:y|ies)|
+                         forces?|energy|load(?:s|ing)?|zones?|points?|players?|
+                         sites?|angles?|damage|absorbers?)\b)/ix,
+      skip: [/\A(?:tooth|teeth|molars?|bowels?|colon|fractures?|soils?)\s+
+                (?:is|are|was|were)\s+impacted/ix],
+      message: '"impact" as a verb hides which way something moved and by how much.',
+      suggestion: 'Name the verb: cut, delayed, doubled, broke, raised. Or use "affected".',
+      examples_bad: [
+        "The outage impacted about four thousand accounts.",
+        "Changing the default will impact every downstream job.",
+        "How does this impact the release date?",
+        "Rising rates impacted our hiring plan.",
+        "The migration impacted performance across the board.",
+        "This impacts every downstream job.",
+        "The new policy is impacting our margins."
+      ],
+      examples_ok: [
+        "The impact crushed the front bumper.",
+        "The crater marks the point of impact.",
+        "Torque the bolts with an impact wrench.",
+        "The meteor impact left a ring of debris.",
+        "The parachute reduces impact force on landing.",
+        "The county filed an environmental impact statement.",
+        "The fund runs an impact investing strategy.",
+        "The journal reports a five-year impact factor.",
+        "He bought an impact driver for the deck job.",
+        "She is an impact player off the bench.",
+        "She had an impacted wisdom tooth removed.",
+        "The tooth was impacted and had to come out.",
+        "The soil was impacted by years of heavy machinery.",
+        "An impacted fracture heals without displacement.",
+        "Will the impact be permanent?",
+        "Consultants will impact-test the housing next week."
+      ],
+      rationale: "As a verb, 'impact' reports that something changed while withholding the " \
+                 "direction and the size. The specific verb -- slowed, doubled, broke -- " \
+                 "carries what the sentence is missing, and 'affected' covers the rest. " \
+                 "Models reach for it because it sounds consequential at no cost."
+    ),
+    Rule.new(
+      id: "impact-noun-vague",
+      category: "puffery",
+      severity: "warning",
+      # Only the puffed shapes: an intensity adjective, or make/have plus an
+      # article. "the impact of X" is left to impact-noun-bare, which sits at
+      # info because it is the standard word in research prose. "positive" and
+      # "negative" stay out of the adjective list on purpose -- they name a
+      # direction, which is more than the intensity words do. "statistically"
+      # is pulled into the match as an optional leading word so skip: can see
+      # it; a statistically significant impact is a finding, not puffery, and
+      # skip: never sees text outside the matched span.
+      pattern: /\b(?:statistically\s+)?
+                (?:
+                  (?:significant|real|meaningful|lasting|massive|huge|profound|
+                     big|major|tremendous|enormous|outsized|considerable|
+                     substantial|genuine|tangible|immense|incredible|
+                     remarkable)\s+
+                | (?:mak(?:e|es|ing)|made|hav(?:e|es|ing)|has|had)\s+
+                  (?:a|an|real|some)\s+
+                )
+                impacts?\b(?!-)
+                (?!\s+(?:statements?|assessments?|reports?|studies|study|
+                         analys[ie]s|evaluations?|factors?|ratings?|scores?|
+                         investing|investors?|funds?|bonds?|craters?|
+                         wrench(?:es)?|drivers?|sockets?|printers?|sprinklers?|
+                         resistan(?:t|ce)|tested|testing|velocit(?:y|ies)|
+                         forces?|energy|load(?:s|ing)?|zones?|points?|players?|
+                         sites?|angles?|damage|absorbers?)\b)/ix,
+      skip: [/\Astatistically\s/i],
+      message: '"significant/real/big impact" and "make an impact" inflate a claim without stating it.',
+      suggestion: "Say what changed and by how much, or cut the sentence.",
+      examples_bad: [
+        "The change had a significant impact on conversion.",
+        "This will have real impact for the team.",
+        "The rewrite made a big impact on load times.",
+        "The launch had a profound impact on morale.",
+        "We want to make an impact this quarter."
+      ],
+      examples_ok: [
+        "The study found a statistically significant impact on mortality.",
+        "The impact crushed the front bumper.",
+        "The helmet failed at high-impact loading.",
+        "Impact-resistant polycarbonate replaced the glass.",
+        "The blast impact zone extended two hundred metres.",
+        "That impact rating exceeds the standard.",
+        "Is this impact reversible?"
+      ],
+      rationale: "The adjective does the work the sentence should have done: 'significant' and " \
+                 "'real' assert that a change mattered without naming it or sizing it. " \
+                 "'Make an impact' is the same move with the noun left bare."
+    ),
+    Rule.new(
+      id: "impact-noun-bare",
+      category: "rhetorical-tic",
+      severity: "info",
+      # Two shapes, each needing its own anchor: a measuring verb in front, or
+      # "of" behind. That is what keeps the collision sense clear without a
+      # list of collision verbs -- "the impact crushed the front bumper" has
+      # neither anchor, and "the point of impact" runs the other way round.
+      # The verb stems end in \w*, not \w+: with \w+ the rule misses the bare
+      # imperative "Consider the impact before you merge".
+      pattern: /\b(?:
+                  (?:measur|assess|consider|understand|understood|evaluat|
+                     gaug|weigh|quantif|track|examin|explor|maximi[sz])\w*\s+
+                  (?:the|its|their|our|this|that)\s+impacts?
+                | the\s+impacts?\s+of
+                )\b(?!-)
+                (?!\s+(?:statements?|assessments?|reports?|studies|study|
+                         analys[ie]s|evaluations?|factors?|ratings?|scores?|
+                         investing|investors?|funds?|bonds?|craters?|
+                         wrench(?:es)?|drivers?|sockets?|printers?|sprinklers?|
+                         resistan(?:t|ce)|tested|testing|velocit(?:y|ies)|
+                         forces?|energy|load(?:s|ing)?|zones?|points?|players?|
+                         sites?|angles?|damage|absorbers?)\b)/ix,
+      message: '"the impact of X" defers naming what actually changed.',
+      suggestion: "Name the change itself, or the number that shows it.",
+      examples_bad: [
+        "We measured the impact of the new onboarding flow.",
+        "Consider the impact before you merge.",
+        "The team is still assessing the impact.",
+        "The impact of the change is hard to quantify."
+      ],
+      examples_ok: [
+        "The impact crushed the front bumper.",
+        "The crater marks the point of impact.",
+        "The meteor impact left a ring of debris.",
+        "Crews measured the impact crater at dawn.",
+        "The panel reviewed the impact assessment before the vote.",
+        "Torque the bolts with an impact wrench.",
+        "Will the impact be permanent?"
+      ],
+      rationale: "This one sits at info because 'the impact of X on Y' is the ordinary word in " \
+                 "research and policy writing, not a tell. Elsewhere it postpones the sentence: " \
+                 "the writer announces that an effect exists and stops before naming it."
+    ),
+    Rule.new(
       id: "thats-how-x",
       category: "rhetorical-tic",
       severity: "warning",
