@@ -1708,6 +1708,100 @@ module Sloplint
                  "means 'this has the shape', not 'this is slop'."
     ),
     Rule.new(
+      id: "isnt-x-its-y",
+      category: "structure",
+      severity: "info",
+      # The corrective with the conjunction dropped: one clause rejects a
+      # description, the next supplies the replacement through a second copula
+      # ("It isn't the tool. It's the habit."). Every copula tense is covered,
+      # and the two clauses may be joined by a period, semicolon, comma, or dash.
+      #
+      # The narrowing sits in the two complement slots, and it is lexical class
+      # rather than vocabulary: neither slot may open with a pronoun, a
+      # possessive, a preposition ("about" excepted, since "not about X, it's
+      # about Y" is the same move), a degree word, or one of the predicate
+      # adjectives that make the second clause a comment instead of a
+      # replacement ("It isn't ready. It's close."). The article is matched
+      # atomically so the guard cannot be skipped by backtracking past it. Those
+      # guards cut a loose version from 19 hits to 4 over 889k words of
+      # 19th-century fiction.
+      #
+      # What survives is the reason for info. An adjective outside the list
+      # still slips through, and some hits are the same shape written by a
+      # person -- "was not the wife; it was the children" is Conan Doyle. A flag
+      # here says the sentence has the frame, not that a model wrote it.
+      pattern: /(?:\b(?:is|are|was|were)\s+not
+                  |\b(?:is|are|was|were)n['’]t
+                  |\b(?:it|that|this|there)['’]s\s+not
+                  |\b(?:they|these|those|we|you)['’]re\s+not)
+                 (?:[ \t]|\r?\n(?!\s*\n))+
+                 (?>(?:a\s+|an\s+|the\s+)?)
+                 (?!so\b|just\b|only\b|merely\b|simply\b|solely\b|even\b|yet\b|quite\b|very\b
+                   |too\b|all\b|always\b|never\b|often\b|also\b|enough\b|really\b|actually\b
+                   |entirely\b|ready\b|close\b|done\b|easy\b|hard\b|clear\b|simple\b
+                   |possible\b|likely\b|true\b|false\b|fine\b|good\b|bad\b|better\b|worse\b
+                   |obvious\b|important\b|different\b|not\b|no\b|nothing\b|there\b|here\b
+                   |what\b|who\b|how\b|why\b|when\b|where\b|because\b|i\b|me\b|he\b|him\b
+                   |she\b|her\b|it\b|we\b|us\b|you\b|they\b|them\b|that\b|this\b|these\b
+                   |those\b|his\b|their\b|its\b|my\b|your\b|our\b|in\b|on\b|at\b|of\b|to\b
+                   |for\b|from\b|with\b|as\b|by\b|toward\b|towards\b|into\b|over\b|under\b
+                   |through\b|against\b|upon\b|within\b|without\b)
+                 [\w'’-]+
+                 [^.!?;\n]{0,40}?
+                 (?:[.!?;]|[ \t]*[—–]|,)
+                 (?:[ \t]|\r?\n(?!\s*\n))+
+                 (?:it|this|that|these|those|they)
+                 (?:['’]s|['’]re|\s+is|\s+are|\s+was|\s+were)
+                 (?:[ \t]|\r?\n(?!\s*\n))+
+                 (?>(?:a\s+|an\s+|the\s+)?)
+                 (?!so\b|just\b|only\b|merely\b|simply\b|solely\b|even\b|yet\b|quite\b|very\b
+                   |too\b|all\b|always\b|never\b|often\b|also\b|enough\b|really\b|actually\b
+                   |entirely\b|ready\b|close\b|done\b|easy\b|hard\b|clear\b|simple\b
+                   |possible\b|likely\b|true\b|false\b|fine\b|good\b|bad\b|better\b|worse\b
+                   |obvious\b|important\b|different\b|not\b|no\b|nothing\b|there\b|here\b
+                   |what\b|who\b|how\b|why\b|when\b|where\b|because\b|i\b|me\b|he\b|him\b
+                   |she\b|her\b|it\b|we\b|us\b|you\b|they\b|them\b|that\b|this\b|these\b
+                   |those\b|his\b|their\b|its\b|my\b|your\b|our\b|in\b|on\b|at\b|of\b|to\b
+                   |for\b|from\b|with\b|as\b|by\b|toward\b|towards\b|into\b|over\b|under\b
+                   |through\b|against\b|upon\b|within\b|without\b)
+                 [\w'’-]+/ix,
+      message: '"isn\'t X, it\'s Y" corrects a description nobody offered.',
+      suggestion: "State the second half on its own; drop the rejected one.",
+      examples_bad: [
+        "It isn't the tool. It's the habit.",
+        "This wasn't a setback, it was a setup for the next release.",
+        "The delay wasn't the network. It was the retry loop.",
+        "Those aren't the metrics, they're the vanity numbers.",
+        "This isn't failure. It's iteration.",
+        "They're not customers; they are partners.",
+        "These weren't accidents. They were choices."
+      ],
+      examples_ok: [
+        # Predicate adjectives on both sides: a comment, not a replacement.
+        "It isn't ready. It's close.",
+        # Escalation word: that shape belongs to not-just-x-but-y.
+        "It isn't only the cost. It is the delay too.",
+        # The second clause needs a pronoun subject and a copula.
+        "It wasn't the alarm that woke me. The dog did.",
+        # The two clauses must be adjacent.
+        "It isn't the heat. Everyone says so. It's the humidity.",
+        # Prepositional complements are ordinary contrast.
+        "The message was not to him; it was to the clerk.",
+        # Pronoun complement.
+        "It was not me who called; it was the neighbour.",
+        # The guard holds after the article, which is matched atomically.
+        "The fire was not out; it was the only light left.",
+        # A paragraph break ends the frame.
+        "The plan was not the problem.\n\nIt was the schedule."
+      ],
+      rationale: "The frame rejects a description nobody proposed, then supplies the true " \
+                 "one, so the sentence sounds like a correction while correcting nobody. It " \
+                 "is 'not A but B' with the conjunction dropped and the second half promoted " \
+                 "to its own clause, which is the form models reach for most. Ordinary prose " \
+                 "contrasts two things this way too, so the rule ships at info: it reports " \
+                 "the shape, not a verdict."
+    ),
+    Rule.new(
       id: "rule-of-three",
       category: "structure",
       severity: "info",
