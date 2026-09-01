@@ -20,7 +20,7 @@ Open **Customize → Plugins → Add marketplace** and paste exactly this:
 benjaminjackson/sloplint
 ```
 
-Not the web address of the page you are reading — just those two words with the slash. Then install **sloplint** from the list.
+Not the web address of the page you are reading — just those two words with the slash, and no slash on the end. `https://github.com/benjaminjackson/sloplint` works too, but a link copied from a page you were browsing usually has more on the end of it and will fail. Then install **sloplint** from the list.
 
 Installing this way needs no package install of any kind, which is why it works in Cowork, where `gem install` cannot reach the internet. Claude Code carries the source along with the plugin and runs it in place.
 
