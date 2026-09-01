@@ -5,6 +5,34 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- sloplint now ships as a Claude Code plugin as well as a gem. Add the
+  marketplace `benjaminjackson/sloplint` and install `sloplint`; the plugin
+  carries the Ruby source with it, so nothing is installed from a package
+  index and it works where `gem install` cannot reach the network — Claude
+  Cowork above all. The plugin adds one skill, `/sloplint:check`, which runs
+  the scanner and reports what it returns. The skill refuses to assess prose
+  on its own when the scanner cannot run, because a review with no scan
+  behind it reads exactly like one with a scan behind it.
+
+### Changed
+
+- Empty or whitespace-only input is now exit 2 with `empty input: nothing to
+  check in ...`, instead of exit 0. Reporting a scan of nothing as a clean
+  scan is the same trap a mistyped rule id sets, and gets the same answer. The
+  text is tested before `--markdown` blanks code and URLs, so a file holding
+  only a fenced code block still exits 0; and only an all-empty set of sources
+  is an error, so one empty file among several named ones is left alone.
+
+- The executable moved from `bin/sloplint` to `exe/sloplint`. claude.ai
+  rejects a plugin with a top-level `bin/` directory, which would block
+  organization distribution. `gem install sloplint` is unaffected.
+
+- `exe/sloplint` now checks `RUBY_VERSION` before loading anything and aborts
+  with an explanation, rather than raising `NoMethodError` from `Data.define`.
+  The Ruby macOS ships at `/usr/bin/ruby` is 2.6 and hits this.
+
 ### New rules
 
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and

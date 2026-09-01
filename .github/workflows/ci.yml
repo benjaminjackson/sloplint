@@ -23,3 +23,6 @@ jobs:
       - run: rake spec
       - run: gem build sloplint.gemspec
       - run: ruby -e 'Gem::Specification.load("sloplint.gemspec").validate'
+      # sloplint also ships as a Claude Code plugin. Skipped when the runner
+      # has no `claude` binary -- the local check covers it then.
+      - run: command -v claude >/dev/null && claude plugin validate . --strict || echo "no claude binary, skipping"

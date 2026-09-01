@@ -1,0 +1,12 @@
+{
+  "name": "sloplint",
+  "description": "The sloplint prose checker, which finds the phrases and rhythms that make writing read as AI-written.",
+  "owner": { "name": "Benjamin Jackson" },
+  "plugins": [
+    {
+      "name": "sloplint",
+      "source": "./",
+      "description": "Checks your writing for the phrases and rhythms that make it read as AI-written, and shows you each one."
+    }
+  ]
+}

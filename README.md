@@ -10,7 +10,32 @@ A pattern earns a place in the catalog only if it shows up constantly in AI writ
 
 ## Installation
 
-Requires **Ruby 3.3+** and nothing else. The runtime is standard library only (`optparse`, `json`, native regex).
+Requires **Ruby 3.3+** and nothing else. The runtime is standard library only (`optparse`, `json`, native regex). The Ruby that macOS ships at `/usr/bin/ruby` is 2.6 and too old; `brew install ruby` gets you a current one.
+
+### In Claude Cowork or the Claude desktop app
+
+Open **Customize → Plugins → Add marketplace** and paste exactly this:
+
+```
+benjaminjackson/sloplint
+```
+
+Not the web address of the page you are reading — just those two words with the slash. Then install **sloplint** from the list.
+
+Installing this way needs no package install of any kind, which is why it works in Cowork, where `gem install` cannot reach the internet. Claude Code carries the source along with the plugin and runs it in place.
+
+New rules reach you when you click **Update** on the marketplace. Nothing updates on its own.
+
+Once it is installed, ask Claude to check a draft, or run `/sloplint:check`.
+
+### In Claude Code
+
+```
+/plugin marketplace add benjaminjackson/sloplint
+/plugin install sloplint@sloplint
+```
+
+### In a terminal
 
 ```bash
 gem install sloplint
@@ -125,7 +150,7 @@ Three codes carry the contract. A crash exits nonzero on its own.
 | 1    | ran, notes found |
 | 2    | bad arguments or usage error |
 
-An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, naming the id) rather than a silent no-op, so a typo can't masquerade as a clean scan.
+An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, naming the id) rather than a silent no-op, so a typo can't masquerade as a clean scan. Input that is empty or only whitespace is exit 2 for the same reason: a pipe that delivered nothing must not read as a clean draft. Only when every source is empty — one empty file among several named ones is taken as deliberate.
 
 ## The rule catalog
 

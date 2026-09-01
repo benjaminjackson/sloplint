@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Integer compare, not string: "3.10" < "3.3" is true and would reject a future
+# Ruby. Array has <=> but no <, hence the explicit compare. Not Gem::Version --
+# this has to hold when RubyGems is not loaded.
+if (RUBY_VERSION.split(".").map(&:to_i).first(2) <=> [3, 3]) < 0
+  abort "sloplint needs Ruby 3.3 or later, found #{RUBY_VERSION}.\n" \
+        "macOS ships Ruby 2.6 at /usr/bin/ruby. Install a current one with `brew install ruby`."
+end
+
+require_relative "../lib/sloplint/cli"
+exit Sloplint::CLI.run(ARGV)

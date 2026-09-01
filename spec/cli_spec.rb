@@ -56,6 +56,40 @@ RSpec.describe Sloplint::CLI do
       expect(code).to eq(2)
     end
 
+    it "returns 2 on empty stdin rather than calling a scan of nothing clean" do
+      code, out, err = run(["check", "-"], stdin_text: "")
+      expect(code).to eq(2)
+      expect(out).to be_empty
+      expect(err).to include("empty input")
+      expect(err).to include("stdin")
+    end
+
+    it "returns 2 on whitespace-only stdin" do
+      code, _out, err = run(["check", "-"], stdin_text: "  \n\t\n")
+      expect(code).to eq(2)
+      expect(err).to include("empty input")
+    end
+
+    it "returns 2 on an empty named file, naming it" do
+      Tempfile.create(["doc", ".md"]) do |f|
+        f.close
+        code, _out, err = run(["check", f.path])
+        expect(code).to eq(2)
+        expect(err).to include(f.path)
+      end
+    end
+
+    it "still returns 0 for a file that is only a fenced code block under --markdown" do
+      # The empty check reads the raw text, before --markdown blanks code and
+      # URLs. This file arrived; it just has no prose in it.
+      Tempfile.create(["doc", ".md"]) do |f|
+        f.write("```ruby\nputs \"that's the whole point\"\n```\n")
+        f.close
+        code, = run(["check", "--markdown", f.path])
+        expect(code).to eq(0)
+      end
+    end
+
     it "returns 2 on invalid UTF-8 input, not the 'notes found' code" do
       bad_bytes = "That is the whole point. \xFF\xFE bad bytes\n"
       code, _out, err = run(["check", "-"], stdin_text: bad_bytes)

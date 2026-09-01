@@ -10,7 +10,8 @@ require_relative "output"
 module Sloplint
   # Command-line shell: optparse, subcommands, exit codes. See docs/SPEC.md.
   #
-  # Exit codes: 0 ran/no notes, 1 ran/notes found, 2 bad arguments.
+  # Exit codes: 0 ran/no notes, 1 ran/notes found, 2 bad arguments. Empty
+  # input is a 2 as well: an unread draft must not report as a clean one.
   module CLI
     module_function
 
@@ -68,7 +69,7 @@ module Sloplint
       paths = argv.empty? ? ["-"] : argv
       by_path = paths.reject { |x| x == "-" }.size > 1
 
-      all_notes = []
+      sources = []
       paths.each do |path|
         text =
           if path == "-"
@@ -80,8 +81,21 @@ module Sloplint
             end
             File.read(path)
           end
-        label = path == "-" ? "-" : path
-        all_notes.concat(Engine.scan(text, rules:, markdown:, path: label))
+        sources << [path == "-" ? "-" : path, text]
+      end
+
+      # Tested on the raw text, before --markdown blanks code and URLs: a file
+      # that holds only a fenced code block did arrive, and scanning it clean
+      # is right. Nothing arriving at all is the trap -- the same one a
+      # mistyped rule id sets, and it exits 2 for the same reason.
+      if sources.all? { |_, text| text.strip.empty? }
+        names = sources.map { |label, _| label == "-" ? "stdin" : label }
+        err.puts("sloplint: empty input: nothing to check in #{names.join(", ")}")
+        return 2
+      end
+
+      all_notes = sources.flat_map do |label, text|
+        Engine.scan(text, rules:, markdown:, path: label)
       end
 
       case opts[:format]
@@ -93,7 +107,10 @@ module Sloplint
       end
 
       all_notes.empty? ? 0 : 1
-    rescue ArgumentError => e
+    # Invalid UTF-8 reaches this two ways: String#strip in the empty check
+    # raises Encoding::CompatibilityError, the engine's regexes raise
+    # ArgumentError. Both are the same thing to the reader.
+    rescue ArgumentError, Encoding::CompatibilityError => e
       err.puts("sloplint: invalid input: #{e.message}")
       2
     end
@@ -187,7 +204,7 @@ module Sloplint
 
           # Recommended for agents:
           cat FILE | sloplint check --markdown -o json -
-          # exit 0 = clean, 1 = notes found, >1 = error
+          # exit 0 = clean, 1 = notes found, >1 = error (empty input is an error)
           # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion}
 
           usage: sloplint [-o full|json] [command] [args]

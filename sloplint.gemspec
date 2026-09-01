@@ -32,8 +32,8 @@ Gem::Specification.new do |spec|
   # -- and RubyGems' own file resolution after it -- independent of the
   # caller's cwd.
   Dir.chdir(__dir__)
-  spec.files = Dir["lib/**/*.rb", "bin/*", "docs/SPEC.md", "LICENSE", "README.md", "CHANGELOG.md"]
-  spec.bindir      = "bin"
+  spec.files = Dir["lib/**/*.rb", "exe/*", "docs/SPEC.md", "LICENSE", "README.md", "CHANGELOG.md"]
+  spec.bindir      = "exe"
   spec.executables = ["sloplint"]
   spec.require_paths = ["lib"]
 

@@ -93,13 +93,15 @@ dependencies at runtime.
 Rationale: rules are regexes; the whole thing is a scanner plus an output
 formatter. A dependency-free `gem install sloplint` is the robust, boring
 choice. The name is free on RubyGems (taken on PyPI, so this also sidesteps the
-collision). Ships a `sloplint` executable via the gemspec's `bin`.
+collision). Ships a `sloplint` executable from `exe/` (claude.ai rejects a
+plugin with a top-level `bin/`, and sloplint ships as a Claude Code plugin
+too).
 
 Package layout (standard gem):
 
 ```
 sloplint/
-  bin/sloplint             # thin shim: require "sloplint/cli"; exit Sloplint::CLI.run(ARGV)
+  exe/sloplint             # thin shim: require "sloplint/cli"; exit Sloplint::CLI.run(ARGV)
   lib/sloplint.rb          # requires the pieces below
   lib/sloplint/version.rb
   lib/sloplint/cli.rb      # optparse, subcommands, exit codes
@@ -160,6 +162,11 @@ Three codes carry the contract. A crash just exits nonzero on its own.
 | 0    | ran, **no notes** |
 | 1    | ran, **notes found** |
 | 2    | bad arguments / usage error |
+
+Empty or whitespace-only input is exit 2, like a mistyped rule id: a scan of
+nothing must not report as a clean scan. The text is tested before
+`--markdown` blanks code and URLs, so a file that holds only a fenced code
+block still exits 0. Only when every source is empty.
 
 ## Note (the diagnostic object)
 
