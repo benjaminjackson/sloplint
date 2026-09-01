@@ -154,11 +154,11 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## The rule catalog
 
-60 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+61 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
 - **rhetorical-tic** (44) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `thats-the-whole`, `thats-how-x`, `announced-takeaway`, `exact-exactly`, `load-bearing`, `intersection-of`, `you-already-know`, `sit-with-that`, `hold-onto-that`, `cleanly`, `clean-count`, `cleanest-x`, `clean-x`, `not-nothing`, `is-is` (doubled copula), `if-im-being-honest` (the candor preamble, from slopwash.com's "false intimacy"), `and-nothing-else` (the trailing "…, and nothing else"), `honestly`, `honest-x`, `most-honest-x` (the honesty family, built the same way as the four `clean` rules above), `impact-verb` ("the outage impacted four thousand accounts"), `impact-noun-bare` ("the impact of X", at `info` because research prose uses it straight), and more.
 - **puffery** (6) five from Wikipedia's "signs of AI writing" — `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights` — plus `impact-noun-vague` ("a significant impact", "make an impact").
-- **structure** (9) `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `isnt-x-its-y` (the same corrective split across two clauses: "It isn't the tool. It's the habit."), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), `question-isnt` (the corrective frame in interrogative dress), `less-about-more-about`, `trailing-significance-participle` (the "…, showcasing its importance" clause), and `rule-of-three`.
+- **structure** (10) `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `isnt-x-its-y` (the same corrective split across two clauses: "It isn't the tool. It's the habit."), `not-by-x-but-by-y` (the corrective on a repeated preposition: "not by luck, but by design"), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), `question-isnt` (the corrective frame in interrogative dress), `less-about-more-about`, `trailing-significance-participle` (the "…, showcasing its importance" clause), and `rule-of-three`.
 - **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
 
 Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.

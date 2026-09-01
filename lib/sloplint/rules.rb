@@ -1802,6 +1802,55 @@ module Sloplint
                  "the shape, not a verdict."
     ),
     Rule.new(
+      id: "not-by-x-but-by-y",
+      category: "structure",
+      severity: "info",
+      # The corrective built on a repeated preposition: "not by A, but by B",
+      # "not from A but from B". The copula rules above cannot see it because
+      # nothing precedes "not" but the verb or a dash, so the anchor here is
+      # the preposition itself, which must repeat after "but". That repetition
+      # is the whole narrowing: a different preposition on the B side is a
+      # concession or an afterthought, not a correction.
+      #
+      # A is capped at six words and B may not open with a pronoun. Neither
+      # guard removes a false positive -- every corpus hit is the real shape
+      # -- they only keep the match from running across a sentence.
+      pattern: /\bnot(?:[ \t]|\r?\n(?!\s*\n))+
+                 (?<prep>by|for|from|with|about|in|on|at|to|of|through|because(?:[ \t]|\r?\n(?!\s*\n))+of|out(?:[ \t]|\r?\n(?!\s*\n))+of)
+                 (?:[ \t]|\r?\n(?!\s*\n))+
+                 (?:[\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+){0,5}[\w'’-]+
+                 ,?(?:[ \t]|\r?\n(?!\s*\n))+but(?:[ \t]|\r?\n(?!\s*\n))+
+                 (?:rather(?:[ \t]|\r?\n(?!\s*\n))+)?
+                 \k<prep>(?:[ \t]|\r?\n(?!\s*\n))+
+                 (?!that\b|this\b|it\b|him\b|her\b|them\b|me\b|us\b|you\b|which\b|whom\b|what\b)
+                 (?:a\s+|an\s+|the\s+)?[\w'’-]+/ix,
+      message: '"not by A, but by B" is the corrective frame on a repeated preposition.',
+      suggestion: "Say what it was by; drop the 'not by… but by' frame.",
+      examples_bad: [
+        "We won not by luck but by preparation.",
+        "The gain came not from the model, but from the data.",
+        "Judge it not on the demo but on the deployment.",
+        "Revenue grew this quarter — not by a rounding error, but by a margin that survives any cut of the data."
+      ],
+      examples_ok: [
+        # The preposition changes: a contrast, not a correction.
+        "He came not for the money but with an apology.",
+        # B-side pronoun.
+        "She wrote not to him but to them.",
+        # A capped at six words.
+        "The deal closed not in the long slow grind of the seventh week, but in an afternoon.",
+        # "not only" belongs to the escalation rules, and the B preposition here would not repeat anyway.
+        "It was not only for the money.",
+        # A paragraph break ends the frame.
+        "We won not by luck\n\nBut by then it hardly mattered."
+      ],
+      rationale: "The 'not A but B' corrective with the copula swapped for a repeated " \
+                 "preposition, which is how a model corrects a claim about means or " \
+                 "cause ('not by luck, but by design'). People write it too -- Thoreau " \
+                 "and Melville both lean on it -- so the rule ships at info. It reports " \
+                 "the shape; a human reader decides whether it earned its place."
+    ),
+    Rule.new(
       id: "rule-of-three",
       category: "structure",
       severity: "info",

@@ -15,6 +15,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the scanner and reports what it returns. The skill refuses to assess prose
   on its own when the scanner cannot run, because a review with no scan
   behind it reads exactly like one with a scan behind it.
+- `not-by-x-but-by-y`: the corrective frame on a repeated preposition, "not
+  by luck, but by design". The copula rules cannot see it because nothing
+  anchors "not" but a verb or a dash, so the anchor is the preposition, which
+  must repeat after "but". Ships at `info`: Thoreau and Melville write it too.
 
 ### Fixed
 
