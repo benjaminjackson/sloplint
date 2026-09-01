@@ -71,15 +71,20 @@ module Sloplint
 
       sources = []
       paths.each do |path|
+        # Read as UTF-8 whatever the locale says. A sandbox with no LANG set
+        # leaves Ruby's default external encoding at US-ASCII, and then the
+        # first em dash raises "invalid byte sequence in US-ASCII" -- on prose
+        # that is perfectly valid UTF-8. Prose is the only input sloplint
+        # takes, so UTF-8 is the assumption, not the locale's guess.
         text =
           if path == "-"
-            stdin.read
+            stdin.read.force_encoding(Encoding::UTF_8)
           else
             unless File.file?(path)
               err.puts("sloplint: no such file: #{path}")
               return 2
             end
-            File.read(path)
+            File.read(path, encoding: Encoding::UTF_8)
           end
         sources << [path == "-" ? "-" : path, text]
       end

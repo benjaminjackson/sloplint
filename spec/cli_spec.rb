@@ -2,6 +2,8 @@
 
 require "stringio"
 require "tempfile"
+require "English"
+require "rbconfig"
 
 RSpec.describe Sloplint::CLI do
   def run(argv, stdin_text: "")
@@ -87,6 +89,22 @@ RSpec.describe Sloplint::CLI do
         f.close
         code, = run(["check", "--markdown", f.path])
         expect(code).to eq(0)
+      end
+    end
+
+    it "scans an em dash under a locale-less environment" do
+      # Cowork's sandbox sets no LANG, so Ruby's default external encoding is
+      # US-ASCII and every read of ordinary prose used to die on the first
+      # non-ASCII character. Spawned rather than called in-process: nothing
+      # short of a real environment reproduces it.
+      Tempfile.create(["doc", ".md"]) do |f|
+        f.write("A sentence — with an em dash.\n")
+        f.close
+        exe = File.expand_path("../exe/sloplint", __dir__)
+        out = IO.popen({ "LC_ALL" => "C", "LANG" => "C" },
+                       [RbConfig.ruby, exe, "check", "-o", "json", f.path], &:read)
+        expect($CHILD_STATUS.exitstatus).to eq(1)
+        expect(out).to include("em-dash")
       end
     end
 

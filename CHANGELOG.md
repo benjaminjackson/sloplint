@@ -16,9 +16,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   on its own when the scanner cannot run, because a review with no scan
   behind it reads exactly like one with a scan behind it.
 
+### Fixed
+
+- `check` now reads files and stdin as UTF-8 whatever the locale says. A
+  sandbox with no `LANG` set — Claude Cowork's, among others — leaves Ruby's
+  default external encoding at US-ASCII, and the first em dash in a draft then
+  failed the whole scan with `invalid input: invalid byte sequence in
+  US-ASCII`. Prose is the only input sloplint takes, so UTF-8 is the
+  assumption rather than the locale's guess. Genuinely invalid UTF-8 is still
+  exit 2.
+
 ### Changed
 
-- Empty or whitespace-only input is now exit 2 with `empty input: nothing to
+- Empty or whitespace-only input
+ is now exit 2 with `empty input: nothing to
   check in ...`, instead of exit 0. Reporting a scan of nothing as a clean
   scan is the same trap a mistyped rule id sets, and gets the same answer. The
   text is tested before `--markdown` blanks code and URLs, so a file holding
