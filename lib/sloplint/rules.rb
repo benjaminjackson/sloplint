@@ -297,6 +297,40 @@ module Sloplint
                  "in a person. Careful writers finish the clause."
     ),
     Rule.new(
+      id: "abstract-lives-in",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # An abstraction given an address: "the craft that lives between the two
+      # desks", "its context lives in a folder nobody else can open", "the
+      # value sits in the follow-up". The subject list is closed and abstract, so a person, a
+      # dog, or a house living or sitting somewhere never matches. The
+      # preposition list leaves out "with", because "the decision sits with
+      # the board" and "the risk lives with the buyer" are ordinary business
+      # and legal English for who is responsible.
+      pattern: /\b(?:work|context|knowledge|answer|value|truth|problem|risk|decision|instructions?|memory|leverage|power|magic|difference|opportunity|insight|advantage|gap|signal|nuance|meaning|tension|friction|complexity|craft|skill|expertise)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:that(?:[ \t]|\r?\n(?!\s*\n))+|which(?:[ \t]|\r?\n(?!\s*\n))+)?(?:lives?|lived|sits?|sat)(?:[ \t]|\r?\n(?!\s*\n))+(?:in|between|inside|outside|beneath|behind|under|underneath|at)\b/ix,
+      message: "An abstraction that lives/sits somewhere is an AI figure.",
+      suggestion: "Say who does the work, or where the thing actually is.",
+      examples_bad: [
+        "The craft that lives between the two desks is where the handoff fails.",
+        "Its context lives in a folder nobody else can open.",
+        "The real value sits in the follow-up, not the meeting."
+      ],
+      examples_ok: [
+        "She lives in Boston and sits between us at dinner.",
+        # Responsibility, not location.
+        "The decision sits with the board.",
+        "The risk lives with the buyer once the goods ship.",
+        "The knowledge base lived on a server in the basement.",
+        "He put the answer in the margin and sat between the two of them."
+      ],
+      rationale: "Giving an idea a location ('the value sits in', 'the work lives " \
+                 "between') lets a writer sound precise about where something is without " \
+                 "saying who does it or what it is. Models reach for it constantly; in " \
+                 "human prose the verbs keep their literal subjects, and responsibility " \
+                 "takes 'with', which is left out."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",
