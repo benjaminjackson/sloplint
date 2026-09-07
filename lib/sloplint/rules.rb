@@ -179,6 +179,77 @@ module Sloplint
                  "the case to check before acting."
     ),
     Rule.new(
+      id: "one-x-one-y",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Three or more "one X" items in a comma chain that stands on its own:
+      # "One owner, one repository, one weekly prune." or, after a colon,
+      # "the setup is narrow: one reviewer, one queue, one deadline". The
+      # determiner is the cadence; the comma is the evidence of authored
+      # parallelism, as in no-x-no-y.
+      #
+      # The chain must open a sentence or follow a colon, semicolon or dash.
+      # That is the narrowing that separates the drumbeat from counting: "the
+      # flat has one bedroom, one bathroom, one balcony" and "add one egg, one
+      # onion, one carrot" hang off a verb, and there the word is doing
+      # arithmetic. Each item is "one" plus one or two letter-led words (never
+      # "and"/"or"), so an enumeration over numbers is not a chain; the
+      # Oxford comma is optional after the first link; a gap may cross a
+      # hard-wrapped newline but never a paragraph break; and the last item
+      # must run into punctuation, a joining word, or the end of the text, so
+      # the excerpt never carries the opening of the next clause. The
+      # distributive "one for you, one for me, one for the pot" is skipped at
+      # any length, and a pair never flags: two is distribution, three is a
+      # drumbeat.
+      #
+      # Verse keeps the shape on purpose ("One face, one voice, one habit, and
+      # two persons"), and that is an accepted cost.
+      pattern: /(?:^|(?<=[.!?:;—–])[ \t]{1,2})\K
+                one[ \t]+(?=[a-z])[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?=[a-z])[\w'’-]+)?
+                ,(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+)?
+                one[ \t]+(?=[a-z])[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?=[a-z])[\w'’-]+)?
+                (?:(?:,(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+)?|(?:[ \t]|\r?\n(?!\s*\n))+and(?:[ \t]|\r?\n(?!\s*\n))+)
+                   one[ \t]+(?=[a-z])[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?=[a-z])[\w'’-]+)?)+
+                (?=[^\w\s'’-]|\s+(?:and|or|but|in|on|at|by|with|for|to|of|from|per|each|that|which|who|when|where|so|because|is|are|was|were)\b|\s*\z)/ix,
+      message: '"one X, one Y, one Z" chain (%{count} items) reads as AI cadence.',
+      suggestion: "Cut the chain or make it one plain sentence.",
+      # Item heads only, so a "one" inside an item is not an item.
+      count_group: /(?:\A|,\s+(?:and\s+)?|\s+and\s+)one\b/i,
+      # The distributive frame, at any length.
+      skip: [/(?:\bone\s+for\b[\s\S]*?){3}/i],
+      examples_bad: [
+        "The setup is deliberately narrow: one reviewer, one queue, one deadline.",
+        "One owner, one repository, one weekly prune.",
+        # No Oxford comma.
+        "One name, one number and one date.",
+        # A curly apostrophe is a word character here.
+        "One team’s lead, one owner, one date.",
+        # A hard-wrapped chain survives one newline.
+        "One owner, one repository,\none weekly prune."
+      ],
+      examples_ok: [
+        "One for you, one for me.",
+        "One for you, one for me, one for the pot.",
+        "We keep three bins: one for 2019, one for 2020, one for 2021.",
+        "One of them left, and the other one stayed.",
+        # After a verb the word is counting.
+        "The flat has one bedroom, one bathroom, one balcony.",
+        "Add one egg, one onion, one carrot and simmer for an hour.",
+        "The season ended with one win, one loss, one draw.",
+        # Essays: First Series (Emerson, public domain): not at a clause start.
+        "Not for nothing one face, one character, one fact, makes much impression on him",
+        # Items in separate sentences never chain.
+        "One person wrote it. One person read it. One person filed it.",
+        # A paragraph break ends the chain.
+        "He carried one bag, one coat,\n\nOne question remained unanswered."
+      ],
+      rationale: "A drumbeat of 'one' items is a model's way of making a setup sound " \
+                 "spare and inevitable; the word does no counting, it sets a rhythm. " \
+                 "The chain has to stand on its own, at a sentence start or after a " \
+                 "colon, because after a verb the word is counting and the shape is " \
+                 "ordinary. Careful writers distribute in pairs and rarely stack three."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",
