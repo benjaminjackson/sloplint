@@ -420,6 +420,68 @@ module Sloplint
                  "delivers a tautology. Careful writers say what the second thing is."
     ),
     Rule.new(
+      id: "same-determiner-chain",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The quiet cousin of one-x-one-y and no-x-no-y: three or more items in
+      # a comma chain that all open on the same determiner or quantifier,
+      # caught with a backreference: "every faculty, every thought, every
+      # emotion", "your inbox, your calendar, your task list", "more work,
+      # more meetings, more email". "one" and "no" are left to their own
+      # rules. The narrative possessives (my, his, her, their, its) are left
+      # out: "his fame, his position, his life" is every novelist's, and it
+      # doubled the human rate. Ships at info because this is a rhetorical
+      # device humans own too, Emerson above all; a model uses it the way it
+      # uses the others, as a default cadence, and several in one draft is
+      # the tell. The Oxford comma is optional after the first link, a gap may
+      # cross a hard-wrapped newline but never a paragraph break, and the last
+      # item must run into punctuation, a joining word, a modal or common
+      # verb, or the end of the text. A verb or adverb the list does not know
+      # can still be swallowed as the last item's second word ("every deploy
+      # today"); the count is right and the over-reach is one word. The
+      # letter-led guards are case-sensitive on purpose: under /i they would
+      # let "New York, New Jersey, New Hampshire" through as a chain.
+      pattern: /\b(every|each|your|our|more|less|fewer|same|any|another|zero|new|real|true)[ \t]+(?-i:(?=[a-z]))[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?-i:(?=[a-z]))[\w'’-]+)?
+                ,(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+)?
+                \1[ \t]+(?-i:(?=[a-z]))[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?-i:(?=[a-z]))[\w'’-]+)?
+                (?:(?:,(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+)?|(?:[ \t]|\r?\n(?!\s*\n))+and(?:[ \t]|\r?\n(?!\s*\n))+)
+                   \1[ \t]+(?-i:(?=[a-z]))[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?-i:(?=[a-z]))[\w'’-]+)?)+
+                (?=[^\w\s'’-]|\s+(?:and|or|but|in|on|at|by|with|for|to|of|from|per|than|that|which|who|when|where|so|because|is|are|was|were|will|would|can|could|should|must|may|might|has|have|had|do|does|did|all|every|each|need|needs|make|makes|bring|brings|matter|matters|today|now|then|here|there)\b|\s*\z)/ix,
+      message: 'Repeated-determiner chain (%{count} items) reads as AI cadence.',
+      suggestion: "Cut the chain or make it one plain sentence.",
+      count_group: /(?:\A|,\s+(?:and\s+)?|\s+and\s+)(?:every|each|your|our|more|less|fewer|same|any|another|zero|new|real|true)\b/i,
+      examples_bad: [
+        "It touches every file, every branch, every deploy.",
+        "You get more work, more meetings, and more email.",
+        "Your inbox, your calendar, your task list.",
+        # No Oxford comma.
+        "It touches every file, every branch and every deploy.",
+        # A chain as the subject of a clause.
+        "Every test, every lint, every build must pass.",
+        "You get more work, more meetings, and more email every day.",
+        # A hard-wrapped chain survives one newline.
+        "Every file, every branch,\nevery deploy."
+      ],
+      examples_ok: [
+        "Every file and every branch was checked.",
+        # Two items is a pair, not a chain.
+        "Every file, every branch.",
+        # The determiner must repeat; a mixed list is a list.
+        "Every file, each branch, and some deploys.",
+        "We bought more bread, some milk, and a dozen eggs.",
+        # A paragraph break ends the chain.
+        "Every file, every branch,\n\nEvery deploy was checked twice.",
+        # Narrative possessives are left out.
+        "His coat, his hat, his gloves.",
+        # Proper nouns are not a chain.
+        "We visited New York, New Jersey, and New Hampshire."
+      ],
+      rationale: "A comma chain of items opening on the same determiner is a drumbeat, " \
+                 "and a model falls into it as a default cadence. It is also a device " \
+                 "careful writers use on purpose, so one is a question, not a verdict; " \
+                 "when a draft carries several, read the family as a warning."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",
