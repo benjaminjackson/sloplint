@@ -156,6 +156,44 @@ module Sloplint
                  "question; several in a draft should be read as a warning."
     ),
     Rule.new(
+      id: "bare-equative",
+      category: "rhetorical-tic",
+      severity: "info",
+      # A sentence that opens on an abstract head noun and equates it with
+      # something: "The unit is the rate.", "The tell is the periodicity.",
+      # "The problem here is the handoff." The head noun list is closed and
+      # abstract, the sentence must start on "The", and the copula must be
+      # followed by "the" (or "not the"), so a predicate adjective ("The
+      # problem is real") or an indefinite ("The answer is a mess") is out,
+      # and so is a pronoun-like complement ("the same", "the one", "the
+      # first"), which points rather than defines.
+      # Ships at info: "The problem is the cost" is how people write too, at
+      # five per million words on Hacker News; it is the density that tells.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})The(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:tell|point|question|problem|issue|lesson|difference|trick|move|job|work|risk|cost|goal|reason|pattern|insight|takeaway|shift|bet|catch|gap|bottleneck|unit|answer|signal|test|fix|failure|mistake|secret|magic|key|story|game)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:here(?:[ \t]|\r?\n(?!\s*\n))+)?is(?:[ \t]|\r?\n(?!\s*\n))+(?:not(?:[ \t]|\r?\n(?!\s*\n))+)?the(?:[ \t]|\r?\n(?!\s*\n))+(?!(?:one|same|only|first|last|best|worst|next|other|latter|former)\b)(?=[a-z])/x,
+      message: '"The X is the Y." is the AI definitional equative.',
+      suggestion: "Say what the thing does or why it matters, instead of what it equals.",
+      examples_bad: [
+        "The unit is the rate, not the sentence.",
+        "The tell here is the periodicity.",
+        "The problem is not the tool. It is the habit."
+      ],
+      examples_ok: [
+        "The problem is real.",
+        "The answer is a mess of caveats.",
+        # Not at a sentence start.
+        "We think the problem is the handoff.",
+        "The key is under the mat.",
+        "The story is the one she told last week.",
+        "The reason is the same: space."
+      ],
+      rationale: "Opening on an abstract noun and equating it with a second noun phrase " \
+                 "states a diagnosis as a definition, which sounds settled and explains " \
+                 "nothing. People write the shape too, so one is a question; several in " \
+                 "a draft should be read as a warning."
+    ),
+    Rule.new(
       id: "did-not-x-did-not-y",
       category: "rhetorical-tic",
       severity: "warning",

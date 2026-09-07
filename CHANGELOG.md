@@ -162,6 +162,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pre-2022 Hacker News, nothing in public-domain prose. Several in a draft
   should be read as a warning.
 
+- `bare-equative` (rhetorical-tic, info) flags a sentence that opens on an
+  abstract head noun and equates it with a definite noun phrase: "The unit
+  is the rate.", "The tell here is the periodicity." The copula must be
+  followed by "the", so "The problem is real" and "The answer is a mess" are
+  out, and so is a pointing complement ("the same", "the one"). Ships at
+  info: four per million words of pre-2022 Hacker News,
+  nothing in public-domain prose. Several in a draft should be read as a
+  warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and

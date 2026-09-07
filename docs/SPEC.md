@@ -286,6 +286,7 @@ false-positive risk, which none has demonstrated.
 | `abstract-lives-in` | an abstract noun that "lives/sits in/between/inside/…" | closed subject list; capitalised subjects skipped; "with" (responsibility), "at" (quantity), "lies in" and "resides in" left out; `info` |
 | `the-x-is-the-x` | "the X … is the X …": the same abstract head noun on both sides of the copula | backreference; closed list of heads that cannot name an object (key, cost, unit are out); the clause between is capped at 50 chars and may not hold a comma, semicolon or colon; the second head must be followed by a preposition, determiner, quantifier, pronoun, plural noun or punctuation, so compounds are out; "isn't" counts |
 | `same-determiner-chain` | 3+ comma-separated items opening on the same determiner or quantifier (every, each, your, more, …) | backreference; counts items; "one" and "no" left to their own rules; the narrative possessives (my, his, her, their, its) left out; items lowercase-led, so proper nouns are not a chain; `info` |
+| `bare-equative` | sentence-initial "The N (here) is (not) the …" with an abstract head noun | closed noun list; the copula must be followed by "the", so predicate adjectives and indefinites are out, and "the same/one/first/…" is out; `info` |
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
 | `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |
