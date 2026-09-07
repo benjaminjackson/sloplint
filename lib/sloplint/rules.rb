@@ -1094,45 +1094,46 @@ module Sloplint
       id: "exact-exactly",
       category: "rhetorical-tic",
       severity: "info",
-      # The allow-list was a list of specific nouns, and technical prose showed
-      # that the real division is not lexical but grammatical: "exact" in front
-      # of a quantity an instrument could read is doing work ("the exact
-      # diameter of the finished rim", "the exact blade pitch angle"), and so
-      # is "exactly" in front of a fact someone went and determined ("could not
-      # be determined exactly when", "reamed exactly to the right size"). The
-      # tell is the bare intensifier on a claim with nothing behind it.
+      # Rewritten after 2.2M words of technical prose left ~111 of 125 hits
+      # false. The shape was the problem, not the entries: the pattern matched
+      # "exact" everywhere and subtracted an allow-list, and an open pattern
+      # with a growing exception list can never close over a common word.
+      # Machining and investigation prose puts "exact" in front of anything an
+      # instrument reads -- diameter, pitch angle, CPU time, blade setting,
+      # five threads, perpendicular, on center -- so each addition bought one
+      # false positive and risked silencing the cliche sitting behind it.
       #
-      # So the allow-list now carries the measurement nouns as a class, and a
-      # second branch clears "exactly" before an interrogative or a
-      # to-phrase. What is left is the reflexive emphasis the rule was written
-      # for: "exactly the point", "exactly right", "exactly why".
-      pattern: /\bexact(?:ly)?\b
-                (?!\s*(?:
-                     # Tier one, unchanged: the original allow-list, matched
-                     # tight so no modifier can reach past it.
-                     (?:the\s+)?
-                     (?:same|opposite|science|change|replica|cop(?:y|ies)|
-                        location|coordinates|way)\b
-                   |[$\d]|noon\b|midnight\b|o'?\s*clock\b
-                     # Tier two: a quantity an instrument reads. These take a
-                     # modifier window ("the exact blade pitch angle"), which
-                     # tier one must not, or the window reaches the clichés
-                     # ("exactly the wrong time", "exactly the right words").
-                   |(?:the\s+|a\s+|an\s+)?(?:[\w-]+\s+){0,2}
-                     (?:diameter|radius|circumference|size|dimensions?|
-                        length|width|height|depth|thickness|gauge|
-                        weight|mass|volume|density|
-                        angle|pitch|bearing|heading|azimuth|
-                        temperature|pressure|voltage|frequency|wavelength|
-                        speed|velocity|altitude|elevation|
-                        position|coordinates|distance|clearance|tolerance|
-                        quantity|match(?:es)?|duplicate)\b
-                     # "exactly when the fire began", "exactly how far it fell"
-                   |when\b|where\b|how\s+(?:much|many|far|long|fast|deep)\b
-                     # "rolled exactly to weight", "reamed exactly to size"
-                   |to\s+(?:the\s+)?
-                     (?:right|correct|nearest|specified|required|
-                        weight|size|scale|length|gauge|tolerance)\b))/ix,
+      # So the rule now matches the tell instead, and the tell is a small
+      # closed set of frames: a demonstrative copula carrying the intensifier
+      # ("that's exactly", "this is exactly the kind of"), the bare evaluative
+      # complement ("exactly right"), the deictic noun ("exactly the point",
+      # "the exact problem"), and a knowing verb plus a wh-word ("I know
+      # exactly why"). Everything else is silent by construction rather than
+      # by exception.
+      #
+      # Two recall losses, both deliberate. "exactly the right words" is the
+      # tell and "reamed to exactly the right size" is a measurement, and they
+      # differ only in their subject, which a regex cannot see -- so that
+      # frame stays out unless a copula carries it. And "determined exactly
+      # when" is precise where "know exactly why" is filler, so only the
+      # knowing verbs take the wh-branch.
+      pattern: /\b(?:
+                  # "That's exactly ...", "This is exactly the kind of ..."
+                  (?:that|this|it|these|those|which|here|there)
+                    (?:'s|\u2019s|\s+(?:is|was|are|were))\s+
+                    (?:the\s+)?exact(?:ly)?\b
+                  # "exactly right", "exactly backwards"
+                | exactly\s+(?:right|wrong|backwards|so)\b
+                  # "exactly the point", "the exact problem"
+                | exactly\s+the\s+
+                    (?:point|problem|issue|reason|kind|sort|type|thing|
+                       question|shape|word)\b
+                | the\s+exact\s+
+                    (?:point|problem|issue|reason|thing|question|shape)\b
+                  # "I know exactly why this happened"
+                | know(?:s|n)?\s+exactly\s+(?:why|what|how|who)\b
+                | knew\s+exactly\s+(?:why|what|how|who)\b
+                )/ix,
       message: '"exact/exactly" is reflexive emphasis unless it names something checkable.',
       suggestion: "Cut it, or replace with the number, name, or match it's supposed to be precise about.",
       examples_bad: [
@@ -2747,7 +2748,15 @@ module Sloplint
       # nothing. A draft where most paragraphs end this way is the tell, and
       # an agent that sees the flag repeat should read the family as a
       # warning.
-      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,}[.!?][ \t]{1,2}\K
+      # The long-sentence prefix is wrapped in an atomic group. Its branches
+      # cannot match [.!?], so the greedy run always ends at the first
+      # sentence-ending punctuation or paragraph break and no shorter partition
+      # can ever satisfy the [.!?] that follows -- backtracking into it only
+      # ever fails. Without (?>...) it fails slowly: PDF-extracted prose with
+      # long unpunctuated stretches (the Columbia report has an 864-character
+      # one) sent this into catastrophic backtracking, 62 seconds for a 2 KB
+      # window and no completion on the 1.1 MB document.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?>(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,})[.!?][ \t]{1,2}\K
                 (?:Nothing|Most|None|Everything|Everyone|Nobody|Then|Neither|Both|That|This|It)
                 (?:,?(?:[ \t]|\r?\n(?!\s*\n))+[\w'’-]+){1,7}[.!?](?=[ \t]*(?:\r?\n[ \t]*(?:\r?\n|\z)|\z))/x,
       message: "A short quantifier-led closer after a long sentence is the AI kicker.",
