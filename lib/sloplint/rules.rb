@@ -2200,6 +2200,61 @@ module Sloplint
                  "or give the problem its own sentence."
     ),
     Rule.new(
+      id: "np-fragment-and",
+      category: "structure",
+      severity: "info",
+      # A whole sentence that is two noun phrases and an "and": "A named owner
+      # and a quarterly review." It is the fix half of a model's
+      # problem-then-fix pair, with the verb left for the reader to supply.
+      # The sentence must open on A/An/One at a sentence start or after a
+      # list marker (the pair's usual habitat is a bulleted list), the second
+      # phrase must open on a/an/one, each phrase is one to three words, and
+      # nothing else may be in the sentence. No auxiliary or modal may appear
+      # anywhere in it, contractions included, so "A man and a woman were
+      # there." and "A man and a woman aren't here." never match.
+      #
+      # Ships at info, and this is why: a lexical verb is invisible to the
+      # pattern, so "A car and a truck collided." has the same shape and
+      # flags. The corpora say that sentence is rare (one hit in 1.25M words
+      # of public-domain prose, most of it narrative), but it is a complete
+      # sentence, and nothing a regex can see separates it from the fragment.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?:[-*+•][ \t]+|\d+[.)][ \t]+)?\K(?:A|An|One)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?!(?:(?:is|are|was|were|be|been|being|am|has|have|had|having|does|do|did|can|could|will|would|shall|should|must|may|might|ought|ain)(?![\w'’-])|\w+n['’]t(?![\w'’-])))[\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+){0,2}(?!(?:(?:is|are|was|were|be|been|being|am|has|have|had|having|does|do|did|can|could|will|would|shall|should|must|may|might|ought|ain)(?![\w'’-])|\w+n['’]t(?![\w'’-])))[\w'’-]+,?(?:[ \t]|\r?\n(?!\s*\n))+and(?:[ \t]|\r?\n(?!\s*\n))+(?:a|an|one)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?!(?:(?:is|are|was|were|be|been|being|am|has|have|had|having|does|do|did|can|could|will|would|shall|should|must|may|might|ought|ain)(?![\w'’-])|\w+n['’]t(?![\w'’-])))[\w'’-]+(?:(?:[ \t]|\r?\n(?!\s*\n))+|(?=\.))){1,3}\.(?=\s|\z)/x,
+      message: '"A X and a Y." as a whole sentence is an AI fragment.',
+      suggestion: "Give the sentence a verb, or fold it into the one before.",
+      examples_bad: [
+        "Nobody checked it after launch. A named owner and a quarterly review.",
+        "One merger and a version-controlled folder.",
+        "An owner and a deadline.",
+        # The pair's usual habitat.
+        "- A named owner and a quarterly review.",
+        "1. A named owner and a quarterly review.",
+        # A comma before "and" is still the pair.
+        "A named owner, and a quarterly review."
+      ],
+      examples_ok: [
+        "A man and a woman were waiting at the door.",
+        "A dog and a cat can share a house.",
+        # Contractions and the rarer auxiliaries are auxiliaries too.
+        "A man and a woman aren't here.",
+        "A boy and a girl shall meet.",
+        "A boy and a girl ought to know.",
+        # Not at a sentence start.
+        "We hired a designer and an engineer.",
+        # More than three words on a side is a clause, not a label.
+        "A long walk down to the river and a swim before breakfast.",
+        # Only "and" between two phrases; a list is not the pair.
+        "A hammer, a saw, and a level."
+      ],
+      rationale: "Two noun phrases and an 'and', standing as a sentence, is how a model " \
+                 "hands over a fix without committing to a verb: the reader supplies " \
+                 "'you need' or 'add'. A short sentence with a plain verb ('A car and a " \
+                 "truck collided.') has the same shape and cannot be told apart, which is " \
+                 "why this is a question rather than a verdict; a draft full of them, " \
+                 "especially as list items, should be read as a warning."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",

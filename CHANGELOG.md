@@ -104,6 +104,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   construction turns up a few of those per million words, all human. A
   draft that keeps giving ideas addresses should be read as a warning.
 
+- `np-fragment-and` (structure, info) flags a whole sentence made of two
+  noun phrases and an "and": "A named owner and a quarterly review." It is
+  the fix half of a model's problem-then-fix pair with the verb left out,
+  and its usual habitat is a bulleted list, so a list marker may open it.
+  Each phrase is one to three words, and no auxiliary or modal may appear,
+  contractions included. It ships at info because a lexical verb is
+  invisible to the pattern: "A car and a truck collided." has the same
+  shape and flags. That sentence is rare in the corpora (nothing in 2.4M
+  words of pre-2022 Hacker News, once in 1.25M words of public-domain
+  prose), but it is a sentence, so one flag is a question; a draft full of
+  them should be read as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
