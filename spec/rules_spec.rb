@@ -98,11 +98,15 @@ RSpec.describe "Sloplint::RULES" do
     # notice-what-there's ok-fixtures (pointing at something real, clean for
     # the self-referential frame) trip it at info. honest-x yields the
     # superlative degree to most-honest-x, so its fixture pinning that
-    # exclusion is by definition text most-honest-x owns. Only these three.
+    # exclusion is by definition text most-honest-x owns. is-the-whole-x
+    # yields "that/this" subjects to thats-the-whole and "entire" to
+    # is-the-entire, so the fixtures pinning those yields are text the two
+    # older rules own. Only these four.
     overlaps = {
       "em-dash-overuse" => %w[em-dash],
       "notice-what-there" => %w[notice-what],
-      "honest-x" => %w[most-honest-x]
+      "honest-x" => %w[most-honest-x],
+      "is-the-whole-x" => %w[thats-the-whole is-the-entire]
     }
 
     Sloplint::RULES.each do |owner|

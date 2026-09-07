@@ -91,6 +91,44 @@ module Sloplint
       rationale: "The 'that's the whole X' flourish is a model tic for landing a paragraph."
     ),
     Rule.new(
+      id: "is-the-whole-x",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The generic form of thats-the-whole: any subject, then "is the whole /
+      # real / actual N" with N from a closed abstract list. "That periodicity
+      # is the whole tell.", "Consistency is the real test." A subject of
+      # "that"/"this" is left to thats-the-whole, and "entire" to
+      # is-the-entire, so no sentence is reported twice. "only" is left out:
+      # "is the only thing" is ordinary speech, and it carried most of the
+      # human rate when probed, and so is "deal" ("the real deal" is an
+      # idiom). The noun may not run on into a compound ("deal-maker").
+      # Ships at info because "the real question" and "the whole point" are
+      # also how people talk.
+      pattern: /(?<![Tt]hat|[Tt]his)(?:[ \t]|\r?\n(?!\s*\n))+is(?:[ \t]|\r?\n(?!\s*\n))+the(?:[ \t]|\r?\n(?!\s*\n))+(?:whole|real|actual)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|cost|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|thing|value|skill|challenge|fix)(?![\w'’-])/ix,
+      message: '"… is the whole/real N" is a stock LLM closer.',
+      suggestion: "Say the point directly instead of ranking it.",
+      examples_bad: [
+        "That periodicity is the whole tell.",
+        "Consistency is the real test.",
+        "Getting the handoff right is the actual work."
+      ],
+      examples_ok: [
+        # Left to thats-the-whole.
+        "That is the whole point.",
+        # Left to is-the-entire.
+        "Timing is the entire game.",
+        # "only" is ordinary speech.
+        "Sleep is the only thing that helps.",
+        "The real question was never asked.",
+        "She is the real deal-maker on the team.",
+        "Clojure is the real deal, and so is the REPL."
+      ],
+      rationale: "Ranking a claim as 'the whole point' or 'the real test' is how a model " \
+                 "lands a paragraph without adding to it. People say it too, so one is a " \
+                 "question; several in a draft should be read as a warning."
+    ),
+    Rule.new(
       id: "did-not-x-did-not-y",
       category: "rhetorical-tic",
       severity: "warning",
