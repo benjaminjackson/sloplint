@@ -114,9 +114,29 @@ RSpec.describe "Sloplint::RULES" do
       end
     end
 
-    it "ends on the noun at a line end with no full stop" do
+    # The gap after "value"/"fix" may hard-wrap but never crosses a
+    # paragraph break, so the wrap column cannot change the verdict.
+    it "ends on the noun at a paragraph break with no full stop" do
       notes = Sloplint::Engine.scan("## That's the whole fix\n\nApply it and rerun the suite.")
       expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+    end
+
+    it "reads a hard-wrapped compound as the compound" do
+      expect(Sloplint::Engine.scan("That's the whole value\nchain, end to end.")).to eq([])
+      notes = Sloplint::Engine.scan("That is the whole value\nchain.")
+      expect(notes.map(&:rule)).not_to include("thats-the-whole")
+    end
+
+    it "reads a hard-wrapped tail as the closer" do
+      notes = Sloplint::Engine.scan("That's the whole fix\nfor the release.")
+      expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+    end
+
+    it "keeps a hard wrap inside \"ball game\"" do
+      ["That's the whole ball\ngame.", "That is the whole ball\ngame."].each do |text|
+        notes = Sloplint::Engine.scan(text)
+        expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+      end
     end
   end
 

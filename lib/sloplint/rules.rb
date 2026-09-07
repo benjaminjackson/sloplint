@@ -19,12 +19,15 @@ module Sloplint
   # The nouns "that's the whole N" closes on. thats-the-whole owns the
   # demonstrative form and is-the-whole-x yields it, so both patterns
   # interpolate this one fragment and the lists cannot drift. "value" and
-  # "fix" must end the sentence or the line, or run into a preposition,
+  # "fix" must end the sentence or the paragraph, or run into one of the
+  # words a closer trails off on (a preposition, "right", "though", "now"),
   # because "value chain", "value-add" and "fix list" name things; the older
-  # nouns do not compound that way. The gap before the terminator stays on
-  # the line, so a heading with no full stop still ends on the noun and the
-  # next paragraph's first word is never read as its continuation.
-  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball[ \t]+game|(?:value|fix)(?=[ \t]*(?:[^\w\s'’-]|\r?\n|\z|(?:of|to|for|in|on|at|with|here|there|behind)\b))/i
+  # nouns do not compound that way. The list of tails is an allowlist and
+  # stays one: a blocklist of compound heads would widen every time a new
+  # compound turned up. The gap before the tail may hard-wrap but never
+  # crosses a paragraph break, so "value\nchain" is still the compound, and
+  # a heading, which ends at a blank line, still ends on the noun.
+  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball(?:[ \t]|\r?\n(?![ \t]*\r?\n))+game|(?:value|fix)(?=(?:[ \t]|\r?\n(?![ \t]*\r?\n))*(?:[^\w\s'’-]|\z|\r?\n[ \t]*\r?\n|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as)\b))/i
 
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
@@ -105,6 +108,7 @@ module Sloplint
         "That's the whole value of a typed error.",
         "That's the whole fix; the cache was already right.",
         "That’s the whole value here.",
+        "That's the whole fix right there.",
         # A heading ends on the noun with no full stop.
         "## That's the whole fix\n\nApply it and rerun the suite."
       ],
@@ -114,6 +118,7 @@ module Sloplint
         "That's the whole history of the case.",
         # "value" and "fix" running on into a compound name a thing.
         "That's the whole value chain, end to end.",
+        "That's the whole value\nchain, end to end.",
         "That's the whole value-add of the consultant.",
         "That's the whole fix list for the release."
       ],
