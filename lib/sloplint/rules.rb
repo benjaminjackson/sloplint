@@ -2026,7 +2026,7 @@ module Sloplint
       # The comma-spliced antithesis on quantifier subjects: "Everyone wants
       # the dashboard, nobody maintains it." One clause opens on
       # everyone/everybody, the other on nobody/no one/none or "one N"
-      # ("everyone may ask, one editor decides"), joined by a bare comma, and
+      # ("everyone may pitch, one editor decides"), joined by a bare comma, and
       # the second clause closes the sentence. The comma splice is the
       # evidence: with "and" or "but" it is an ordinary sentence, and with a
       # period it is two. The first subject must open a clause, the two
@@ -2043,7 +2043,7 @@ module Sloplint
       suggestion: "Say which one is the problem, in its own sentence.",
       examples_bad: [
         "Everyone wants the dashboard, nobody maintains it.",
-        "Treat it like a shared intern: everyone may ask, one editor decides.",
+        "Run it like a newsroom desk: everyone may pitch, one editor decides.",
         "Nobody owns the file, everyone edits it."
       ],
       examples_ok: [
