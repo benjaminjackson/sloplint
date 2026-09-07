@@ -135,7 +135,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with a backreference. The narrative possessives (my, his, her, their, its)
   are left out, since "his fame, his position, his life" is every
   novelist's. It ships at info because the device is one humans use on
-  purpose: 7.5 per million words of pre-2022 Hacker News and 14 per million
+  purpose: about 8 per million words of pre-2022 Hacker News and 14 per
+  million
   in public-domain prose. One is a question; several in a draft should be
   read as a warning.
 

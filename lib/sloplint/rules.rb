@@ -435,14 +435,18 @@ module Sloplint
       # uses the others, as a default cadence, and several in one draft is
       # the tell. The Oxford comma is optional after the first link, a gap may
       # cross a hard-wrapped newline but never a paragraph break, and the last
-      # item must run into punctuation, a joining word, or the end of the
-      # text, so the excerpt stops at the chain.
-      pattern: /\b(every|each|your|our|more|less|fewer|same|any|another|zero|new|real|true)[ \t]+(?=[a-z])[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?=[a-z])[\w'’-]+)?
+      # item must run into punctuation, a joining word, a modal or common
+      # verb, or the end of the text. A verb or adverb the list does not know
+      # can still be swallowed as the last item's second word ("every deploy
+      # today"); the count is right and the over-reach is one word. The
+      # letter-led guards are case-sensitive on purpose: under /i they would
+      # let "New York, New Jersey, New Hampshire" through as a chain.
+      pattern: /\b(every|each|your|our|more|less|fewer|same|any|another|zero|new|real|true)[ \t]+(?-i:(?=[a-z]))[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?-i:(?=[a-z]))[\w'’-]+)?
                 ,(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+)?
-                \1[ \t]+(?=[a-z])[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?=[a-z])[\w'’-]+)?
+                \1[ \t]+(?-i:(?=[a-z]))[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?-i:(?=[a-z]))[\w'’-]+)?
                 (?:(?:,(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+)?|(?:[ \t]|\r?\n(?!\s*\n))+and(?:[ \t]|\r?\n(?!\s*\n))+)
-                   \1[ \t]+(?=[a-z])[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?=[a-z])[\w'’-]+)?)+
-                (?=[^\w\s'’-]|\s+(?:and|or|but|in|on|at|by|with|for|to|of|from|per|that|which|who|when|where|so|because|is|are|was|were)\b|\s*\z)/ix,
+                   \1[ \t]+(?-i:(?=[a-z]))[\w'’-]+(?:[ \t]+(?!and\b|or\b)(?-i:(?=[a-z]))[\w'’-]+)?)+
+                (?=[^\w\s'’-]|\s+(?:and|or|but|in|on|at|by|with|for|to|of|from|per|than|that|which|who|when|where|so|because|is|are|was|were|will|would|can|could|should|must|may|might|has|have|had|do|does|did|all|every|each|need|needs|make|makes|bring|brings|matter|matters|today|now|then|here|there)\b|\s*\z)/ix,
       message: 'Repeated-determiner chain (%{count} items) reads as AI cadence.',
       suggestion: "Cut the chain or make it one plain sentence.",
       count_group: /(?:\A|,\s+(?:and\s+)?|\s+and\s+)(?:every|each|your|our|more|less|fewer|same|any|another|zero|new|real|true)\b/i,
@@ -452,6 +456,9 @@ module Sloplint
         "Your inbox, your calendar, your task list.",
         # No Oxford comma.
         "It touches every file, every branch and every deploy.",
+        # A chain as the subject of a clause.
+        "Every test, every lint, every build must pass.",
+        "You get more work, more meetings, and more email every day.",
         # A hard-wrapped chain survives one newline.
         "Every file, every branch,\nevery deploy."
       ],
@@ -465,7 +472,9 @@ module Sloplint
         # A paragraph break ends the chain.
         "Every file, every branch,\n\nEvery deploy was checked twice.",
         # Narrative possessives are left out.
-        "His fame, his position, his life will be in my hands."
+        "His coat, his hat, his gloves.",
+        # Proper nouns are not a chain.
+        "We visited New York, New Jersey, and New Hampshire."
       ],
       rationale: "A comma chain of items opening on the same determiner is a drumbeat, " \
                  "and a model falls into it as a default cadence. It is also a device " \
