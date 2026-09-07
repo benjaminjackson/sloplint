@@ -361,7 +361,7 @@ module Sloplint
         # Essays: First Series (Emerson, public domain): not at a clause start.
         "Not for nothing one face, one character, one fact, makes much impression on him",
         # Items in separate sentences never chain.
-        "One person wrote it. One person read it. One person filed it.",
+        "One person wrote it in the morning. One person read it after lunch. One person filed it at the end of the day.",
         # A paragraph break ends the chain.
         "He carried one bag, one coat,\n\nOne question remained unanswered."
       ],
@@ -2285,7 +2285,7 @@ module Sloplint
         # The second clause needs a pronoun subject and a copula.
         "It wasn't the alarm that woke me. The dog did.",
         # The two clauses must be adjacent.
-        "It isn't the heat. Everyone says so. It's the humidity.",
+        "It isn't the heat. Everyone says so, and they have said so for years. It's the humidity.",
         # Prepositional complements are ordinary contrast.
         "The message was not to him; it was to the clerk.",
         # Pronoun complement.
@@ -2608,6 +2608,53 @@ module Sloplint
                  "about 150 per million words, so one flag means nothing; a draft " \
                  "where the flag repeats paragraph after paragraph should be read as a " \
                  "warning, and the fix is usually to delete the closer outright."
+    ),
+    Rule.new(
+      id: "short-run",
+      category: "structure",
+      severity: "info",
+      # Three consecutive sentences of thirty characters or fewer, each
+      # opening on a letter and closing on a full stop, with no quotation
+      # mark in any of them: "Nobody used it. A named owner. Then a
+      # review." The run must start at a sentence boundary and may cross a
+      # hard-wrapped newline but not a paragraph break. Dialogue is excluded by the quotation marks, a
+      # sentence with a digit in it is data rather than staccato, and a
+      # "sentence" ending on a lone capital is an initial ("Norman W."), so
+      # those are out; exclamations and questions are left out because a run
+      # of them is a different device.
+      #
+      # Ships at info. A staccato run is a device people use on purpose, at
+      # about thirty per million words on Hacker News, so one flag is a
+      # question. A draft that keeps doing it is the tell, and an agent that
+      # sees the flag repeat should read the family as a warning.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})\K(?:[A-Za-z][^.!?\n"“”0-9]{3,29}(?<![A-Z])\.(?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]*)){2}[A-Za-z][^.!?\n"“”0-9]{3,29}(?<![A-Z])\.(?=\s|\z)/,
+      message: "A run of three short sentences reads as AI staccato.",
+      suggestion: "Join two of them, or give one of them a subordinate clause.",
+      examples_bad: [
+        "Nobody used it. A named owner. Then a review.",
+        # A hard-wrapped run survives one newline.
+        "Nobody used it. A named owner.\nThen a review.",
+        "The draft sat on one desk. Nobody else saw it. So it never shipped.",
+        "Drafts only at first. Widen after a month. Two people sign off."
+      ],
+      examples_ok: [
+        "Nobody used it. A named owner and a quarterly review that the whole team can see.",
+        # Dialogue.
+        "\"Go now.\" \"I will.\" \"Then go.\"",
+        # A paragraph break ends the run.
+        "Nobody used it. A named owner.\n\nThen a review.",
+        # Questions and exclamations are a different device.
+        "Who owns it? Nobody. Who checks it? Nobody.",
+        # Two short sentences are a pair.
+        "Ship it. Then find out if it was worth the effort and the wait.",
+        # Numbers are data, and an initial is not a sentence end.
+        "Hold cash. Expected value: 1000. Expected tax: none.",
+        "Norman W. Tupper loves officer Taylor. Nobody else does."
+      ],
+      rationale: "Short sentences in a row borrow force from their rhythm, and a model " \
+                 "falls into the rhythm whenever it wants to sound decisive. People do it " \
+                 "on purpose, about thirty times per million words, so one flag is a " \
+                 "question; a draft where the flag repeats should be read as a warning."
     ),
     Rule.new(
       id: "em-dash",
