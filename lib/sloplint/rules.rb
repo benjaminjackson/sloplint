@@ -2380,6 +2380,53 @@ module Sloplint
                  "especially as list items, should be read as a warning."
     ),
     Rule.new(
+      id: "quip-question",
+      category: "structure",
+      severity: "info",
+      # The verbless question that opens a pitch: "No invite?", "New to the
+      # tool?", "Still stuck?", "Ready to start?". It must start a sentence,
+      # open on one of a short list of words, run one to four more words, and
+      # end on the question mark, with no auxiliary or contraction anywhere,
+      # so a real question ("Not what you expected?" flags, "Is it new?" does
+      # not) stays out. "Need" and "Want" are not on the list: "Need help?"
+      # is a question with its verb elided, not a verbless one. Gaps may
+      # cross a hard-wrapped newline but never a paragraph break. Ships at
+      # info: dialogue and forum replies ask the same shape of a person, and
+      # one is a question, not a verdict.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})\K(?:No|New|Still|Not|Already|Ready|Curious|Unsure|Stuck|Tired|Confused|Worried)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?!(?:is|are|was|were|has|have|had|do|does|did|can|could|will|would|should|must|may|might|am|[\w]+n['’]t)\b)[\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+){0,3}(?!(?:is|are|was|were|has|have|had|do|does|did|can|could|will|would|should|must|may|might|am|[\w]+n['’]t)\b)[\w'’-]+[ \t]*\?/x,
+      message: "A verbless opening question is a marketing-copy tell.",
+      suggestion: "Ask it as a sentence, or state what follows without the setup.",
+      examples_bad: [
+        "No invite? Start a team of your own.",
+        "New to the tool? Read the guide first.",
+        "Still stuck after that? Ask in the channel.",
+        "Ready to start?",
+        "Not what you expected?",
+        # A hard-wrapped quip survives one newline.
+        "Still\nstuck? Ask in the channel."
+      ],
+      examples_ok: [
+        "Is it new?",
+        "No, they aren't?",
+        "Not sure if it will work?",
+        # Not at a sentence start.
+        "She asked, Still unsure?",
+        # An elided verb is a question, not a quip.
+        "Need help?",
+        "Want the short version?",
+        # Too long to be a quip.
+        "Still waiting for the last batch of reviews from the other team?",
+        # A paragraph break ends it, and the question mark stays on the line.
+        "Not sure\n\nwhat happened here?",
+        "Not sure what happened\n?"
+      ],
+      rationale: "A one-line question with no verb is the hook of a landing page, and a " \
+                 "model reaches for it to open any section. People ask the same shape in " \
+                 "replies, of a product or a person, so one flag is a question; several " \
+                 "in a draft should be read as a warning."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",

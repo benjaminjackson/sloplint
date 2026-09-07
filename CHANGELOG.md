@@ -140,6 +140,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   in public-domain prose. One is a question; several in a draft should be
   read as a warning.
 
+- `quip-question` (structure, info) flags the verbless question that opens
+  a pitch: "No invite?", "New to the tool?", "Still stuck?". It must start a
+  sentence, open on one of a short list of words, and close on the question
+  mark within four more words with no auxiliary or contraction, so a real
+  question stays out; "Need" and "Want" are left off the list because "Need
+  help?" is a question with its verb elided. Ships at info: about six per
+  million words of pre-2022 Hacker News, all of them replies asking the
+  same shape of a person; nothing in public-domain prose outside Joyce's
+  dialogue. Several in a draft should be read as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
