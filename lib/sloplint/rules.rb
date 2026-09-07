@@ -16,9 +16,11 @@ module Sloplint
     end
   end
 
-  # A gap that may hard-wrap but never crosses a paragraph break, the class
-  # is-the-whole-x spells out in place.
-  WRAP_GAP = /(?:[ \t]|\r?\n(?!\s*\n))/
+  # A gap that may hard-wrap but never crosses a paragraph break. A
+  # non-breaking space is a gap too, since the editors that emit curly
+  # apostrophes emit those between words. is-the-whole-x and WHOLE_CLOSERS
+  # share it.
+  WRAP_GAP = /(?:[ \t ]|\r?\n(?!\s*\n))/
 
   # The nouns "that's the whole N" closes on. thats-the-whole owns the
   # demonstrative form and is-the-whole-x yields it, so both patterns
@@ -31,10 +33,14 @@ module Sloplint
   # of tails is an allowlist and stays one: a blocklist of compound heads
   # would widen every time a new compound turned up. A hyphen or an
   # apostrophe ends the closer only after a gap, since with no gap it is
-  # part of the compound. The gap may hard-wrap but never crosses a
-  # paragraph break, so "value\nchain" is still the compound, and a
-  # heading, which ends at a blank line, still ends on the noun.
-  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^\w\s'’-]|#{WRAP_GAP}+[^\w\s]|#{WRAP_GAP}*(?:\z|\r?\n[ \t]*\r?\n|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|it|they)\b))/i
+  # part of the compound; an emphasis marker after a gap is not an end
+  # either, since it opens the next word ("value *chain*"). A numbered
+  # list item on the next line ends the closer like a bullet does. The gap
+  # may hard-wrap but never crosses a paragraph break, so "value\nchain"
+  # is still the compound, and a heading, which ends at a blank line,
+  # still ends on the noun. The character classes are Unicode-aware, so a
+  # non-breaking space is a space and an accented letter is a letter.
+  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^[:word:][:space:]'’-]|#{WRAP_GAP}+(?:[^[:word:][:space:]*_]|\d+[.)][ \t])|#{WRAP_GAP}*(?:\z|\r?\n[ \t]*\r?\n|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|it|they)\b))/i
 
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
@@ -121,6 +127,7 @@ module Sloplint
         # hyphen joins a compound.
         "That's the whole fix -- the cache was already right.",
         "- Cache key was stale.\n- That's the whole fix\n- Tests pass.",
+        "2. That's the whole fix\n3. Tests pass.",
         # A heading ends on the noun with no full stop.
         "## That's the whole fix\n\nApply it and rerun the suite."
       ],
@@ -131,8 +138,13 @@ module Sloplint
         # "value" and "fix" running on into a compound name a thing.
         "That's the whole value chain, end to end.",
         "That's the whole value\nchain, end to end.",
+        "That's the whole value chain, end to end.",
+        "That's the whole value *chain*, end to end.",
         "That's the whole value-add of the consultant.",
-        "That's the whole fix list for the release."
+        "That's the whole value's worth.",
+        "That's the whole fix list for the release.",
+        # A paragraph break is not a gap inside the two-word noun.
+        "That's the whole ball\n\ngame."
       ],
       rationale: "The 'that's the whole X' flourish is a model tic for landing a paragraph."
     ),
@@ -159,11 +171,11 @@ module Sloplint
       # a paragraph break. Ships at info because "the real question" and
       # "the whole point" are also how people talk.
       pattern: /(?<![\w'’-])
-                (?!(?:that|this)(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+(?:whole)(?:[ \t]|\r?\n(?!\s*\n))+(?:#{WHOLE_CLOSERS})(?![\w'’-]))
+                (?!(?:that|this)#{WRAP_GAP}+(?:is)#{WRAP_GAP}+(?:the)#{WRAP_GAP}+(?:whole)#{WRAP_GAP}+(?:#{WHOLE_CLOSERS})(?![\w'’-]))
                 (?!(?:what|which|who|where|when|how)(?![\w'’-]))
-                [\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+
-                (?:(?:whole|real|actual)(?:[ \t]|\r?\n(?!\s*\n))+(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix)
-                  |entire (?:[ \t]|\r?\n(?!\s*\n))+(?!(?:point|game|thing|deal|story)(?![\w'’-]))(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix))(?![\w'’-])/ix,
+                [\w'’-]+#{WRAP_GAP}+(?:is)#{WRAP_GAP}+(?:the)#{WRAP_GAP}+
+                (?:(?:whole|real|actual)#{WRAP_GAP}+(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix)
+                  |entire #{WRAP_GAP}+(?!(?:point|game|thing|deal|story)(?![\w'’-]))(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix))(?![\w'’-])/ix,
       message: '"… is the whole/real N" is a stock LLM closer.',
       suggestion: "Say the point directly instead of ranking it.",
       examples_bad: [
