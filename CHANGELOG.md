@@ -174,13 +174,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a draft should be read as a warning.
 
 - `mic-drop-closer` (structure, info) flags the kicker: a sentence of sixty
-  or more characters, then a two-to-eight-word closer that ends the paragraph
-  and opens on a quantifier or deictic, "Nothing here needs a new login.",
-  "Most teams end up with two." Ships at info because people end
-  paragraphs this way too, at about 150 per million words of pre-2022
-  Hacker News (a comment ends on a verdict); one flag means nothing. A draft where it repeats
-  paragraph after paragraph is the tell, and the rationale tells the agent
-  to read that as a warning.
+  or more characters, then a two-to-eight-word closer that ends the
+  paragraph and opens on a quantifier or deictic, "Nothing here needs a new
+  login.", "Most teams end up with two." A blank line or the end of the
+  text must follow the closer, so a bullet followed by another bullet is
+  not one; both sentences may be hard-wrapped; and whitespace runs in the
+  long sentence are capped, so a URL blanked by `--markdown` cannot make it.
+  Ships at info because people end paragraphs this way too, at about 150
+  per million words of pre-2022 Hacker News (a comment ends on a verdict);
+  one flag means nothing. A draft where it repeats paragraph after
+  paragraph is the tell, and the rationale tells the agent to read that as
+  a warning.
 
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
