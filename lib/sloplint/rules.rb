@@ -179,6 +179,39 @@ module Sloplint
                  "the case to check before acting."
     ),
     Rule.new(
+      id: "one-x-one-y",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Three or more "one X" items in a comma chain: "one person, one chat,
+      # one agent". The determiner is the cadence; the comma is the evidence
+      # of authored parallelism, as in no-x-no-y. Each item is "one" plus one
+      # or two letter-led words, so an enumeration over numbers ("one for
+      # 2019, one for 2020, one for 2021") is not a chain, and a pair ("one for
+      # you, one for me") never flags: two is distribution, three is a drumbeat.
+      pattern: /\bone\s+(?=[a-z])[\w'-]+(?:\s+(?=[a-z])[\w'-]+)?
+                (?:,\s+(?:and\s+)?one\s+(?=[a-z])[\w'-]+(?:\s+(?=[a-z])[\w'-]+)?){2,}/ix,
+      message: '"one X, one Y, one Z" chain (%{count} items) reads as AI cadence.',
+      suggestion: "Cut the chain or make it one plain sentence.",
+      # Item heads only, so a "one" inside an item is not an item.
+      count_group: /(?:\A|,\s+(?:and\s+)?)one\b/i,
+      examples_bad: [
+        "Most agents are single player: one person, one chat, one agent.",
+        "One owner, one repository, one weekly prune.",
+        "It needs one name, one number, and one date."
+      ],
+      examples_ok: [
+        "One for you, one for me.",
+        "We keep three bins: one for 2019, one for 2020, one for 2021.",
+        "One of them left, and the other one stayed.",
+        # Items in separate sentences never chain.
+        "One person wrote it. One person read it. One person filed it."
+      ],
+      rationale: "A drumbeat of 'one' items is a model's way of making a setup sound " \
+                 "spare and inevitable; the word does no counting, it sets a rhythm. " \
+                 "Careful writers distribute in pairs ('one for you, one for me') and " \
+                 "rarely stack three."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",

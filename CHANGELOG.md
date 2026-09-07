@@ -62,6 +62,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Hacker News (a geographic sweep) and once in 1.25M words of public-domain
   prose (Joyce).
 
+- `one-x-one-y` (rhetorical-tic, warning) flags three or more "one X" items
+  in a comma chain: "one person, one chat, one agent". The word does no
+  counting; it sets a rhythm. Items must be letter-led, so an enumeration
+  over numbers is not a chain, and a pair ("one for you, one for me") never
+  flags. Nothing in 2.4M words of pre-2022 Hacker News; once in 1.25M words
+  of public-domain prose (Emerson).
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
