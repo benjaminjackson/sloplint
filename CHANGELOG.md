@@ -50,6 +50,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### New rules
 
+- `from-x-to-y-chain` (rhetorical-tic, warning) flags two or more
+  comma-separated "from X to Y" spans in a row: "from guessing to measuring,
+  from hoping to knowing". Each span names two poles and nothing between
+  them, and stacking them sweeps across a change without describing it. Two
+  human shapes are skipped: the relay, where each span starts where the last
+  ended ("from the egg to the worm, from the worm to the fly"), and the
+  reduplication, where a span has the same word at both ends ("from hummock
+  to hummock"). Operands must open with a letter, so a list of ranges ("from
+  1990 to 1995, from 1997 to 2001") is not a chain. With those out it flags once in 2.4M words of pre-2022
+  Hacker News (a geographic sweep) and once in 1.25M words of public-domain
+  prose (Joyce).
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
