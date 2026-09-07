@@ -144,7 +144,7 @@ module Sloplint
         /\bfrom\s+(?:the\s+)?((?:[\w'-]+\s+){0,2}[\w'-]+)\s+to\s+(?:the\s+)?\1(?=,|\s*\z)/i
       ],
       examples_bad: [
-        "It is the move from private notes to shared files, from personal memory to team context, from individual leverage to group capability.",
+        "The change is the move from scattered notes to one shared file, from habit to written rules, from solo effort to a team that can carry it.",
         "We went from guessing to measuring, from hoping to knowing.",
         "The plan takes them from the pilot to the rollout, and from the memo to the audit.",
         # The last span may run into a clause, as long as a joining word starts it.
