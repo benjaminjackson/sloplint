@@ -2839,7 +2839,7 @@ module Sloplint
       severity: "info",
       # The kicker: a sentence of at least sixty characters, then a closer of
       # two to eight words that ends the paragraph and opens on a quantifier
-      # or a deictic ("Nothing here needs a new login.", "Most teams end up
+      # ("Nothing here needs a new login.", "Most teams end up
       # with two.", "Then find out whether it paid off."). The long sentence
       # must start a sentence itself, so the scan is linear, and \K drops it
       # from the match so the note points at the closer. The closer must be
@@ -2850,6 +2850,14 @@ module Sloplint
       # two spaces a run, so a URL or code span blanked by --markdown cannot
       # manufacture the sixty characters. The gap between the two sentences
       # is one or two spaces, and the closer needs at least two words.
+      #
+      # "That", "This" and "It" were in the opener list and are out. They are
+      # not quantifiers, and procedural writing ends a step with one as a
+      # matter of course: every hit in 2.25M words of engineering prose was a
+      # bare demonstrative closing a paragraph after a long sentence -- "This
+      # completes the roughing operations.", "This is the normal running
+      # position." The quantifiers carry the tell; the demonstratives are
+      # ordinary, and no examples_bad used one.
       #
       # Ships at info, and the rationale says why: people end paragraphs this
       # way too, at about 150 per million words on Hacker News. One is
@@ -2865,7 +2873,7 @@ module Sloplint
       # one) sent this into catastrophic backtracking, 62 seconds for a 2 KB
       # window and no completion on the 1.1 MB document.
       pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?>(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,})[.!?][ \t]{1,2}\K
-                (?:Nothing|Most|None|Everything|Everyone|Nobody|Then|Neither|Both|That|This|It)
+                (?:Nothing|Most|None|Everything|Everyone|Nobody|Then|Neither|Both)
                 (?:,?(?:[ \t]|\r?\n(?!\s*\n))+[\w'’-]+){1,7}[.!?](?=[ \t]*(?:\r?\n[ \t]*(?:\r?\n|\z)|\z))/x,
       message: "A short quantifier-led closer after a long sentence is the AI kicker.",
       suggestion: "Cut the closer, or move the claim to the front of the paragraph.",
@@ -2891,9 +2899,14 @@ module Sloplint
         # More than two spaces is not a sentence gap.
         "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works.   Nothing here needs a new login.",
         # A bullet followed by another bullet is not a paragraph end.
-        "- Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. It works.\n- We moved the deploy script into the repo so the on-call rota could run it. It works.\n- The rest is in the appendix and needs no change from anyone on the team.\n",
+        "- Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here breaks.\n- We moved the deploy script into the repo so the on-call rota could run it. Nothing here breaks.\n- The rest is in the appendix and needs no change from anyone on the team.\n",
         # Blanked text cannot make the long sentence.
-        "See                                                                          here. It works.\n"
+        "See                                                                          here. Nothing here breaks.\n",
+        # A bare demonstrative closing a step is how procedural writing ends
+        # a paragraph. Wording follows Turning and Boring (1919) and
+        # Aviation Engines (1917), both public domain by date.
+        "The cutting tools are set to the dimensions required for the finished work, and the stops are locked. This completes the roughing operations.",
+        "The magneto is protected from oil and grit by a cover that is easy to remove for service. This means prolonged life for the magneto."
       ],
       rationale: "A short sentence after a long one borrows emphasis from the contrast, " \
                  "and a model spends that emphasis at the end of nearly every paragraph, " \
@@ -2919,22 +2932,64 @@ module Sloplint
       #
       # Dialogue is excluded by the boundary: a closing quote after the stop
       # is not a space. A quotation mark inside a sentence is excluded by the
-      # class. A sentence with a digit in it is data, a "sentence" ending on
-      # a lone capital is an initial ("Alan W."), and a run holding a
+      # class. A sentence with a digit in it is data, and a run holding a
       # multi-letter abbreviation ("Prof.", "Dept.") is dropped, since the
-      # abbreviation is not a sentence end. Questions and exclamations are
+      # abbreviation is not a sentence end.
+      #
+      # Three narrowings after 2.25M words of technical prose, all of them the
+      # same mistake: reading document furniture as sentences.
+      #
+      # A "sentence" ending on a lone letter is a list label, not a sentence.
+      # The guard used to cover capitals only, for initials ("Alan W."), so
+      # lettered enumeration walked through it -- "Acronym e. OpNom f. Hazard
+      # System record number g." is one form field, read as three sentences.
+      # No English sentence ends on a bare letter, either case, so the guard
+      # now covers both.
+      #
+      # Every sentence in the run must hold a space. A one-word "sentence" is
+      # an abbreviation, and a citation line is nothing else: "Natl. Inst.
+      # Stand. Technol." was a clean three-sentence run under the old shape.
+      #
+      # Every sentence opens on a capital. Lowercase-initial runs are speech
+      # transcribed, not prose written: a cockpit voice recorder transcript
+      # ("we all get gas. we go to divert to Albany. we pick up a load.") has
+      # the staccato shape exactly, and an accident report carries pages of
+      # it. A sentence in edited prose starts with a capital.
+      #
+      # And the run may not step over a list marker -- see MARKER below. Questions and exclamations are
       # left out because a run of them is a different device.
       #
       # Ships at info. A staccato run is a device people use on purpose, at
       # about thirty per million words on Hacker News, so one flag is a
       # question. A draft that keeps doing it is the tell, and an agent that
       # sees the flag repeat should read the family as a warning.
-      pattern: /(?:\A|(?<=\n\n)|(?<=[.!?])[ \t]{0,2}\r?\n|(?<=[.!?])[ \t]{1,2})[ \t]{0,4}(?:[-*+•][ \t]+|\d+[.)][ \t]+)?\K
-                (?:[A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z][A-Z])\.(?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]{0,4})){2}
-                [A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z][A-Z])\.(?=\s|\z)/x,
+      # MARKER is the list furniture this rule has to see in order to ignore
+      # it: a bullet glyph, the literal "o" that plain-text technical
+      # documents use as one, a numbered item, and a lettered item. It opens a
+      # run (a bullet may hold staccato) but may never sit *inside* one --
+      # three bullets in a row are a list, which is what the comment above
+      # always intended and the pattern did not enforce.
+      pattern: /(?:\A|(?<=\n\n)|(?<=[.!?])[ \t]{0,2}\r?\n|(?<=[.!?])[ \t]{1,2})[ \t]{0,4}
+                (?:[-*+•][ \t]+|o[ \t]+(?=[A-Z])|\d+[.)][ \t]+|[A-Za-z][.)][ \t]+(?=[A-Z]))?\K
+                (?:[A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z'’][A-Za-z])\.
+                   (?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]{0,4})
+                   (?![-*+•][ \t]|o[ \t]+[A-Z]|\d+[.)][ \t]|[A-Za-z][.)][ \t]+[A-Z])){2}
+                [A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z'’][A-Za-z])\.(?=\s|\z)/x,
       message: "A run of three short sentences reads as AI staccato.",
       suggestion: "Join two of them, or give one of them a subordinate clause.",
-      skip: [/\b(?:Corp|Prof|Dept|Sept|Univ|Assn|approx|misc|cont|Ave|Blvd|Fig|Est|Inc|Ltd|vol|etc|Mrs|Mr|Ms|Dr|St|Jr|Sr|No)\./],
+      # Two whole-run exclusions, because each is a property of the run and
+      # not of any one sentence in it. Three single-word "sentences" in a row
+      # is a citation line ("Natl. Inst. Stand. Technol."), never staccato --
+      # one single-word sentence is the archetypal kicker and stays. Three
+      # lowercase-led sentences in a row is transcribed speech ("we all get
+      # gas. we go to divert to Albany."); a run that reaches a capital
+      # anywhere is prose, so identifier-initial writing ("npm was slow. git
+      # blame helped. We moved on.") is untouched.
+      skip: [
+        /\b(?:Corp|Prof|Dept|Sept|Univ|Assn|approx|misc|cont|Ave|Blvd|Fig|Est|Inc|Ltd|vol|etc|Mrs|Mr|Ms|Dr|St|Jr|Sr|No)\./,
+        /\A\S+\.[ \t\r\n]+\S+\.[ \t\r\n]+\S+\.\z/,
+        /\A[a-z][^.!?]*\.\s+[a-z][^.!?]*\.\s+[a-z][^.!?]*\.\z/
+      ],
       examples_bad: [
         "Nobody used it. A named owner. Then a review.",
         "The draft sat on one desk. Nobody else saw it. So it never shipped.",
@@ -2944,7 +2999,15 @@ module Sloplint
         # A bullet may hold a run.
         "- Nobody used it. A named owner. Then a review.",
         # An acronym ends a sentence; only a lone initial does not.
-        "Nobody used it. We shipped it to QA. Then a review."
+        "Nobody used it. We shipped it to QA. Then a review.",
+        # A one-word sentence is the kicker, not an abbreviation, so only a
+        # run made entirely of them is excluded.
+        "The fix landed. Agreed. We moved on.",
+        # A sentence may end on a possessive; that is not a bare letter.
+        "We shipped a fix. The bug was Ana's. Nobody cared.",
+        # Identifier-initial prose is the register this tool is aimed at, so a
+        # run only counts as transcript when nothing in it reaches a capital.
+        "git blame helped. npm was slow. We moved on."
       ],
       examples_ok: [
         "Nobody used it. A named owner and a quarterly review that the whole team can see.",
@@ -2970,7 +3033,20 @@ module Sloplint
         # Blanked text after a newline cannot weld two sentences.
         "Nobody used it. A named owner.\n                                  Then a review.",
         # Consecutive bullets are a list.
-        "- Fast setup.\n- No config.\n- Free tier.\n"
+        "- Fast setup.\n- No config.\n- Free tier.\n",
+        # Document furniture, not staccato. Wording follows a NASA hazard
+        # report form, a NIST publication citation line and a NIST control
+        # enumeration -- US government works.
+        "Acronym e. OpNom f. Hazard System record number g.",
+        "Phone q. Fax r. e-mail s.",
+        "Natl. Inst. Stand. Technol.",
+        "What type of event occurred; b. When the event occurred; c. Where the event occurred; d.",
+        "o Shop was not a clean area. o Lighting was not adequate. o Space was limited.",
+        # Consecutive bullets are a list, whatever each one says.
+        "- Nobody used it here.\n- A named owner was set.\n- Then a review happened.",
+        # Transcribed speech has the staccato shape and is not prose.
+        # Wording follows an NTSB cockpit voice recorder transcript.
+        "we all get gas. we go to divert to Albany. we pick up a load."
       ],
       rationale: "Short sentences in a row borrow force from their rhythm, and a model " \
                  "falls into the rhythm whenever it wants to sound decisive. People do it " \

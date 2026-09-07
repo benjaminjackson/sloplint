@@ -30,6 +30,48 @@ sentence found in the wild, however perfect a specimen it is. `examples_ok` may
 quote public-domain prose with the source named in a comment. No collected
 corpus belongs in the repo, on either side. See "Provenance" in `docs/SPEC.md`.
 
+## Probe against real prose, not just fixtures
+
+`examples_bad` and `examples_ok` are pins, not evidence. They only ever say
+that the pattern still does what you already knew it did. Before a rule ships,
+run it over a body of real human writing — hundreds of thousands of words, not
+a handful of sentences — and read every hit. A rule that has only met its own
+fixtures has not been probed, whatever the commit message says.
+
+Match the reading to where the tool actually gets pointed. Forum comments and
+19th-century novels are both real prose and neither one is a design doc, an
+incident report or reference documentation, which is the register an agent
+runs this on. A probe that finds nothing may only mean the corpus could not
+contain the thing: 25 Gutenberg texts said `cleanly` was safe because Victorian
+novels have no builds, and the same period read as an engineering manual has
+it on the first page.
+
+Three things that keep turning up, worth checking by name:
+
+- **Narrow on structure, not on a list.** A deictic, a locative, a possessive,
+  a determiner frame, a copula — these held up against a register they had
+  never seen. Noun lists and allow-lists broke, every time, and each entry
+  added to fix one false positive silenced the tell sitting behind it. If a
+  narrowing is a list that keeps growing, the pattern is the wrong shape:
+  match the tell as a closed set of frames rather than matching a common word
+  and subtracting the exceptions.
+- **A document is not a stream of sentences.** Bullets, lettered and numbered
+  enumerations, form-field labels, citation lines, table entries, headings and
+  transcribed speech all read as prose to a regex, and a rule that counts
+  sentences will count them. `Phone q. Fax r. e-mail s.` is one form row;
+  `Natl. Inst. Stand. Technol.` is one citation; `o Shop was not clean.` is a
+  bullet. If a rule spans a sentence boundary, make it see the furniture so it
+  can refuse it.
+- **Time the scan on a real document.** Fixtures are short, so a pattern that
+  backtracks catastrophically passes the whole suite in milliseconds and then
+  hangs on the first PDF-extracted page it meets. Anything with a repeated
+  group over an alternation wants an atomic group `(?>...)` or an upper bound.
+  Scan a megabyte before shipping.
+
+None of the reading is committed — see "Provenance" in `docs/SPEC.md`. What the
+commit message carries is the numbers and the register: how much was read, what
+kind of writing it was, how many hits, and how many survived reading them.
+
 ## Rationale stays lean
 
 `rationale:` tells the reader why a construct reads as AI-written. Probing is
