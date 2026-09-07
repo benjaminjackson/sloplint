@@ -16,18 +16,25 @@ module Sloplint
     end
   end
 
+  # A gap that may hard-wrap but never crosses a paragraph break, the class
+  # is-the-whole-x spells out in place.
+  WRAP_GAP = /(?:[ \t]|\r?\n(?!\s*\n))/
+
   # The nouns "that's the whole N" closes on. thats-the-whole owns the
   # demonstrative form and is-the-whole-x yields it, so both patterns
   # interpolate this one fragment and the lists cannot drift. "value" and
   # "fix" must end the sentence or the paragraph, or run into one of the
-  # words a closer trails off on (a preposition, "right", "though", "now"),
-  # because "value chain", "value-add" and "fix list" name things; the older
-  # nouns do not compound that way. The list of tails is an allowlist and
-  # stays one: a blocklist of compound heads would widen every time a new
-  # compound turned up. The gap before the tail may hard-wrap but never
-  # crosses a paragraph break, so "value\nchain" is still the compound, and
-  # a heading, which ends at a blank line, still ends on the noun.
-  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball(?:[ \t]|\r?\n(?![ \t]*\r?\n))+game|(?:value|fix)(?=(?:[ \t]|\r?\n(?![ \t]*\r?\n))*(?:[^\w\s'’-]|\z|\r?\n[ \t]*\r?\n|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as)\b))/i
+  # words a closer trails off on (a preposition, a pronoun, "right",
+  # "though", "now"), because "value chain", "value-add" and "fix list"
+  # name things. The older nouns compound too ("game plan") and ship as
+  # they always have; only the two new ones were probed for it. The list
+  # of tails is an allowlist and stays one: a blocklist of compound heads
+  # would widen every time a new compound turned up. A hyphen or an
+  # apostrophe ends the closer only after a gap, since with no gap it is
+  # part of the compound. The gap may hard-wrap but never crosses a
+  # paragraph break, so "value\nchain" is still the compound, and a
+  # heading, which ends at a blank line, still ends on the noun.
+  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^\w\s'’-]|#{WRAP_GAP}+[^\w\s]|#{WRAP_GAP}*(?:\z|\r?\n[ \t]*\r?\n|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|it|they)\b))/i
 
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
@@ -109,6 +116,11 @@ module Sloplint
         "That's the whole fix; the cache was already right.",
         "That’s the whole value here.",
         "That's the whole fix right there.",
+        "That's the whole fix that was needed.",
+        # A dash or a bullet after a gap ends the closer; only a glued
+        # hyphen joins a compound.
+        "That's the whole fix -- the cache was already right.",
+        "- Cache key was stale.\n- That's the whole fix\n- Tests pass.",
         # A heading ends on the noun with no full stop.
         "## That's the whole fix\n\nApply it and rerun the suite."
       ],
