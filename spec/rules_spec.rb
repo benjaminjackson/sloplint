@@ -101,12 +101,15 @@ RSpec.describe "Sloplint::RULES" do
     # exclusion is by definition text most-honest-x owns. is-the-whole-x
     # yields "that/this" subjects to thats-the-whole and "entire" to
     # is-the-entire, so the fixtures pinning those yields are text the two
-    # older rules own. Only these four.
+    # older rules own. epistrophe is off by default precisely because it
+    # fires on deliberate human rhetoric, and the Federalist sentence
+    # not-just-x-but-y pins is one. Only these five.
     overlaps = {
       "em-dash-overuse" => %w[em-dash],
       "notice-what-there" => %w[notice-what],
       "honest-x" => %w[most-honest-x],
-      "is-the-whole-x" => %w[thats-the-whole is-the-entire]
+      "is-the-whole-x" => %w[thats-the-whole is-the-entire],
+      "not-just-x-but-y" => %w[epistrophe]
     }
 
     Sloplint::RULES.each do |owner|
