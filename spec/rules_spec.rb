@@ -99,6 +99,25 @@ RSpec.describe "Sloplint::RULES" do
         expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
       end
     end
+
+    # The compound guard on the two newer nouns is thats-the-whole's alone.
+    # is-the-whole-x keeps its own bare "value" and "fix", so the
+    # uncontracted compound still reads at info there, as it did before.
+    %w[value fix].each do |noun|
+      it "leaves the contracted compound on #{noun.inspect} alone" do
+        expect(Sloplint::Engine.scan("That's the whole #{noun} chain.")).to eq([])
+      end
+
+      it "does not claim the uncontracted compound on #{noun.inspect}" do
+        notes = Sloplint::Engine.scan("That is the whole #{noun} chain.")
+        expect(notes.map(&:rule)).not_to include("thats-the-whole")
+      end
+    end
+
+    it "ends on the noun at a line end with no full stop" do
+      notes = Sloplint::Engine.scan("## That's the whole fix\n\nApply it and rerun the suite.")
+      expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+    end
   end
 
   describe "count_group rules" do

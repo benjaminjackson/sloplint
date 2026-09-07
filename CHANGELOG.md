@@ -37,8 +37,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   closer is the one an agent writes in technical prose ("That's the whole
   value of the `info` tier", "That's the whole fix"), and `is-the-whole-x`
   sees only the uncontracted "is", so the sentence slipped both rules. The
-  two new nouns must end the sentence or run into a preposition, so "value
-  chain", "value-add" and "fix list" stay clean, and a curly apostrophe now
+  two new nouns must end the sentence or the line, or run into a
+  preposition, so `thats-the-whole` leaves "value chain", "value-add" and
+  "fix list" alone (`is-the-whole-x` still reads the uncontracted "That is
+  the whole value chain" at `info`, as it did), and a curly apostrophe now
   counts as a contraction. Both rules interpolate one `WHOLE_CLOSERS`
   fragment, so the lists cannot drift, and a spec walks every noun through
   every form the two wrappers treat differently. Neither noun appears after
