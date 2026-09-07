@@ -16,12 +16,15 @@ module Sloplint
     end
   end
 
+  # A paragraph break: a newline, a line holding nothing but spaces (a
+  # non-breaking space among them, since the editors that emit curly
+  # apostrophes emit those), and another newline.
+  PARA_BREAK = /\r?\n[ \t\u00A0]*\r?\n/
+
   # A gap that may hard-wrap but never crosses a paragraph break. A
-  # non-breaking space is a gap too, and a line holding only one is still
-  # a blank line, since the editors that emit curly apostrophes emit those
-  # between words. thats-the-whole, is-the-whole-x and WHOLE_CLOSERS share
-  # it.
-  WRAP_GAP = /(?:[ \t\u00A0]|\r?\n(?![ \t\u00A0\r]*\n))/
+  # non-breaking space is a gap too. thats-the-whole, is-the-whole-x and
+  # WHOLE_CLOSERS share it.
+  WRAP_GAP = /(?:[ \t\u00A0]|(?!#{PARA_BREAK})\r?\n)/
 
   # The nouns "that's the whole N" closes on. thats-the-whole owns the
   # demonstrative form and is-the-whole-x yields it, so both patterns
@@ -35,18 +38,20 @@ module Sloplint
   # of tails is an allowlist and stays one: a blocklist of compound heads
   # would widen every time a new compound turned up. A hyphen or an
   # apostrophe ends the closer only after a gap, since with no gap it is
-  # part of the compound; an emphasis marker or a backtick after a gap is
-  # not an end either, since it opens the next word ("value *chain*",
-  # "fix `list`"; under --markdown a blanked code span leaves the rule
-  # nothing to read, which is the blanking's cost, not this one's). A
-  # numbered list item on the next line ends the closer like a bullet
-  # does. "at" is not a tail, because "value at risk" names a thing. The
+  # part of the compound; an opening delimiter after a gap (an emphasis
+  # marker, a backtick, a quote, a bracket) is not an end either, since it
+  # opens the next word ("value *chain*", "fix `list`"). Under --markdown
+  # a code span is blanked to spaces and the tail after it reads as the
+  # closer's; that is the blanking's cost, not this one's. A numbered list
+  # item on the next line ends the closer like a bullet does. Prepositions
+  # stay tails although "value at risk" and "value for money" name things;
+  # a tail list is not the place to enumerate compounds. The
   # gap may hard-wrap but never crosses a paragraph break, so
   # "value\nchain" is still the compound, and a heading, which ends at a
   # blank line, still ends on the noun. The character classes are
   # Unicode-aware, so a non-breaking space is a space and an accented
   # letter is a letter.
-  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^[:word:][:space:]'’-]|#{WRAP_GAP}+(?:[^[:word:][:space:]*_`]|\d+[.)][ \t])|#{WRAP_GAP}*(?:\z|\r?\n[ \t\u00A0]*\r?\n|(?:of|to|for|in|on|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|he|she|it|they|the|a|an|this|these|those|every|any|my|our|your|his|her|their|its)\b))/i
+  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^[:word:][:space:]'’-]|#{WRAP_GAP}+(?:[^[:word:][:space:]*_`"'‘“(\[{~]|\d+[.)][ \t])|#{WRAP_GAP}*(?:\z|#{PARA_BREAK}|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|he|she|it|they|the|a|an|this|these|those|every|any|my|our|your|his|her|their|its)\b))/i
 
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
@@ -151,7 +156,7 @@ module Sloplint
         "That's the whole value\u00A0chain, end to end.",
         "That's the whole value *chain*, end to end.",
         "That's the whole fix `list` for the release.",
-        "That's the whole value at risk for the desk.",
+        "That's the whole fix (list) for the release.",
         "That's the whole value-add of the consultant.",
         "That's the whole value's worth.",
         "That's the whole fix list for the release.",
