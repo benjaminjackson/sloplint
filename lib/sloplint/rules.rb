@@ -2200,6 +2200,44 @@ module Sloplint
                  "or give the problem its own sentence."
     ),
     Rule.new(
+      id: "np-fragment-and",
+      category: "structure",
+      severity: "warning",
+      # A whole sentence that is two noun phrases and an "and": "A named owner
+      # and a quarterly review." It is the fix half of a model's
+      # problem-then-fix pair, with the verb left for the reader to supply.
+      # The sentence must open on A/An/One (capitalised, at a sentence start),
+      # the second phrase must open on a/an/one, each phrase is one to three
+      # words, and nothing else may be in the sentence. No auxiliary or modal
+      # may appear anywhere in it, so "A man and a woman were there." never
+      # matches; a lexical verb can slip through ("A dog and a cat sleep."),
+      # which the corpora say is rare.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})\K(?:A|An|One)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?!(?:is|are|was|were|be|been|has|have|had|does|do|did|can|could|will|would|should|must|may|might)\b)[\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+){1,3}
+                and(?:[ \t]|\r?\n(?!\s*\n))+(?:a|an|one)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?!(?:is|are|was|were|be|been|has|have|had|does|do|did|can|could|will|would|should|must|may|might)\b)[\w'’-]+(?:(?:[ \t]|\r?\n(?!\s*\n))+|(?=\.))){1,3}\.(?=\s|\z)/x,
+      message: '"A X and a Y." as a whole sentence is an AI fragment.',
+      suggestion: "Give the sentence a verb, or fold it into the one before.",
+      examples_bad: [
+        "Nobody checked it after launch. A named owner and a quarterly review.",
+        "One merger and a version-controlled folder.",
+        "An owner and a deadline."
+      ],
+      examples_ok: [
+        "A man and a woman were waiting at the door.",
+        "A dog and a cat can share a house.",
+        # Not at a sentence start.
+        "We hired a designer and an engineer.",
+        # More than three words on a side is a clause, not a label.
+        "A long walk down to the river and a swim before breakfast.",
+        # Only "and" between two phrases; a list is not the pair.
+        "A hammer, a saw, and a level."
+      ],
+      rationale: "Two noun phrases and an 'and', standing as a sentence, is how a model " \
+                 "hands over a fix without committing to a verb: the reader supplies " \
+                 "'you need' or 'add'. Careful writers finish the thought."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",

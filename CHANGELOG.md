@@ -104,6 +104,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   construction turns up a few of those per million words, all human. A
   draft that keeps giving ideas addresses should be read as a warning.
 
+- `np-fragment-and` (structure, warning) flags a whole sentence made of two
+  noun phrases and an "and": "A named owner and a quarterly review." It is
+  the fix half of a model's problem-then-fix pair with the verb left out.
+  The sentence must open on A/An/One at a sentence start, each phrase is one
+  to three words, and no auxiliary or modal may appear. Nothing in 2.4M
+  words of pre-2022 Hacker News; once in 1.25M words of public-domain prose
+  (Joyce).
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
