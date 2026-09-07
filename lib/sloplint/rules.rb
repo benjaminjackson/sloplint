@@ -16,6 +16,43 @@ module Sloplint
     end
   end
 
+  # A paragraph break: a newline, a line holding nothing but spaces (a
+  # non-breaking space among them, since the editors that emit curly
+  # apostrophes emit those), and another newline.
+  PARA_BREAK = /\r?\n[ \t\u00A0]*\r?\n/
+
+  # A gap that may hard-wrap but never crosses a paragraph break. A
+  # non-breaking space is a gap too. thats-the-whole, is-the-whole-x and
+  # WHOLE_CLOSERS share it.
+  WRAP_GAP = /(?:[ \t\u00A0]|(?!#{PARA_BREAK})\r?\n)/
+
+  # The nouns "that's the whole N" closes on. thats-the-whole owns the
+  # demonstrative form and is-the-whole-x yields it, so both patterns
+  # interpolate this one fragment and the lists cannot drift. "value" and
+  # "fix" must end the sentence or the paragraph, or run into one of the
+  # words a closer trails off on (a preposition, a pronoun, a determiner,
+  # "right", "though", "now"), because "value chain", "value-add" and
+  # "fix list" name things. The older nouns compound too ("game plan") and
+  # ship as
+  # they always have; only the two new ones were probed for it. The list
+  # of tails is an allowlist and stays one: a blocklist of compound heads
+  # would widen every time a new compound turned up. A hyphen or an
+  # apostrophe ends the closer only after a gap, since with no gap it is
+  # part of the compound; an opening delimiter after a gap (an emphasis
+  # marker, a backtick, a quote, a bracket) is not an end either, since it
+  # opens the next word ("value *chain*", "fix `list`"). Under --markdown
+  # a code span is blanked to spaces and the tail after it reads as the
+  # closer's; that is the blanking's cost, not this one's. A numbered list
+  # item on the next line ends the closer like a bullet does. Prepositions
+  # stay tails although "value at risk" and "value for money" name things;
+  # a tail list is not the place to enumerate compounds. The
+  # gap may hard-wrap but never crosses a paragraph break, so
+  # "value\nchain" is still the compound, and a heading, which ends at a
+  # blank line, still ends on the noun. The character classes are
+  # Unicode-aware, so a non-breaking space is a space and an accented
+  # letter is a letter.
+  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^[:word:][:space:]'’-]|#{WRAP_GAP}+(?:[^[:word:][:space:]*_`"'‘“(\[{~]|\d+[.)][ \t])|#{WRAP_GAP}*(?:\z|#{PARA_BREAK}|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|he|she|it|they|the|a|an|this|these|those|every|any|my|our|your|his|her|their|its)\b))/i
+
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
     Rule.new(
@@ -83,11 +120,51 @@ module Sloplint
       id: "thats-the-whole",
       category: "rhetorical-tic",
       severity: "warning",
-      pattern: /\b(?:that|this)(?:'s| is)\s+the\s+whole\s+(?:point|game|thing|deal|story|ballgame|ball\s+game)\b/i,
+      # The nouns are WHOLE_CLOSERS. "value" and "fix" are the closers agents
+      # write in technical prose ("That's the whole fix"), where the
+      # contraction keeps them out of is-the-whole-x, which sees only "is".
+      # Either apostrophe counts; editors emit the curly one.
+      pattern: /\b(?:that|this)(?:['’]s|#{WRAP_GAP}+is)#{WRAP_GAP}+the#{WRAP_GAP}+whole#{WRAP_GAP}+(?:#{WHOLE_CLOSERS})\b/i,
       message: '"That\'s the whole point/game/…" is a stock LLM closer.',
       suggestion: "Say the point directly instead of announcing it.",
-      examples_bad: ["That's the whole point."],
-      examples_ok: ["This is the whole cake."],
+      examples_bad: [
+        "That's the whole point.",
+        "That's the whole value of a typed error.",
+        "That's the whole fix; the cache was already right.",
+        "That’s the whole value here.",
+        "That's the whole fix right there.",
+        "That's the whole fix that was needed.",
+        "That's the whole fix the reviewer asked for.",
+        # A blank line holding only a non-breaking space is still blank.
+        "## That's the whole fix\n\u00A0\nApply it.",
+        # A dash or a bullet after a gap ends the closer; only a glued
+        # hyphen joins a compound.
+        "That's the whole fix -- the cache was already right.",
+        "- Cache key was stale.\n- That's the whole fix\n- Tests pass.",
+        "2. That's the whole fix\n3. Tests pass.",
+        # A heading ends on the noun with no full stop.
+        "## That's the whole fix\n\nApply it and rerun the suite."
+      ],
+      examples_ok: [
+        "This is the whole cake.",
+        # An unlisted noun stays clean, however closer-shaped the sentence.
+        "That's the whole history of the case.",
+        # "value" and "fix" running on into a compound name a thing.
+        "That's the whole value chain, end to end.",
+        "That's the whole value\nchain, end to end.",
+        # The gap is a non-breaking space.
+        "That's the whole value\u00A0chain, end to end.",
+        "That's the whole value *chain*, end to end.",
+        "That's the whole fix `list` for the release.",
+        "That's the whole fix (list) for the release.",
+        "That's the whole value-add of the consultant.",
+        "That's the whole value's worth.",
+        "That's the whole fix list for the release.",
+        # A paragraph break is not a gap, inside the two-word noun or
+        # before any noun.
+        "That's the whole ball\n\ngame.",
+        "That's the whole\n\npoint."
+      ],
       rationale: "The 'that's the whole X' flourish is a model tic for landing a paragraph."
     ),
     Rule.new(
@@ -100,8 +177,9 @@ module Sloplint
       # match opens on the subject's last word, so the note points at the
       # sentence and not at a space. Two older rules own two exact shapes,
       # and those are yielded so nothing is reported twice: "that/this is
-      # the whole point/game/thing/deal/story" to thats-the-whole, and "is
-      # the entire point/game/thing/deal/story" to is-the-entire; every
+      # the whole N" for every N in WHOLE_CLOSERS to thats-the-whole (the
+      # lookahead interpolates the same fragment), and "is the entire
+      # point/game/thing/deal/story" to is-the-entire; every
       # other subject and noun flags here, so "This is the real test." is
       # not lost. A question is not a closer, so an interrogative subject
       # (what, which, who, where, when, how) is out. "only" is left out
@@ -112,11 +190,11 @@ module Sloplint
       # a paragraph break. Ships at info because "the real question" and
       # "the whole point" are also how people talk.
       pattern: /(?<![\w'’-])
-                (?!(?:that|this)(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+(?:whole)(?:[ \t]|\r?\n(?!\s*\n))+(?:point|game|thing|deal|story|ballgame|ball[ \t]+game)(?![\w'’-]))
+                (?!(?:that|this)#{WRAP_GAP}+(?:is)#{WRAP_GAP}+(?:the)#{WRAP_GAP}+(?:whole)#{WRAP_GAP}+(?:#{WHOLE_CLOSERS})(?![\w'’-]))
                 (?!(?:what|which|who|where|when|how)(?![\w'’-]))
-                [\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+
-                (?:(?:whole|real|actual)(?:[ \t]|\r?\n(?!\s*\n))+(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix)
-                  |entire (?:[ \t]|\r?\n(?!\s*\n))+(?!(?:point|game|thing|deal|story)(?![\w'’-]))(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix))(?![\w'’-])/ix,
+                [\w'’-]+#{WRAP_GAP}+(?:is)#{WRAP_GAP}+(?:the)#{WRAP_GAP}+
+                (?:(?:whole|real|actual)#{WRAP_GAP}+(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix)
+                  |entire #{WRAP_GAP}+(?!(?:point|game|thing|deal|story)(?![\w'’-]))(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix))(?![\w'’-])/ix,
       message: '"… is the whole/real N" is a stock LLM closer.',
       suggestion: "Say the point directly instead of ranking it.",
       examples_bad: [
@@ -132,8 +210,9 @@ module Sloplint
         "Consistency\nis the real test."
       ],
       examples_ok: [
-        # Left to thats-the-whole.
+        # Left to thats-the-whole, an old noun and a widened one.
         "That is the whole point.",
+        "That is the whole fix.",
         # Left to is-the-entire.
         "Timing is the entire game.",
         # "only" is ordinary speech.

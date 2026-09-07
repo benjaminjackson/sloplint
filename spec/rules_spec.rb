@@ -78,6 +78,68 @@ RSpec.describe "Sloplint::RULES" do
     end
   end
 
+  # thats-the-whole and is-the-whole-x share the "that/this is the whole N"
+  # shape and interpolate the same WHOLE_CLOSERS fragment, but each wraps it
+  # in its own subject, copula and whitespace syntax. This walks every noun
+  # through every form those wrappers treat differently, and expects one
+  # warning each time: a form that only is-the-whole-x sees is reported at
+  # info, and a form neither sees is not reported at all.
+  describe "the whole-* pair" do
+    nouns = ["point", "game", "thing", "deal", "story", "ballgame", "ball game", "value", "fix"]
+    forms = {
+      "uncontracted" => "That is the whole %s.",
+      "contracted" => "That's the whole %s.",
+      "curly apostrophe" => "That’s the whole %s.",
+      "this" => "This is the whole %s.",
+      "hard-wrapped" => "That is the whole\n%s."
+    }
+    nouns.product(forms.to_a).each do |noun, (name, form)|
+      it "reports the #{name} form on #{noun.inspect} once, at warning" do
+        notes = Sloplint::Engine.scan(format(form, noun))
+        expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+      end
+    end
+
+    # The compound guard on the two newer nouns is thats-the-whole's alone.
+    # is-the-whole-x keeps its own bare "value" and "fix", so the
+    # uncontracted compound still reads at info there, as it did before.
+    %w[value fix].each do |noun|
+      it "leaves the contracted compound on #{noun.inspect} alone" do
+        expect(Sloplint::Engine.scan("That's the whole #{noun} chain.")).to eq([])
+      end
+
+      it "does not claim the uncontracted compound on #{noun.inspect}" do
+        notes = Sloplint::Engine.scan("That is the whole #{noun} chain.")
+        expect(notes.map(&:rule)).not_to include("thats-the-whole")
+      end
+    end
+
+    # The gap after "value"/"fix" may hard-wrap but never crosses a
+    # paragraph break, so the wrap column cannot change the verdict.
+    it "ends on the noun at a paragraph break with no full stop" do
+      notes = Sloplint::Engine.scan("## That's the whole fix\n\nApply it and rerun the suite.")
+      expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+    end
+
+    it "reads a hard-wrapped compound as the compound" do
+      expect(Sloplint::Engine.scan("That's the whole value\nchain, end to end.")).to eq([])
+      notes = Sloplint::Engine.scan("That is the whole value\nchain.")
+      expect(notes.map(&:rule)).not_to include("thats-the-whole")
+    end
+
+    it "reads a hard-wrapped tail as the closer" do
+      notes = Sloplint::Engine.scan("That's the whole fix\nfor the release.")
+      expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+    end
+
+    it "keeps a hard wrap inside \"ball game\"" do
+      ["That's the whole ball\ngame.", "That is the whole ball\ngame."].each do |text|
+        notes = Sloplint::Engine.scan(text)
+        expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+      end
+    end
+  end
+
   describe "count_group rules" do
     it "counts items in a no-x-no-y chain" do
       note = Sloplint::Engine.scan("No fluff, no filler, no jargon.").find { |n| n.rule == "no-x-no-y" }

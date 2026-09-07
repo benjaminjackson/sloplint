@@ -277,7 +277,7 @@ false-positive risk, which none has demonstrated.
 |----|---------|-------|
 | `no-x-no-y` | 2+ comma-separated "no …" items in a row | counts items |
 | `no-x-no-y-frag` | the same cadence as sentence fragments ("No fluff. No filler.") | counts items; `info` |
-| `thats-the-whole` | "that/this is the whole point/game/thing…" | |
+| `thats-the-whole` | "that/this is the whole point/game/thing…" | also value and fix, the closers agents write in technical prose, when they end the sentence or the paragraph or run into a closer's tail word; either apostrophe; `is-the-whole-x` yields the same list |
 | `is-the-whole-x` | any subject + "is the whole/real/actual/entire N" (tell, point, test, work, …) | opens on the subject word; yields only the exact sentences `thats-the-whole` and `is-the-entire` own; interrogative subjects out; "only", "deal", "thing", "cost" left out; `info` |
 | `did-not-x-did-not-y` | 2+ "did not …"/"didn't …" in a row | counts items |
 | `from-x-to-y-chain` | 2+ comma-separated "from X to Y" spans | counts spans; operands open with a letter, so ranges are out; skips the relay ("to B, from B") and the reduplication ("from X to X") |
