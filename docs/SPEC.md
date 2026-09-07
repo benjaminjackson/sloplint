@@ -290,7 +290,7 @@ false-positive risk, which none has demonstrated.
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
 | `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |
-| `cleanly` | "cleanly" anywhere | no verb list; the engineering idiom counts too |
+| `cleanly` | "cleanly" into/onto/in two/in half — the partition frame | the preposition is the narrowing; the engineering idiom ("applies cleanly", "separated cleanly", "cleanly compiled") is a checkable fact and stays out, and the clause-final form is left out. `info`: the frame is not the sense, and separating "splits cleanly into two parts" from "retracted cleanly into the well" needs the subject |
 | `clean-count` | "two/three clean parts/buckets/categories…" | needs a partition noun |
 | `cleanest-x` | "the cleanest framing/formulation", "cleanest way to put it" | noun list only |
 | `clean-x` | "a clean abstraction/distinction/framing", "clean line between" | `info` |
@@ -302,10 +302,10 @@ false-positive risk, which none has demonstrated.
 | `worth-naming` | "worth naming/flagging/separating/spelling out" | skip "naming names"; yields to the rule below when a manner adverb follows; `info` |
 | `worth-saying-plainly` | "it's worth saying plainly / better put bluntly…", plus the bare "Put plainly," / "Said bluntly," | sentence-initial; the bare branch drops "simply"/"clearly" so "put simply" and "simply put" stay clean |
 | `not-nothing` | copula + "not nothing" litotes, any subject | skip personal/there subjects |
-| `exact-exactly` | "exact"/"exactly" | allowlist for the checkable uses; `info` |
+| `exact-exactly` | "exact"/"exactly" | allowlist for the checkable uses, including measurement nouns as a class ("the exact diameter", "the exact blade pitch angle") and "exactly" before an interrogative or a to-phrase; `info` |
 | `load-bearing` | "load-bearing" outside its construction sense | skip building nouns either side |
-| `intersection-of` | "the intersection of X and Y" as positioning | skip street corners, geometry, set arithmetic |
-| `impact-verb` | "impact" used as a verb ("the outage impacted 4,000 accounts") | needs an auxiliary or subject pronoun for the base form; skip the medical and soil sense of "impacted", the fixed compounds, and hyphenated forms |
+| `intersection-of` | "the intersection of X and Y" as positioning | skip street corners, geometry, set arithmetic, airfield surfaces (runway, taxiway, apron), matrix rows and columns, and operands shaped like a US route designator ("US-27A") or a quadrant plus house number ("NE 140th Court") |
+| `impact-verb` | "impact" used as a verb ("the outage impacted 4,000 accounts") | needs an auxiliary or subject pronoun for the base form; "to impact" requires a following object, so the preposition ("prior to impact") stays out; skip the medical and soil sense of "impacted", the struck object of a real collision ("impacted terrain"), the fixed compounds, and hyphenated forms |
 | `impact-noun-bare` | "the impact of X", "measure the impact" — `info` | needs a measuring verb in front or "of" behind; skip the collision sense and the fixed compounds |
 | `thats-how-x` | sentence-initial "that's how…" | |
 | `announced-takeaway` | colon-led label: "The pattern/lesson/takeaway…:" | sentence-initial |
