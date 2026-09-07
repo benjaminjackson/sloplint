@@ -90,6 +90,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Nothing in 2.4M words of pre-2022 Hacker News or 1.25M words of
   public-domain prose.
 
+- `abstract-lives-in` (rhetorical-tic, info) flags an abstraction given an
+  address: "the craft that lives between the two desks", "its context lives
+  in a folder nobody else can open", "the value sits in the follow-up". The
+  subject list is closed and abstract, so people and dogs living and sitting
+  places never match, and a capitalised subject is a proper noun. "with" is
+  left out of the prepositions because "the decision sits with the board" is
+  ordinary English for who is responsible, "at" because "the value sits at
+  ten million" is a quantity, and "lies in" because "the problem lies in
+  the assumption" is where a fault is. It ships at info because the same
+  shape says where information literally is ("the knowledge lives in our
+  heads"), and a sample of pre-2022 Hacker News biased toward the
+  construction turns up a few of those per million words, all human. A
+  draft that keeps giving ideas addresses should be read as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and

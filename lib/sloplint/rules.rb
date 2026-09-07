@@ -297,6 +297,66 @@ module Sloplint
                  "in a person. Careful writers finish the clause."
     ),
     Rule.new(
+      id: "abstract-lives-in",
+      category: "rhetorical-tic",
+      severity: "info",
+      # An abstraction given an address: "the craft that lives between the two
+      # desks", "its context lives in a folder nobody else can open", "the
+      # value sits in the follow-up". The subject list is closed and abstract,
+      # so a person, a dog, or a house living or sitting somewhere never
+      # matches, and a capitalised subject is skipped, so the messenger app
+      # Signal sitting in the middle of a relay is not the figure (at the cost
+      # of a sentence-initial "Context lives in", which is rare).
+      #
+      # Two prepositions are left out. "with" marks responsibility ("the
+      # decision sits with the board"), and "at" marks a quantity ("the value
+      # sits at ten million"); "at the intersection of" belongs to
+      # intersection-of. Two verbs are left out too: "lies in" ("the problem
+      # lies in the assumption") and "resides in" are ordinary English for
+      # where a fault or an authority is, at any register.
+      #
+      # Ships at info. The same shape states where information literally is
+      # ("the knowledge lives in our heads", "the instructions live in the
+      # README"), and a sample of pre-2022 Hacker News biased toward the
+      # construction turns up a few of those per million words, all human.
+      # One flag is a question; a draft that keeps giving ideas addresses
+      # should be read as a warning.
+      pattern: /\b(?:work|context|knowledge|answer|value|truth|problem|risk|decision|instructions?|memory|leverage|power|magic|difference|opportunity|insight|advantage|gap|signal|nuance|meaning|tension|friction|complexity|craft|skill|expertise)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:that(?:[ \t]|\r?\n(?!\s*\n))+|which(?:[ \t]|\r?\n(?!\s*\n))+)?(?:lives?|lived|sits?|sat)(?:[ \t]|\r?\n(?!\s*\n))+(?:in|between|inside|outside|beneath|behind|under|underneath)\b/ix,
+      message: "An abstraction that lives/sits somewhere is an AI figure.",
+      suggestion: "Say who does the work, or where the thing actually is.",
+      # A capitalised subject is a proper noun.
+      skip: [/\A[A-Z]/],
+      examples_bad: [
+        "The craft that lives between the two desks is where the handoff fails.",
+        "Its context lives in a folder nobody else can open.",
+        "The real value sits in the follow-up, not the meeting."
+      ],
+      examples_ok: [
+        "She lives in Boston and sits between us at dinner.",
+        # Responsibility, not location.
+        "The decision sits with the board.",
+        "The risk lives with the buyer once the goods ship.",
+        # A quantity, not a location.
+        "The value sits at ten million dollars a life.",
+        # "on" is not in the list.
+        "The knowledge lived on a server in the basement.",
+        # An intervening noun breaks the figure.
+        "The knowledge base lived in the basement.",
+        # A proper noun.
+        "Signal sits in the middle of the relay.",
+        # "lies in" is ordinary English for where a fault is.
+        "The problem lies in the assumption.",
+        "He put the answer in the margin and sat between the two of them."
+      ],
+      rationale: "Giving an idea a location ('the value sits in', 'the work lives " \
+                 "between') lets a writer sound precise about where something is without " \
+                 "saying who does it or what it is. Models reach for it constantly, but " \
+                 "people use the same shape to say where information literally is, so " \
+                 "one flag is a question; a draft that keeps giving ideas addresses should " \
+                 "be read as a warning."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",

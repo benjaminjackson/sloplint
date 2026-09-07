@@ -282,6 +282,7 @@ false-positive risk, which none has demonstrated.
 | `from-x-to-y-chain` | 2+ comma-separated "from X to Y" spans | counts spans; operands open with a letter, so ranges are out; skips the relay ("to B, from B") and the reduplication ("from X to X") |
 | `one-x-one-y` | 3+ comma-separated "one X" items standing on their own | counts items; must open a sentence or follow a colon, so a chain after a verb is counting; items letter-led; the distributive "one for …" skipped; a pair never flags |
 | `and-what-it-should` | ", and what it should." — a second "what" clause closing on a bare modal or a negated auxiliary | comma, conjunction and full stop required; the affirmative copula and do-verb ("what he does.") are complete clauses and out; a question is out |
+| `abstract-lives-in` | an abstract noun that "lives/sits in/between/inside/…" | closed subject list; capitalised subjects skipped; "with" (responsibility), "at" (quantity), "lies in" and "resides in" left out; `info` |
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
 | `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |
