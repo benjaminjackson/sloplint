@@ -103,6 +103,55 @@ module Sloplint
       rationale: "Repeated negated-verb parallelism is a signature model cadence."
     ),
     Rule.new(
+      id: "from-x-to-y-chain",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Two or more "from X to Y" spans in a row, comma-separated: "from
+      # private notes to shared files, from personal memory to team context".
+      # Each span is "from", one to three words, "to", one to three words; the
+      # comma between spans is the evidence of authored parallelism, as in
+      # no-x-no-y, so a chain never crosses a sentence boundary.
+      #
+      # Two human shapes share the surface and are skipped. The relay, where
+      # each span starts where the last one ended ("from the egg to the worm,
+      # from the worm to the fly"), traces a sequence: the second "from"
+      # repeating the first "to" drops the note. The reduplication, "from
+      # hummock to hummock, from root to root", describes motion: a span whose
+      # two ends are the same words drops it.
+      pattern: /\bfrom\s+(?:[\w'-]+\s+){1,3}to\s+(?:[\w'-]+\s+){0,2}[\w'-]+
+                (?:,\s+(?:and\s+)?from\s+(?:[\w'-]+\s+){1,3}to\s+(?:[\w'-]+\s+){0,2}[\w'-]+)+/ix,
+      message: '"from X to Y, from X to Y" chain (%{count} spans) reads as AI cadence.',
+      suggestion: "Keep one span, or name the things instead of sweeping across them.",
+      count_group: /\bfrom\b/i,
+      skip: [
+        # The relay: "to the worm, from the worm".
+        /\bto\s+(?:[\w'-]+\s+){0,2}([\w'-]+),\s+(?:and\s+)?from\s+(?:[\w'-]+\s+){0,2}\1\b/i,
+        # The reduplication: "from hummock to hummock".
+        /\bfrom\s+(?:the\s+)?((?:[\w'-]+\s+){0,2}[\w'-]+)\s+to\s+(?:the\s+)?\1\b/i
+      ],
+      examples_bad: [
+        "It is the move from private notes to shared files, from personal memory to team context, from individual leverage to group capability.",
+        "We went from guessing to measuring, from hoping to knowing.",
+        "The plan takes them from the pilot to the rollout, and from the memo to the audit."
+      ],
+      examples_ok: [
+        "The train runs from Boston to New York.",
+        # Pride and Prejudice (Austen, public domain): the relay.
+        "it jumps from admiration to love, from love to matrimony, in a moment.",
+        # Walden (Thoreau, public domain): the reduplication.
+        "jumping from hummock to hummock, from willow root to willow root, when the wild river valley",
+        # A span longer than three words on either side is a clause, not an item.
+        "He drove from the coast to the mountains in a day, and from there the road was easy.",
+        # Two spans in separate sentences never chain.
+        "She moved from Ohio to Maine. From there she wrote to him weekly."
+      ],
+      rationale: "Stacked 'from X to Y' spans are a model's way of gesturing at a whole " \
+                 "transformation without describing any of it; each span names two poles and " \
+                 "nothing between them. Human prose stacks the phrase for a sequence (each span " \
+                 "picking up where the last ended) or for motion (the same word at both ends), " \
+                 "and both of those are skipped. What remains is rare in careful writing."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",
