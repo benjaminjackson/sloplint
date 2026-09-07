@@ -57,7 +57,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   human shapes are skipped: the relay, where each span starts where the last
   ended ("from the egg to the worm, from the worm to the fly"), and the
   reduplication, where a span has the same word at both ends ("from hummock
-  to hummock"). With those out it flags once in 2.4M words of pre-2022
+  to hummock"). Operands must open with a letter, so a list of ranges ("from
+  1990 to 1995, from 1997 to 2001") is not a chain. With those out it flags once in 2.4M words of pre-2022
   Hacker News (a geographic sweep) and once in 1.25M words of public-domain
   prose (Joyce).
 

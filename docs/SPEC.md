@@ -279,7 +279,7 @@ false-positive risk, which none has demonstrated.
 | `no-x-no-y-frag` | the same cadence as sentence fragments ("No fluff. No filler.") | counts items; `info` |
 | `thats-the-whole` | "that/this is the whole point/game/thing…" | |
 | `did-not-x-did-not-y` | 2+ "did not …"/"didn't …" in a row | counts items |
-| `from-x-to-y-chain` | 2+ comma-separated "from X to Y" spans | counts spans; skips the relay ("to B, from B") and the reduplication ("from X to X") |
+| `from-x-to-y-chain` | 2+ comma-separated "from X to Y" spans | counts spans; operands open with a letter, so ranges are out; skips the relay ("to B, from B") and the reduplication ("from X to X") |
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
 | `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |
