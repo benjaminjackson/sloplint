@@ -430,24 +430,43 @@ module Sloplint
       id: "cleanly",
       category: "rhetorical-tic",
       severity: "warning",
-      # No verb list. The engineering idioms -- a patch applies cleanly, a
-      # branch merges cleanly, a build compiles cleanly -- are the same move
-      # and get flagged too, on purpose. The word survives in a 19th-century
-      # adjective sense ("cleanly dressed", "a cleanly laid table") that the
-      # rule also catches, which costs nothing: nobody writes that today.
-      pattern: /\bcleanly\b/i,
+      # The bare adverb was the whole rule, and the engineering idioms were
+      # flagged on purpose. Technical prose says that was the wrong call: a
+      # patch that applies cleanly, a build that compiles cleanly and a gear
+      # leg that separates cleanly are all checkable facts with a visible
+      # failure state, which is the opposite of rating a fit you haven't
+      # shown. The original probe -- 25 Gutenberg texts, no modern manner
+      # adverb found -- could not have caught this, because Victorian novels
+      # have no builds; the same corpus read as engineering ("clearly and
+      # cleanly drawn in pencil", Machine Drawing and Design, 1890) has it.
+      #
+      # What is left is the partition frame: something abstract divided into
+      # parts, or mapped onto another scheme, and rated before the reader sees
+      # the parts. The preposition carries it. The clause-final form ("the
+      # objection breaks down cleanly, and neither half survives") is the same
+      # tell and is left out: separating it from "the gear separated cleanly."
+      # needs the subject, and a regex cannot see the subject -- the same
+      # reason the animacy verbs stay out of trailing-significance-participle.
+      pattern: /\bcleanly\s+(?:in(?:to|\s+(?:two|three|half))|onto)\b/i,
       message: '"Cleanly" rates the fit instead of showing it.',
       suggestion: "Cut the adverb, or say what actually lined up.",
       examples_bad: [
         "The argument splits cleanly into two parts.",
-        "The patch applies cleanly to main.",
         "The new taxonomy maps cleanly onto the old one.",
-        "The objection breaks down cleanly, and neither half survives."
+        "The objection divides cleanly in half, and neither side survives."
       ],
       examples_ok: [
         "The branch merged without conflicts.",
         "She wiped the counter clean.",
-        "The build finished with no warnings."
+        "The build finished with no warnings.",
+        # The engineering idiom the rule used to flag on purpose. A patch that
+        # applies cleanly either did or did not; there is nothing being rated.
+        "The patch applies cleanly to main.",
+        # Wording follows NTSB AAR-14/01 and NASA SEL-84-101 (US government
+        # works) and An Introduction to Machine Drawing and Design (1890).
+        "The main landing gear separated cleanly from the airplane.",
+        "The code should be cleanly compiled beforehand.",
+        "Your answers should be clearly and cleanly drawn in pencil."
       ],
       rationale: "The adverb rates the join instead of showing it, and it rates before the " \
                  "reader has anything to check. Real material resists -- the leftover case, " \
@@ -770,7 +789,33 @@ module Sloplint
       id: "exact-exactly",
       category: "rhetorical-tic",
       severity: "info",
-      pattern: /\bexact(?:ly)?\b(?!\s*(?:(?:the\s+)?(?:same|opposite|science|change|replica|copy|location|coordinates|way)\b|[$\d]|noon\b|midnight\b|o'?\s*clock\b))/i,
+      # The allow-list was a list of specific nouns, and technical prose showed
+      # that the real division is not lexical but grammatical: "exact" in front
+      # of a quantity an instrument could read is doing work ("the exact
+      # diameter of the finished rim", "the exact blade pitch angle"), and so
+      # is "exactly" in front of a fact someone went and determined ("could not
+      # be determined exactly when", "reamed exactly to the right size"). The
+      # tell is the bare intensifier on a claim with nothing behind it.
+      #
+      # So the allow-list now carries the measurement nouns as a class, and a
+      # second branch clears "exactly" before an interrogative or a
+      # to-phrase. What is left is the reflexive emphasis the rule was written
+      # for: "exactly the point", "exactly right", "exactly why".
+      pattern: /\bexact(?:ly)?\b
+                (?!\s*(?:(?:the\s+)?(?:[\w-]+\s+){0,2}
+                     (?:same|opposite|science|change|replica|cop(?:y|ies)|
+                        location|coordinates|way|
+                        match(?:es)?|duplicate|equivalent|
+                        diameter|radius|size|dimensions?|length|width|height|
+                        depth|thickness|weight|mass|volume|angle|pitch|
+                        temperature|pressure|speed|altitude|position|
+                        distance|amount|quantity|number|count|figure|value|
+                        time|times|date|moment|instant|sequence|order|
+                        wording|phrasing|text|words?|
+                        cause|nature|extent|mechanism|composition)\b
+                   |[$\d]|noon\b|midnight\b|o'?\s*clock\b
+                   |when\b|where\b|which\b|whom\b|how\s+(?:much|many|far|long)\b
+                   |to\s+(?:the\s+)?\w))/ix,
       message: '"exact/exactly" is reflexive emphasis unless it names something checkable.',
       suggestion: "Cut it, or replace with the number, name, or match it's supposed to be precise about.",
       examples_bad: [
@@ -793,7 +838,14 @@ module Sloplint
         "The train left at exactly noon.",
         "They agreed to meet at exactly midnight.",
         "The meeting starts at exactly 3 o'clock.",
-        "She has exacting standards for her students."
+        "She has exacting standards for her students.",
+        # A measured quantity and a determined fact, pinning the two branches
+        # added above. Wording follows "Turning and Boring" (1919, public
+        # domain by date) and NTSB AAR-04/01 (US government work).
+        "The soft jaws are bored to the exact diameter of the finished rim.",
+        "Investigators could not determine the exact blade pitch angle.",
+        "The bore is finished with a reamer to exactly the right size and taper.",
+        "It could not be determined exactly when the fire began."
       ],
       rationale: "Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to " \
                  "check; it earns its place only next to a number, a name, or a stated identity."
@@ -866,6 +918,17 @@ module Sloplint
       # "streets" and silencing a real hit. No /i on the whole pattern: it
       # would make [a-z] match capitals and undo the first guard, so the
       # case-insensitive parts are inline (?i:...) groups instead.
+      #
+      # Three additions after the rule met accident reports and reference
+      # documentation, where every hit was literal and each broke a guard.
+      # Airfield surfaces (runway, taxiway, apron) are as literal as a street
+      # and are written lowercase, so the first guard was actively admitting
+      # them. A matrix cell is the same literal sense as a set intersection,
+      # so rows and columns join the geometry list. And the all-caps
+      # allowance, added for "AI"/"UX"/"HCI" on the premise that no street is
+      # spelled that way, was admitting American route designators: two
+      # lookaheads now drop an operand shaped like a route number ("US-27A")
+      # or a quadrant plus a house number ("NE 140th Court").
       pattern: /\b[Tt]he\s+intersection\s+of\b
                 (?!\s+(?:[\w-]+\s+){0,2}
                      (?i:sets?|lines?|curves?|planes?|circles?|spheres?|axes|
@@ -873,8 +936,14 @@ module Sloplint
                          roads?|highways?|routes?|tracks?|corridors?|paths?|
                          boulevards?|lanes?|arrays?|lists?|ranges?|
                          collections?|keys?|vectors?|matrices|polygons?|
-                         rectangles?|intervals?|data|datasets?)\b)
-                (?=\s+(?:[a-z]|[A-Z]{2,}\b))/x,
+                         rectangles?|intervals?|data|datasets?|
+                         runways?|taxiways?|taxilanes?|aprons?|
+                         rows?|columns?|cells?|
+                         courts?|drives?|places?|terraces?|parkways?|
+                         crossings?|junctions?|alleys?)\b)
+                (?!\s+(?:[\w-]+\s+){0,3}[A-Z]{1,3}-\d)
+                (?!\s+[A-Z]{1,3}\s+\d)
+                (?=\s+(?:[a-z]|[A-Z]{2,}\b(?!-\d)))/x,
       message: '"the intersection of X and Y" outside streets or geometry is borrowed positioning.',
       suggestion: "Say what the work does, or name the two things it takes from each.",
       examples_bad: [
@@ -901,7 +970,16 @@ module Sloplint
         "Snow piled up at the intersection of the roads below.",
         "Compute the intersection of the two arrays.",
         "The query returns the intersection of both key sets.",
-        "The intersection of the ranges is empty."
+        "The intersection of the ranges is empty.",
+        # Airfield surfaces, route designators and matrix cells, each pinning
+        # one of the three guards added above. Wording follows NTSB AAR-16/02,
+        # AAR-14/01 and HAR-17/02 and the NASA Software Safety Guidebook
+        # (NASA-GB-8719.13) -- US government works, public domain.
+        "The airplane crossed the intersection of runway 13 with runway 4.",
+        "Firefighters gathered near the intersection of taxiway N and taxiway F.",
+        "The crash occurred at the intersection of US-27A and NE 140th Court.",
+        "Traffic was heaviest at the intersection of NE 140th Court.",
+        "The square at the intersection of a row and a column contains a code."
       ],
       rationale: "A street corner and a set diagram are the phrase's literal homes. Everywhere " \
                  "else it claims a position without doing the work of one: the writer sits " \
@@ -926,11 +1004,23 @@ module Sloplint
       # Onigmo bug documented there. The trailing (?!-) is load-bearing too:
       # every other guard is spelled with \s+, so "will impact-test the
       # housing" walks straight past them.
+      #
+      # Accident reports found two holes. "to impact" was in the auxiliary
+      # list as an infinitive marker, so it also matched the preposition in
+      # "4 seconds prior to impact" and "time to impact"; that branch now
+      # stands on its own and requires a following object. And "impacted" in
+      # those reports is usually one object hitting another -- an airplane
+      # impacts terrain, debris impacts a wing -- which is the collision noun
+      # the rule already excludes, just on the other side of the verb, so the
+      # struck-object list mirrors it.
       pattern: /\b(?:
-                  (?:will|would|can|could|may|might|shall|should|must|to|does|
+                  (?:will|would|can|could|may|might|shall|should|must|does|
                      do|did|doesn't|don't|didn't|won't|helps?|helped)\s+
                   (?:(?:it|this|that|they|we|you)\s+)?
                   impacts?
+                | to\s+impacts?(?=\s+(?:the|a|an|its|their|our|your|his|her|
+                                       this|that|these|those|every|all|any|
+                                       some|more|fewer|most|both|each|\w+ly)\b)
                 | (?:it|this|that|which|he|she)\s+impacts
                 | (?:they|we|you)\s+impact
                 | (?:(?:tooth|teeth|molars?|bowels?|colon|fractures?|soils?)\s+
@@ -942,6 +1032,15 @@ module Sloplint
                 (?!\s+(?:tooth|teeth|molars?|wisdom|canines?|bowels?|colon|
                          stool|feces|fecal|fractures?|soils?|snow|ice|sediment|
                          gravel|earwax|cerumen)\b)
+                (?!\s+(?:the\s+)?(?:[\w-]+\s+){0,2}
+                        (?:terrain|ground|earth|seabed|seawall|water|
+                           sea|ocean|river|trees?|grove|brush|
+                           hillside|ridge|embankment|berm|slope|cliff|
+                           runway|taxiway|apron|tarmac|pavement|roadway|
+                           guardrail|barrier|median|pole|posts?|abutment|
+                           wing|fuselage|tail|nacelle|rotor|airframe|
+                           bumper|windshield|chassis|hull|deck|bulkhead|
+                           wall|roof|structure|building|bridge|pier)\b)
                 (?!\s+(?:statements?|assessments?|reports?|studies|study|
                          analys[ie]s|evaluations?|factors?|ratings?|scores?|
                          investing|investors?|funds?|bonds?|craters?|
@@ -978,7 +1077,14 @@ module Sloplint
         "The soil was impacted by years of heavy machinery.",
         "An impacted fracture heals without displacement.",
         "Will the impact be permanent?",
-        "Consultants will impact-test the housing next week."
+        "Consultants will impact-test the housing next week.",
+        # One object striking another, and the preposition that was reading as
+        # an infinitive. Wording follows NTSB AAR-06/03 and AAR-14/01 and the
+        # Columbia Accident Investigation Board report -- US government works.
+        "The airplane impacted terrain about 300 feet north of the threshold.",
+        "The foam debris impacted the left wing shortly after separation.",
+        "The stick shaker activated 4 seconds prior to impact.",
+        "The chart plots time to impact in seconds."
       ],
       rationale: "As a verb, 'impact' reports that something changed while withholding the " \
                  "direction and the size. The specific verb -- slowed, doubled, broke -- " \
