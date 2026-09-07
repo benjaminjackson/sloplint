@@ -2020,6 +2020,52 @@ module Sloplint
     # expensive rule in the catalog at 65% of scan time on 1MB. Per
     # CLAUDE.md: some tells can't be regexes; this was one.
     Rule.new(
+      id: "everyone-nobody",
+      category: "structure",
+      severity: "warning",
+      # The comma-spliced antithesis on quantifier subjects: "Everyone wants
+      # the dashboard, nobody maintains it." One clause opens on
+      # everyone/everybody, the other on nobody/no one/none or "one N"
+      # ("everyone may ask, one editor decides"), joined by a bare comma, and
+      # the second clause closes the sentence. The comma splice is the
+      # evidence: with "and" or "but" it is an ordinary sentence, and with a
+      # period it is two. The first subject must open a clause, the two
+      # subjects must differ in polarity, so the anaphoric "nobody is on my
+      # side, nobody takes part with me" is not a hinge, and "one" may not be
+      # "one of". Neither clause may hold a newline, so a chain never crosses
+      # a paragraph break, and the comma gap is at most two spaces, so a
+      # blanked code span under --markdown cannot weld two clauses.
+      pattern: /(?:^|(?<=[.!?:;]\s))
+                (?:(?:everyone|everybody)[ \t]+[^,.;:!?\n]{2,40},[ \t]{1,2}(?:nobody|no[ \t]+one|none|one[ \t]+(?!of\b)(?=[a-z])[\w'’-]+)
+                  |(?:nobody|no[ \t]+one)[ \t]+[^,.;:!?\n]{2,40},[ \t]{1,2}(?:everyone|everybody|one[ \t]+(?!of\b)(?=[a-z])[\w'’-]+))
+                [ \t]+[^,.;:!?\n]{2,40}[.;!?]/ix,
+      message: '"Everyone X, nobody Y." is the AI antithesis hinge.',
+      suggestion: "Say which one is the problem, in its own sentence.",
+      examples_bad: [
+        "Everyone wants the dashboard, nobody maintains it.",
+        "Treat it like a shared intern: everyone may ask, one editor decides.",
+        "Nobody owns the file, everyone edits it."
+      ],
+      examples_ok: [
+        # A conjunction makes it a sentence, not a hinge.
+        "Everyone left early, and nobody noticed.",
+        # Pride and Prejudice (Austen, public domain): the same subject twice is
+        # anaphora, not antithesis.
+        "Nobody is on my side, nobody takes part with me;",
+        # The second clause must close the sentence.
+        "Everyone who came, nobody excepted, signed the book.",
+        # A period is two sentences.
+        "Everyone wants the dashboard. Nobody maintains it.",
+        "One of them left, everyone else stayed for the vote and the dinner afterwards.",
+        # A paragraph break is not a comma.
+        "Everyone wants the dashboard,\n\nnobody maintains it."
+      ],
+      rationale: "The everyone/nobody hinge states a whole diagnosis as a balanced pair of " \
+                 "clauses, and the balance is what makes it sound settled. Models reach for " \
+                 "it to close a setup; careful writers join the clauses with a conjunction " \
+                 "or give the problem its own sentence."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",

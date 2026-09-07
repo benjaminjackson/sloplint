@@ -71,6 +71,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   for you, one for me, one for the pot" is skipped at any length. Nothing in
   2.4M words of pre-2022 Hacker News or 1.25M words of public-domain prose.
 
+- `everyone-nobody` (structure, warning) flags the comma-spliced antithesis
+  on quantifier subjects: "Everyone wants the dashboard, nobody maintains
+  it." The
+  balance is what makes the diagnosis sound settled. The comma splice is
+  required (with "and" it is a sentence, with a period it is two), the two
+  subjects must differ in polarity, and the second clause must close the
+  sentence. Nothing in 2.4M words of pre-2022 Hacker News or 1.25M words of
+  public-domain prose.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
