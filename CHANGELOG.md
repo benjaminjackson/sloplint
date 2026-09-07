@@ -150,6 +150,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   same shape of a person; nothing in public-domain prose outside Joyce's
   dialogue. Several in a draft should be read as a warning.
 
+- `is-the-whole-x` (rhetorical-tic, info) is `thats-the-whole` on any
+  subject: "That periodicity is the whole tell.", "Consistency is the real
+  test." It yields only the exact sentences the two older rules own
+  ("that/this is the whole point/game/thing/deal/story" and "is the entire
+  point/game/thing/deal/story"), so nothing is reported twice and "This is
+  the real test." is not lost. An interrogative subject is out, since a
+  question is not a closer; "only", "deal", "thing" and "cost" are left out
+  because "is the only thing", "the real deal", "the real thing" and "the
+  whole cost" are ordinary speech. Ships at info: about three per million words of
+  pre-2022 Hacker News, nothing in public-domain prose. Several in a draft
+  should be read as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and

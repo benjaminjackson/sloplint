@@ -91,6 +91,71 @@ module Sloplint
       rationale: "The 'that's the whole X' flourish is a model tic for landing a paragraph."
     ),
     Rule.new(
+      id: "is-the-whole-x",
+      category: "rhetorical-tic",
+      severity: "info",
+      # The generic form of thats-the-whole: a subject, then "is the whole /
+      # real / actual / entire N" with N from a closed abstract list. "That
+      # periodicity is the whole tell.", "Consistency is the real test." The
+      # match opens on the subject's last word, so the note points at the
+      # sentence and not at a space. Two older rules own two exact shapes,
+      # and those are yielded so nothing is reported twice: "that/this is
+      # the whole point/game/thing/deal/story" to thats-the-whole, and "is
+      # the entire point/game/thing/deal/story" to is-the-entire; every
+      # other subject and noun flags here, so "This is the real test." is
+      # not lost. A question is not a closer, so an interrogative subject
+      # (what, which, who, where, when, how) is out. "only" is left out
+      # because "is the only thing" is ordinary speech; "deal", "thing" and
+      # "cost" because "the real deal", "the real thing" and "the whole cost"
+      # are idioms or quantities. The noun may not run on into a compound
+      # ("problem-solver"). Gaps may cross a hard-wrapped newline but never
+      # a paragraph break. Ships at info because "the real question" and
+      # "the whole point" are also how people talk.
+      pattern: /(?<![\w'’-])
+                (?!(?:that|this)(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+(?:whole)(?:[ \t]|\r?\n(?!\s*\n))+(?:point|game|thing|deal|story|ballgame|ball[ \t]+game)(?![\w'’-]))
+                (?!(?:what|which|who|where|when|how)(?![\w'’-]))
+                [\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?:whole|real|actual)(?:[ \t]|\r?\n(?!\s*\n))+(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix)
+                  |entire (?:[ \t]|\r?\n(?!\s*\n))+(?!(?:point|game|thing|deal|story)(?![\w'’-]))(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix))(?![\w'’-])/ix,
+      message: '"… is the whole/real N" is a stock LLM closer.',
+      suggestion: "Say the point directly instead of ranking it.",
+      examples_bad: [
+        "That periodicity is the whole tell.",
+        "Consistency is the real test.",
+        "Getting the handoff right is the actual work.",
+        # Not thats-the-whole's nouns, so not yielded.
+        "This is the real test.",
+        "That is the actual problem.",
+        # "entire" with a noun is-the-entire does not own.
+        "Timing is the entire tell.",
+        # A hard-wrapped closer survives one newline.
+        "Consistency\nis the real test."
+      ],
+      examples_ok: [
+        # Left to thats-the-whole.
+        "That is the whole point.",
+        # Left to is-the-entire.
+        "Timing is the entire game.",
+        # "only" is ordinary speech.
+        "Sleep is the only thing that helps.",
+        "The real question was never asked.",
+        # Idioms and quantities.
+        "Clojure is the real deal, and so is the REPL.",
+        "The 1962 recording is the real thing.",
+        "The remaining balance is the whole cost of the repair.",
+        # A compound with a listed noun.
+        "She is the real problem-solver on the team.",
+        # A question is not a closer.
+        "What is the real difference between the two plans?",
+        "Nobody knows what is the actual cost of storage.",
+        # A paragraph break is not a gap.
+        "Consistency\n\nis the real test."
+      ],
+      rationale: "Ranking a claim as 'the whole point' or 'the real test' is how a model " \
+                 "lands a paragraph without adding to it. People say it too, so one is a " \
+                 "question; several in a draft should be read as a warning."
+    ),
+    Rule.new(
       id: "did-not-x-did-not-y",
       category: "rhetorical-tic",
       severity: "warning",
