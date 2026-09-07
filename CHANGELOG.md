@@ -199,9 +199,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `epistrophe` (rhetorical-tic, info, off by default) flags two clauses
   that end on the same two-word phrase, the second closing the sentence:
-  "built for one desk, and almost no job is done at one desk." It is
-  off by default like `rule-of-three`: the figure is one Emerson and Marcus
-  Aurelius use on purpose, and on pre-2022 Hacker News most of the 43 hits
+  "built for one desk, and almost no job is done at one desk." Two
+  backreferences catch the repeat, so the phrase may be hard-wrapped; an
+  article-led phrase, a short second word, a long or punctuated second
+  clause, and a clause made of blanked Markdown are all out. It is off by
+  default like `rule-of-three`: the figure is one Emerson and Marcus
+  Aurelius use on purpose, and on pre-2022 Hacker News most of the 42 hits
   per million words are plain phrase reuse. Select it when a draft is
   suspected of leaning on it; several then should be read as a warning.
 

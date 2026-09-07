@@ -219,26 +219,44 @@ module Sloplint
       default_on: false,
       # Two clauses that end on the same two-word phrase, the second closing
       # the sentence: "built for one desk, and almost no job is done at one
-      # desk." A backreference catches the repeat. The phrase may not open
-      # on an article, its second word must be four letters or more, and the
+      # desk." Two backreferences catch the repeat, one per word, so the
+      # phrase may be hard-wrapped at either occurrence. The phrase may not
+      # open on an article, since "in the report, and … in the report" is
+      # ordinary; its second word must be four letters or more; and the
       # second clause is five to sixty characters with no internal
-      # punctuation. Off by default: this is a named figure that Emerson and
-      # Marcus Aurelius use on purpose, and on Hacker News most hits are
-      # ordinary phrase reuse ("what they mean, not what the dictionary says
-      # they mean"), so the rate is above what an info rule should carry.
-      # Select it when a draft is suspected of leaning on it.
-      pattern: /\b((?!the\b|a\b|an\b)[\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+[\w'’-]{4,}),(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+|but(?:[ \t]|\r?\n(?!\s*\n))+)?[^.,;:!?\n]{5,60}\b\1[.!?]/i,
+      # punctuation, opening on a word, with whitespace runs capped at two
+      # spaces (or a hard wrap with a small indent), so a code span or URL
+      # blanked by --markdown cannot weld a false repeat. Off by default:
+      # this is a named figure that Emerson and Marcus Aurelius use on
+      # purpose, and on Hacker News most hits are ordinary phrase reuse
+      # ("what we said, not what the minutes say we said"), so the rate is
+      # above what an info rule should carry. Select it when a draft is
+      # suspected of leaning on it.
+      pattern: /\b((?!the\b|a\b|an\b)[\w'’-]+)(?:[ \t]|\r?\n(?!\s*\n)[ \t]{0,4})+([\w'’-]{4,}),(?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]{0,4})(?:(?:and|but)(?:[ \t]|\r?\n(?!\s*\n)[ \t]{0,4})+)?
+                (?=\w)(?:[^.,;:!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]{0,4}){5,60}?\b\1(?:[ \t]|\r?\n(?!\s*\n)[ \t]{0,4})+\2[.!?]/ix,
       message: "Two clauses ending on the same phrase (epistrophe) read as AI cadence.",
       suggestion: "Vary the second ending, or cut the repeat.",
       examples_bad: [
         "The tool was built for one desk, and almost no job is done at one desk.",
-        "They wanted a shared file, but nobody would maintain a shared file."
+        "They wanted a shared file, but nobody would maintain a shared file.",
+        # A hard-wrapped repeat survives one newline, in either clause.
+        "The tool was built for one desk, and almost no job\nis done at one desk.",
+        "The tool was built for one\ndesk, and almost no job is done at one desk."
       ],
       examples_ok: [
         "The tool was built for one desk, and almost no job is done alone.",
         # A repeat across a sentence boundary is two sentences.
         "They wanted a shared file. Nobody would maintain a shared file.",
-        "It is what they mean, not the dictionary."
+        # An article-led phrase is ordinary repetition.
+        "It was in the report, and the numbers were in the report.",
+        # The second word must be four letters or more.
+        "I like the blue one, and she likes the blue one.",
+        # The second clause is at most sixty characters.
+        "The tool was built for one desk, and almost no job anywhere in the whole company across all of its many offices is done at one desk.",
+        # No internal punctuation in the second clause.
+        "The tool was built for one desk, and, as it happens, no job is done at one desk.",
+        # Blanked text cannot make the second clause.
+        "It was tuned for one desk, and                                   on one desk."
       ],
       rationale: "Ending consecutive clauses on the same phrase is a figure of emphasis, " \
                  "and a model reaches for it whenever it wants a sentence to land. People " \
