@@ -1118,10 +1118,28 @@ module Sloplint
       # when" is precise where "know exactly why" is filler, so only the
       # knowing verbs take the wh-branch.
       pattern: /\b(?:
-                  # "That's exactly ...", "This is exactly the kind of ..."
-                  (?:that|this|it|these|those|which|here|there)
+                  # "That's exactly ...", "This is exactly the kind of ...".
+                  # The complement is open here, so it needs the checkable
+                  # allow-list back as a guard, or the copula re-admits every
+                  # measurement the rest of the rule was rewritten to drop:
+                  # "That's the exact same design", "It was exactly noon".
+                  # "here" and "there" are not subjects: the existential
+                  # "there is exactly one solution" is a count, so checkable.
+                  (?:that|this|it|these|those|which)
                     (?:'s|\u2019s|\s+(?:is|was|are|were))\s+
                     (?:the\s+)?exact(?:ly)?\b
+                    (?!\s*(?:
+                         (?:the\s+)?
+                         (?:same|opposite|science|change|replica|cop(?:y|ies)|
+                            location|coordinates|way)\b
+                       |[$\d]|noon\b|midnight\b|o'?\s*clock\b
+                       |(?:one|two|three|four|five|six|seven|eight|nine|ten|
+                          eleven|twelve|dozen|twenty|thirty|fifty|hundred)\b
+                       |(?:the\s+|a\s+|an\s+)?(?:[\w-]+\s+){0,2}
+                         (?:diameter|radius|size|dimensions?|length|width|
+                            height|depth|thickness|weight|mass|volume|
+                            angle|pitch|temperature|pressure|speed|altitude|
+                            position|distance|clearance|tolerance)\b))
                   # "exactly right", "exactly backwards"
                 | exactly\s+(?:right|wrong|backwards|so)\b
                   # "exactly the point", "the exact problem"
@@ -1163,7 +1181,18 @@ module Sloplint
         "The soft jaws are bored to the exact diameter of the finished rim.",
         "Investigators could not determine the exact blade pitch angle.",
         "The bore is finished with a reamer to exactly the right size and taper.",
-        "It could not be determined exactly when the fire began."
+        "It could not be determined exactly when the fire began.",
+        # The demonstrative copula leaves its complement open, so each of the
+        # checkable uses is pinned again in that frame -- review found the
+        # branch re-admitting the whole allow-list it was meant to replace.
+        "That's the exact same design we shipped last year.",
+        "These are the exact coordinates of the wreck.",
+        "It was exactly noon when the whistle blew.",
+        "This is the exact replica of the ship.",
+        # Existential "there"/"here" carry a count, which is checkable.
+        "There is exactly one solution to the equation.",
+        "There are exactly 24 hours in a day.",
+        "Here is the exact temperature at the time of the failure."
       ],
       rationale: "Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to " \
                  "check; it earns its place only next to a number, a name, or a stated identity."
