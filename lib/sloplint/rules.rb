@@ -2839,7 +2839,7 @@ module Sloplint
       severity: "info",
       # The kicker: a sentence of at least sixty characters, then a closer of
       # two to eight words that ends the paragraph and opens on a quantifier
-      # or a deictic ("Nothing here needs a new login.", "Most teams end up
+      # ("Nothing here needs a new login.", "Most teams end up
       # with two.", "Then find out whether it paid off."). The long sentence
       # must start a sentence itself, so the scan is linear, and \K drops it
       # from the match so the note points at the closer. The closer must be
@@ -2899,9 +2899,9 @@ module Sloplint
         # More than two spaces is not a sentence gap.
         "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works.   Nothing here needs a new login.",
         # A bullet followed by another bullet is not a paragraph end.
-        "- Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. It works.\n- We moved the deploy script into the repo so the on-call rota could run it. It works.\n- The rest is in the appendix and needs no change from anyone on the team.\n",
+        "- Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here breaks.\n- We moved the deploy script into the repo so the on-call rota could run it. Nothing here breaks.\n- The rest is in the appendix and needs no change from anyone on the team.\n",
         # Blanked text cannot make the long sentence.
-        "See                                                                          here. It works.\n",
+        "See                                                                          here. Nothing here breaks.\n",
         # A bare demonstrative closing a step is how procedural writing ends
         # a paragraph. Wording follows Turning and Boring (1919) and
         # Aviation Engines (1917), both public domain by date.
@@ -2971,15 +2971,25 @@ module Sloplint
       # always intended and the pattern did not enforce.
       pattern: /(?:\A|(?<=\n\n)|(?<=[.!?])[ \t]{0,2}\r?\n|(?<=[.!?])[ \t]{1,2})[ \t]{0,4}
                 (?:[-*+•][ \t]+|o[ \t]+(?=[A-Z])|\d+[.)][ \t]+|[A-Za-z][.)][ \t]+(?=[A-Z]))?\K
-                (?:(?=[^.!?\n"“”0-9]*[ \t])
-                   [A-Z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z][A-Za-z])\.
+                (?:[A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z'’][A-Za-z])\.
                    (?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]{0,4})
                    (?![-*+•][ \t]|o[ \t]+[A-Z]|\d+[.)][ \t]|[A-Za-z][.)][ \t]+[A-Z])){2}
-                (?=[^.!?\n"“”0-9]*[ \t])
-                [A-Z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z][A-Za-z])\.(?=\s|\z)/x,
+                [A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z'’][A-Za-z])\.(?=\s|\z)/x,
       message: "A run of three short sentences reads as AI staccato.",
       suggestion: "Join two of them, or give one of them a subordinate clause.",
-      skip: [/\b(?:Corp|Prof|Dept|Sept|Univ|Assn|approx|misc|cont|Ave|Blvd|Fig|Est|Inc|Ltd|vol|etc|Mrs|Mr|Ms|Dr|St|Jr|Sr|No)\./],
+      # Two whole-run exclusions, because each is a property of the run and
+      # not of any one sentence in it. Three single-word "sentences" in a row
+      # is a citation line ("Natl. Inst. Stand. Technol."), never staccato --
+      # one single-word sentence is the archetypal kicker and stays. Three
+      # lowercase-led sentences in a row is transcribed speech ("we all get
+      # gas. we go to divert to Albany."); a run that reaches a capital
+      # anywhere is prose, so identifier-initial writing ("npm was slow. git
+      # blame helped. We moved on.") is untouched.
+      skip: [
+        /\b(?:Corp|Prof|Dept|Sept|Univ|Assn|approx|misc|cont|Ave|Blvd|Fig|Est|Inc|Ltd|vol|etc|Mrs|Mr|Ms|Dr|St|Jr|Sr|No)\./,
+        /\A\S+\.[ \t\r\n]+\S+\.[ \t\r\n]+\S+\.\z/,
+        /\A[a-z][^.!?]*\.\s+[a-z][^.!?]*\.\s+[a-z][^.!?]*\.\z/
+      ],
       examples_bad: [
         "Nobody used it. A named owner. Then a review.",
         "The draft sat on one desk. Nobody else saw it. So it never shipped.",
@@ -2989,7 +2999,15 @@ module Sloplint
         # A bullet may hold a run.
         "- Nobody used it. A named owner. Then a review.",
         # An acronym ends a sentence; only a lone initial does not.
-        "Nobody used it. We shipped it to QA. Then a review."
+        "Nobody used it. We shipped it to QA. Then a review.",
+        # A one-word sentence is the kicker, not an abbreviation, so only a
+        # run made entirely of them is excluded.
+        "The fix landed. Agreed. We moved on.",
+        # A sentence may end on a possessive; that is not a bare letter.
+        "We shipped a fix. The bug was Ana's. Nobody cared.",
+        # Identifier-initial prose is the register this tool is aimed at, so a
+        # run only counts as transcript when nothing in it reaches a capital.
+        "git blame helped. npm was slow. We moved on."
       ],
       examples_ok: [
         "Nobody used it. A named owner and a quarterly review that the whole team can see.",
