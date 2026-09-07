@@ -2549,6 +2549,50 @@ module Sloplint
                  "in a draft should be read as a warning."
     ),
     Rule.new(
+      id: "mic-drop-closer",
+      category: "structure",
+      severity: "info",
+      # The kicker: a sentence of at least sixty characters, then a closer of
+      # two to eight words that ends the paragraph and opens on a quantifier or
+      # a deictic ("Nothing here needs a new login.", "Most teams end up with
+      # two.", "Then find out whether it paid off."). The long sentence must
+      # start a sentence itself, so the scan is linear, and \K drops it from
+      # the match so the note points at the closer. The closer must be the
+      # last thing in the paragraph; the same sentence mid-paragraph is just a
+      # sentence.
+      #
+      # Ships at info, and the rationale says why: people end paragraphs this
+      # way too, at about 150 per million words on Hacker News. One is
+      # nothing. A draft where most paragraphs end this way is the tell, and
+      # an agent that sees the flag repeat should read the family as a
+      # warning.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})[^.!?\n]{60,}[.!?][ \t]{1,2}\K
+                (?:Nothing|Most|None|Everything|Everyone|Nobody|Then|Neither|Both|That|This|It)(?:[ \t]|\r?\n(?!\s*\n))+(?:[\w'’-]+[ ,]+){0,6}[\w'’-]+[.!?](?=[ \t]*(?:\r?\n|\z))/x,
+      message: "A short quantifier-led closer after a long sentence is the AI kicker.",
+      suggestion: "Cut the closer, or move the claim to the front of the paragraph.",
+      examples_bad: [
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here needs a new login.",
+        "Keep a private notebook for the drafts where taste matters, and a shared one for the work that passes between desks. Most teams end up with two.",
+        "Ship the shared notebook to a team that has agreed on the owner, the folder, and the first task it will hold. Then find out whether it paid off.\n\nNext week: the audit."
+      ],
+      examples_ok: [
+        # No long sentence before it.
+        "Nothing here needs a new login.",
+        # Not the end of the paragraph.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here needs a new login. The prompts are in the appendix.",
+        # A closer that does not open on the list.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. We kept the prompts short.",
+        # Too long to be a kicker.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Most of the teams we spoke to ended up using a mix of two of them."
+      ],
+      rationale: "A short sentence after a long one borrows emphasis from the contrast, " \
+                 "and a model spends that emphasis at the end of nearly every paragraph, " \
+                 "restating the point it has just made. People write the shape too, at " \
+                 "about 150 per million words, so one flag means nothing; a draft " \
+                 "where the flag repeats paragraph after paragraph should be read as a " \
+                 "warning, and the fix is usually to delete the closer outright."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",
