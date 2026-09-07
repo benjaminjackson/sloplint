@@ -2380,6 +2380,40 @@ module Sloplint
                  "especially as list items, should be read as a warning."
     ),
     Rule.new(
+      id: "quip-question",
+      category: "structure",
+      severity: "info",
+      # The verbless question that opens a pitch: "No invite?", "New to the
+      # tool?", "Still stuck?", "Ready to start?". It must start a sentence,
+      # open on one of a short list of words, run one to four more words, and
+      # end on the question mark, with no auxiliary or contraction anywhere,
+      # so a real question ("Not what you expected?" flags, "Is it new?" does
+      # not) stays out. Ships at info: dialogue and forum replies ask "Not
+      # happy with it?" too, and one is a question, not a verdict.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})\K(?:No|New|Still|Not|Already|Ready|Curious|Unsure|Stuck|Need|Want|Tired|Confused|Worried)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?!(?:is|are|was|were|has|have|had|do|does|did|can|could|will|would|should|must|may|might|am|[\w]+n['’]t)\b)[\w'’-]+\s*){1,4}\?/x,
+      message: "A verbless opening question is a marketing-copy tell.",
+      suggestion: "Ask it as a sentence, or state what follows without the setup.",
+      examples_bad: [
+        "No invite? Start a team of your own.",
+        "New to the tool? Read the guide first.",
+        "Still stuck after that? Ask in the channel."
+      ],
+      examples_ok: [
+        "Is it new?",
+        "No, they aren't?",
+        "Not sure if it will work?",
+        # Not at a sentence start.
+        "She asked, still unsure?",
+        # Too long to be a quip.
+        "Still waiting for the last batch of reviews from the other team?"
+      ],
+      rationale: "A one-line question with no verb is the hook of a landing page, and a " \
+                 "model reaches for it to open any section. People ask the same shape in " \
+                 "replies ('Not happy with it?'), so one flag is a question; several in " \
+                 "a draft should be read as a warning."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",
