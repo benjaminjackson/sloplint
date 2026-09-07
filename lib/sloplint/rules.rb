@@ -144,7 +144,7 @@ module Sloplint
         /\bfrom\s+(?:the\s+)?((?:[\w'-]+\s+){0,2}[\w'-]+)\s+to\s+(?:the\s+)?\1(?=,|\s*\z)/i
       ],
       examples_bad: [
-        "It is the move from private notes to shared files, from personal memory to team context, from individual leverage to group capability.",
+        "The change is the move from scattered notes to one shared file, from habit to written rules, from solo effort to a team that can carry it.",
         "We went from guessing to measuring, from hoping to knowing.",
         "The plan takes them from the pilot to the rollout, and from the memo to the audit.",
         # The last span may run into a clause, as long as a joining word starts it.
@@ -248,6 +248,53 @@ module Sloplint
                  "The chain has to stand on its own, at a sentence start or after a " \
                  "colon, because after a verb the word is counting and the shape is " \
                  "ordinary. Careful writers distribute in pairs and rarely stack three."
+    ),
+    Rule.new(
+      id: "and-what-it-should",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The elliptical tail: "List what the assistant knows about the client,
+      # and what it should." The second "what" clause borrows its verb from the
+      # first and ends on a bare modal or a negated auxiliary, so the sentence
+      # closes on a contrast it never states. The comma, the conjunction, and
+      # the full stop right after the modal are all required; "and what it
+      # should do" is a complete clause and does not flag. The affirmative
+      # copula and do-verb ("and what he does.", "and what it is.") are left
+      # out: those are complete clauses with a main verb, not ellipsis. A
+      # question mark is left out too, because an interrogative licenses the
+      # ellipsis ("what does it cover, and what doesn't it?"). Gaps may cross
+      # a hard-wrapped newline but never a paragraph break.
+      pattern: /,(?:[ \t]|\r?\n(?!\s*\n))+(?:and|but|or)(?:[ \t]|\r?\n(?!\s*\n))+what(?:[ \t]|\r?\n(?!\s*\n))+(?:it|they|you|we|he|she|one|i)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?:should|could|would|must|can|will|might|may)(?:(?:[ \t]|\r?\n(?!\s*\n))+not|n['’]t)?
+                  |cannot|(?:does|did|is|was|has|have|had|are|were)(?:(?:[ \t]|\r?\n(?!\s*\n))+not|n['’]t))[.!]/ix,
+      message: '"…, and what it should." is the AI elliptical tail.',
+      suggestion: "Finish the clause, or cut it.",
+      examples_bad: [
+        "List what the assistant knows about the client, and what it should.",
+        "List what the tool does, and what it doesn't.",
+        "List what the tool does, and what it does not.",
+        "Say what the team decided, but what it couldn't.",
+        "List what I know about the client, and what I should.",
+        "List what we cover, and what we haven't.",
+        # A hard-wrapped tail survives one newline.
+        "List what the model knows about the client,\nand what it should."
+      ],
+      examples_ok: [
+        "List what the assistant knows about the client, and what it should know.",
+        "He asked what it was, and what it should be called.",
+        "Nobody knew what it cost or what it should.",
+        "She wrote down what she saw. And what she should have seen, she added later.",
+        # A main verb is a complete clause.
+        "It is not what he says, but what he does.",
+        "They knew what he did, and what he was.",
+        # A question licenses the ellipsis.
+        "Who decides what the policy covers, and what it doesn't?",
+        # A paragraph break is not a comma.
+        "List what the assistant knows,\n\nand what it should."
+      ],
+      rationale: "Ending on a bare modal makes the reader supply the verb and the " \
+                 "contrast, which reads as poise in a model and as an unfinished sentence " \
+                 "in a person. Careful writers finish the clause."
     ),
     Rule.new(
       id: "dont-verb-it",
