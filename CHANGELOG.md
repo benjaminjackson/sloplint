@@ -120,10 +120,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   equative: "the reason it holds up is the reason the other half happens",
   "the problem with the tool is the problem with the team". A backreference
   catches the same abstract head noun on both sides of the copula, so the
-  sentence equates two things while naming neither. The second head must
-  be followed by a preposition, determiner, pronoun or punctuation, so a
-  compound ("the answer key") is not a repeat. Once in 2.4M words of
-  pre-2022 Hacker News; nothing in 1.25M words of public-domain prose.
+  sentence equates two things while naming neither. The head list holds
+  only nouns that cannot name an object, since "the key to the front door
+  is the key on the red fob" is an identity statement; the two heads must
+  share a clause, so an earlier "the cost was low, but shipping is the
+  cost" never pairs; and the second head must be followed by a preposition,
+  determiner, quantifier, pronoun, plural noun or punctuation, so "the
+  answer key" is not a repeat. Once in 2.4M words of pre-2022 Hacker News;
+  nothing in 1.25M words of public-domain prose.
 
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing

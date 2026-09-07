@@ -364,35 +364,56 @@ module Sloplint
       # other half happens", "the problem with A is the problem with B". The
       # same abstract head noun sits on both sides of the copula, caught by a
       # backreference, so the sentence equates two things by declaring them
-      # the same kind of thing. The noun list is closed and abstract; the
-      # clause between the two heads is capped at fifty characters and may
-      # not cross a sentence, clause or semicolon boundary, though it may
-      # cross a hard-wrapped newline. The second head
-      # must be followed by a preposition, a determiner, a pronoun, or
+      # the same kind of thing.
+      #
+      # The noun list is closed and holds only heads that cannot name a
+      # specific object: reason, problem, question, lesson and their kin.
+      # "key", "cost", "value", "unit", "fix" and the like are out, because
+      # "the key to the front door is the key on the red fob" is an identity
+      # statement that tells the reader something. The clause between the
+      # two heads is capped at fifty characters and may not hold a comma,
+      # semicolon or colon, so the two heads sit in one clause and an earlier
+      # "the cost was low, but shipping is the cost" never pairs; it may
+      # cross a hard-wrapped newline. The second head must be followed by a
+      # preposition, determiner, quantifier, pronoun, plural noun, or
       # punctuation, so a compound ("the answer key") is not a repeat. The
-      # sentence-initial capital is not required, so "and the reason … is the
-      # reason …" flags too.
-      pattern: /\bthe(?:[ \t]|\r?\n(?!\s*\n))+(reason|problem|question|answer|point|lesson|difference|trick|move|job|work|risk|cost|goal|tell|signal|unit|test|pattern|insight|takeaway|shift|bet|catch|gap|bottleneck|thing|issue|story|game|value|fix|cause|failure|mistake|secret|magic|key)\b
-                (?:[^.!?;:\n]|\r?\n(?!\s*\n)){2,50}?\bis(?:[ \t]|\r?\n(?!\s*\n))+(?:not(?:[ \t]|\r?\n(?!\s*\n))+)?the(?:[ \t]|\r?\n(?!\s*\n))+\1
-                (?=[,.;:!?]|(?:[ \t]|\r?\n(?!\s*\n))+(?:of|for|with|in|on|to|at|behind|about|that|which|why|here|there|the|a|an|this|these|those|my|our|your|their|its|his|her|it|they|we|you|i|he|she)\b)/ix,
+      # bare form ("the reason is the reason we came") and the contracted
+      # negation ("isn't the reason") both count. The sentence-initial
+      # capital is not required, so "and the reason … is the reason …"
+      # flags too.
+      pattern: /\bthe\s+(reason|problem|question|lesson|difference|trick|move|goal|tell|pattern|insight|takeaway|shift|bet|catch|bottleneck|issue|game|cause|failure|magic|challenge|tension|irony|paradox|trap)\b
+                (?:[^.!?;:,\n]|\r?\n(?!\s*\n)){1,50}?\bis(?:n['’]t|\s+not)?\s+the\s+\1
+                (?=[,.;:!?]|\s+(?:of|for|with|in|on|to|at|behind|about|that|which|why|here|there|the|a|an|this|these|those|my|our|your|their|its|his|her|it|they|we|you|i|he|she|every|each|most|many|some|any|no|nobody|everyone|people|[a-z]+s)\b)/ix,
       message: '"The X … is the X …" equates by repeating the head noun.',
       suggestion: "Say what the second thing is, not that it is the same kind of thing.",
       examples_bad: [
         "The reason it holds up is the reason the other half happens.",
         "The problem with the tool is the problem with the team.",
         "In practice the question for them is not the question for us.",
+        "The problem with the tool isn't the problem with the team.",
+        # The bare form.
+        "The reason is the reason we came.",
+        # A quantifier or a plural noun may follow the second head.
+        "The reason people stay is the reason people leave.",
+        "The problem with onboarding is the problem every team has.",
+        "The lesson from the outage is the lesson most teams skip.",
         # A hard-wrapped clause survives one newline.
         "The reason\nit holds is the reason it fails."
       ],
       examples_ok: [
-        "The reason is the weather.",
-        "The problem is the reason we came.",
+        "Rain is the reason we stayed home.",
+        "Its cost is the reason we came late.",
         # Across a sentence boundary is two sentences.
         "The reason is simple. It is the reason we left.",
         # A compound noun is not a repeated head.
         "The answer to the first question is the answer key, not a guess.",
-        # A semicolon is a boundary.
-        "Process is the issue; community process is the issue we can fix."
+        # A semicolon or a comma is a boundary: the heads must share a clause.
+        "Process is the issue; community process is the issue we can fix.",
+        "The cost was low, but shipping is the cost we forgot.",
+        "The reason was never clear, but timing is the reason it failed.",
+        # Concrete heads are identity statements, not tautologies.
+        "The key to the front door is the key on the red fob.",
+        "The cost of shipping is the cost of the box plus postage."
       ],
       rationale: "Repeating the head noun across the copula asserts an identity between " \
                  "two things while naming neither; it sounds like a diagnosis and " \
