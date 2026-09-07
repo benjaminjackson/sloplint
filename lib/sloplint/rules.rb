@@ -429,7 +429,7 @@ module Sloplint
     Rule.new(
       id: "cleanly",
       category: "rhetorical-tic",
-      severity: "warning",
+      severity: "info",
       # The bare adverb was the whole rule, and the engineering idioms were
       # flagged on purpose. Technical prose says that was the wrong call: a
       # patch that applies cleanly, a build that compiles cleanly and a gear
@@ -440,13 +440,19 @@ module Sloplint
       # have no builds; the same corpus read as engineering ("clearly and
       # cleanly drawn in pencil", Machine Drawing and Design, 1890) has it.
       #
-      # What is left is the partition frame: something abstract divided into
-      # parts, or mapped onto another scheme, and rated before the reader sees
-      # the parts. The preposition carries it. The clause-final form ("the
-      # objection breaks down cleanly, and neither half survives") is the same
-      # tell and is left out: separating it from "the gear separated cleanly."
-      # needs the subject, and a regex cannot see the subject -- the same
-      # reason the animacy verbs stay out of trailing-significance-participle.
+      # What is left is the partition frame: something divided into parts, or
+      # mapped onto another scheme, and rated before the reader sees the
+      # parts. The clause-final form ("the objection breaks down cleanly, and
+      # neither half survives") is the same tell and is left out.
+      #
+      # The frame is not the sense, and this rule ships at info because of it.
+      # "The argument splits cleanly into two parts" and "the gear retracted
+      # cleanly into the well" are one pattern apart only in their subject,
+      # and a regex cannot see the subject -- the same limit that keeps the
+      # animacy verbs out of trailing-significance-participle. The preposition
+      # buys the common physical cases ("separated cleanly from", "cleanly
+      # compiled", "cleanly drawn") and nothing more, so a flag here is a
+      # question for the agent reading it, not a verdict.
       pattern: /\bcleanly\s+(?:in(?:to|\s+(?:two|three|half))|onto)\b/i,
       message: '"Cleanly" rates the fit instead of showing it.',
       suggestion: "Cut the adverb, or say what actually lined up.",
@@ -802,20 +808,32 @@ module Sloplint
       # to-phrase. What is left is the reflexive emphasis the rule was written
       # for: "exactly the point", "exactly right", "exactly why".
       pattern: /\bexact(?:ly)?\b
-                (?!\s*(?:(?:the\s+)?(?:[\w-]+\s+){0,2}
+                (?!\s*(?:
+                     # Tier one, unchanged: the original allow-list, matched
+                     # tight so no modifier can reach past it.
+                     (?:the\s+)?
                      (?:same|opposite|science|change|replica|cop(?:y|ies)|
-                        location|coordinates|way|
-                        match(?:es)?|duplicate|equivalent|
-                        diameter|radius|size|dimensions?|length|width|height|
-                        depth|thickness|weight|mass|volume|angle|pitch|
-                        temperature|pressure|speed|altitude|position|
-                        distance|amount|quantity|number|count|figure|value|
-                        time|times|date|moment|instant|sequence|order|
-                        wording|phrasing|text|words?|
-                        cause|nature|extent|mechanism|composition)\b
+                        location|coordinates|way)\b
                    |[$\d]|noon\b|midnight\b|o'?\s*clock\b
-                   |when\b|where\b|which\b|whom\b|how\s+(?:much|many|far|long)\b
-                   |to\s+(?:the\s+)?\w))/ix,
+                     # Tier two: a quantity an instrument reads. These take a
+                     # modifier window ("the exact blade pitch angle"), which
+                     # tier one must not, or the window reaches the clichés
+                     # ("exactly the wrong time", "exactly the right words").
+                   |(?:the\s+|a\s+|an\s+)?(?:[\w-]+\s+){0,2}
+                     (?:diameter|radius|circumference|size|dimensions?|
+                        length|width|height|depth|thickness|gauge|
+                        weight|mass|volume|density|
+                        angle|pitch|bearing|heading|azimuth|
+                        temperature|pressure|voltage|frequency|wavelength|
+                        speed|velocity|altitude|elevation|
+                        position|coordinates|distance|clearance|tolerance|
+                        quantity|match(?:es)?|duplicate)\b
+                     # "exactly when the fire began", "exactly how far it fell"
+                   |when\b|where\b|how\s+(?:much|many|far|long|fast|deep)\b
+                     # "rolled exactly to weight", "reamed exactly to size"
+                   |to\s+(?:the\s+)?
+                     (?:right|correct|nearest|specified|required|
+                        weight|size|scale|length|gauge|tolerance)\b))/ix,
       message: '"exact/exactly" is reflexive emphasis unless it names something checkable.',
       suggestion: "Cut it, or replace with the number, name, or match it's supposed to be precise about.",
       examples_bad: [
@@ -926,9 +944,13 @@ module Sloplint
       # them. A matrix cell is the same literal sense as a set intersection,
       # so rows and columns join the geometry list. And the all-caps
       # allowance, added for "AI"/"UX"/"HCI" on the premise that no street is
-      # spelled that way, was admitting American route designators: two
-      # lookaheads now drop an operand shaped like a route number ("US-27A")
-      # or a quadrant plus a house number ("NE 140th Court").
+      # spelled that way, was admitting American route designators. The
+      # trailing (?!-\d) on that branch drops a route number ("US-27A"), and
+      # one more lookahead drops a quadrant plus a house number ("NE 140th
+      # Court"). Street-type nouns are deliberately NOT added to the literal
+      # list: "court", "drive" and "place" are ordinary abstract nouns, and
+      # the two-word window would reach them as the second operand and
+      # silence "the intersection of memory and place".
       pattern: /\b[Tt]he\s+intersection\s+of\b
                 (?!\s+(?:[\w-]+\s+){0,2}
                      (?i:sets?|lines?|curves?|planes?|circles?|spheres?|axes|
@@ -938,10 +960,7 @@ module Sloplint
                          collections?|keys?|vectors?|matrices|polygons?|
                          rectangles?|intervals?|data|datasets?|
                          runways?|taxiways?|taxilanes?|aprons?|
-                         rows?|columns?|cells?|
-                         courts?|drives?|places?|terraces?|parkways?|
-                         crossings?|junctions?|alleys?)\b)
-                (?!\s+(?:[\w-]+\s+){0,3}[A-Z]{1,3}-\d)
+                         rows?|columns?|cells?)\b)
                 (?!\s+[A-Z]{1,3}\s+\d)
                 (?=\s+(?:[a-z]|[A-Z]{2,}\b(?!-\d)))/x,
       message: '"the intersection of X and Y" outside streets or geometry is borrowed positioning.',
@@ -1018,9 +1037,9 @@ module Sloplint
                      do|did|doesn't|don't|didn't|won't|helps?|helped)\s+
                   (?:(?:it|this|that|they|we|you)\s+)?
                   impacts?
-                | to\s+impacts?(?=\s+(?:the|a|an|its|their|our|your|his|her|
-                                       this|that|these|those|every|all|any|
-                                       some|more|fewer|most|both|each|\w+ly)\b)
+                | to\s+impacts?
+                  (?=\s+(?!and\b|or\b|but\b|in\b|on\b|at\b|of\b|for\b|from\b|
+                            with\b|during\b|after\b|before\b|than\b)\w)
                 | (?:it|this|that|which|he|she)\s+impacts
                 | (?:they|we|you)\s+impact
                 | (?:(?:tooth|teeth|molars?|bowels?|colon|fractures?|soils?)\s+
@@ -1032,15 +1051,14 @@ module Sloplint
                 (?!\s+(?:tooth|teeth|molars?|wisdom|canines?|bowels?|colon|
                          stool|feces|fecal|fractures?|soils?|snow|ice|sediment|
                          gravel|earwax|cerumen)\b)
-                (?!\s+(?:the\s+)?(?:[\w-]+\s+){0,2}
-                        (?:terrain|ground|earth|seabed|seawall|water|
-                           sea|ocean|river|trees?|grove|brush|
-                           hillside|ridge|embankment|berm|slope|cliff|
-                           runway|taxiway|apron|tarmac|pavement|roadway|
-                           guardrail|barrier|median|pole|posts?|abutment|
-                           wing|fuselage|tail|nacelle|rotor|airframe|
-                           bumper|windshield|chassis|hull|deck|bulkhead|
-                           wall|roof|structure|building|bridge|pier)\b)
+                (?!\s+(?:the\s+|a\s+|an\s+)?(?:[\w-]+\s+)?
+                        (?:terrain|ground|seabed|seawall|treetops|trees?|
+                           grove|thicket|hillside|embankment|berm|
+                           escarpment|ridgeline|cliff|
+                           runway|taxiway|apron|tarmac|guardrail|
+                           fuselage|nacelle|airframe|empennage|rotor|
+                           windshield|bulkhead|revetment|abutment|
+                           wing|wingtip|stabilizer|landing\s+gear)\b)
                 (?!\s+(?:statements?|assessments?|reports?|studies|study|
                          analys[ie]s|evaluations?|factors?|ratings?|scores?|
                          investing|investors?|funds?|bonds?|craters?|

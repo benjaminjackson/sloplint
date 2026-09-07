@@ -286,7 +286,7 @@ false-positive risk, which none has demonstrated.
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
 | `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |
-| `cleanly` | "cleanly" into/onto/in two — the partition frame | the preposition is the narrowing; the engineering idiom ("applies cleanly", "separated cleanly") is a checkable fact and stays out, and the clause-final form needs the subject so it is left out too |
+| `cleanly` | "cleanly" into/onto/in two/in half — the partition frame | the preposition is the narrowing; the engineering idiom ("applies cleanly", "separated cleanly", "cleanly compiled") is a checkable fact and stays out, and the clause-final form is left out. `info`: the frame is not the sense, and separating "splits cleanly into two parts" from "retracted cleanly into the well" needs the subject |
 | `clean-count` | "two/three clean parts/buckets/categories…" | needs a partition noun |
 | `cleanest-x` | "the cleanest framing/formulation", "cleanest way to put it" | noun list only |
 | `clean-x` | "a clean abstraction/distinction/framing", "clean line between" | `info` |
