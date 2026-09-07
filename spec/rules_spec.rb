@@ -78,6 +78,20 @@ RSpec.describe "Sloplint::RULES" do
     end
   end
 
+  # thats-the-whole and is-the-whole-x share the "that/this is the whole N"
+  # shape. is-the-whole-x yields it by repeating thats-the-whole's noun list
+  # in a lookahead, and nothing but this keeps the two lists in step: a noun
+  # added to one and not the other is reported twice, or not at all.
+  describe "the whole-* pair" do
+    ["point", "game", "thing", "deal", "story", "ballgame", "ball game",
+     "value", "fix", "trick", "bet", "job"].each do |noun|
+      it "reports \"that is the whole #{noun}\" once, at warning" do
+        notes = Sloplint::Engine.scan("That is the whole #{noun}.")
+        expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
+      end
+    end
+  end
+
   describe "count_group rules" do
     it "counts items in a no-x-no-y chain" do
       note = Sloplint::Engine.scan("No fluff, no filler, no jargon.").find { |n| n.rule == "no-x-no-y" }
