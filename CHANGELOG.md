@@ -186,6 +186,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   paragraph is the tell, and the rationale tells the agent to read that as
   a warning.
 
+- `short-run` (structure, info) flags three consecutive sentences of thirty
+  characters or fewer, each closing on a full stop with no quotation mark:
+  "Nobody used it. A named owner. Then a review." The run must start at a
+  real sentence boundary, so the short tail of a hard-wrapped sentence never
+  opens one; dialogue is out by the boundary, sentences with digits as data,
+  initials and abbreviations as not sentence ends, consecutive bullets as a
+  list, and questions and exclamations by design. Ships at info: a staccato
+  run is a device people use on purpose, at about thirty per million words
+  of pre-2022 Hacker News. A draft that keeps doing it is the tell, and the
+  rationale tells the agent to read that as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and

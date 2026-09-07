@@ -361,7 +361,7 @@ module Sloplint
         # Essays: First Series (Emerson, public domain): not at a clause start.
         "Not for nothing one face, one character, one fact, makes much impression on him",
         # Items in separate sentences never chain.
-        "One person wrote it. One person read it. One person filed it.",
+        "One person wrote it in the morning. One person read it after lunch. One person filed it at the end of the day.",
         # A paragraph break ends the chain.
         "He carried one bag, one coat,\n\nOne question remained unanswered."
       ],
@@ -2285,7 +2285,7 @@ module Sloplint
         # The second clause needs a pronoun subject and a copula.
         "It wasn't the alarm that woke me. The dog did.",
         # The two clauses must be adjacent.
-        "It isn't the heat. Everyone says so. It's the humidity.",
+        "It isn't the heat. Everyone says so, and they have said so for years. It's the humidity.",
         # Prepositional complements are ordinary contrast.
         "The message was not to him; it was to the clerk.",
         # Pronoun complement.
@@ -2608,6 +2608,81 @@ module Sloplint
                  "about 150 per million words, so one flag means nothing; a draft " \
                  "where the flag repeats paragraph after paragraph should be read as a " \
                  "warning, and the fix is usually to delete the closer outright."
+    ),
+    Rule.new(
+      id: "short-run",
+      category: "structure",
+      severity: "info",
+      # Three consecutive sentences of thirty characters or fewer, each
+      # opening on a letter and closing on a full stop, with no quotation
+      # mark or digit in any of them: "Nobody used it. A named owner. Then a
+      # review." The run must start at a real boundary (the text, a blank
+      # line, a line ending on a stop, or a stop and one or two spaces), so
+      # the short tail of a hard-wrapped long sentence never opens one; it
+      # may cross a hard-wrapped newline but not a paragraph break, and the
+      # indent after a newline is at most four spaces, so a URL or code span
+      # blanked by --markdown cannot weld two sentences. A list marker may
+      # open the run, but consecutive bullets are a list, not staccato.
+      #
+      # Dialogue is excluded by the boundary: a closing quote after the stop
+      # is not a space. A quotation mark inside a sentence is excluded by the
+      # class. A sentence with a digit in it is data, a "sentence" ending on
+      # a lone capital is an initial ("Alan W."), and a run holding a
+      # multi-letter abbreviation ("Prof.", "Dept.") is dropped, since the
+      # abbreviation is not a sentence end. Questions and exclamations are
+      # left out because a run of them is a different device.
+      #
+      # Ships at info. A staccato run is a device people use on purpose, at
+      # about thirty per million words on Hacker News, so one flag is a
+      # question. A draft that keeps doing it is the tell, and an agent that
+      # sees the flag repeat should read the family as a warning.
+      pattern: /(?:\A|(?<=\n\n)|(?<=[.!?])[ \t]{0,2}\r?\n|(?<=[.!?])[ \t]{1,2})[ \t]{0,4}(?:[-*+•][ \t]+|\d+[.)][ \t]+)?\K
+                (?:[A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z][A-Z])\.(?:[ \t]{1,2}|\r?\n(?!\s*\n)[ \t]{0,4})){2}
+                [A-Za-z][^.!?\n"“”0-9]{3,29}(?<![^A-Za-z][A-Z])\.(?=\s|\z)/x,
+      message: "A run of three short sentences reads as AI staccato.",
+      suggestion: "Join two of them, or give one of them a subordinate clause.",
+      skip: [/\b(?:Corp|Prof|Dept|Sept|Univ|Assn|approx|misc|cont|Ave|Blvd|Fig|Est|Inc|Ltd|vol|etc|Mrs|Mr|Ms|Dr|St|Jr|Sr|No)\./],
+      examples_bad: [
+        "Nobody used it. A named owner. Then a review.",
+        "The draft sat on one desk. Nobody else saw it. So it never shipped.",
+        "Drafts only at first. Widen after a month. Two people sign off.",
+        # A hard-wrapped run survives one newline.
+        "Nobody used it. A named owner.\nThen a review.",
+        # A bullet may hold a run.
+        "- Nobody used it. A named owner. Then a review.",
+        # An acronym ends a sentence; only a lone initial does not.
+        "Nobody used it. We shipped it to QA. Then a review."
+      ],
+      examples_ok: [
+        "Nobody used it. A named owner and a quarterly review that the whole team can see.",
+        # Dialogue.
+        "\"Go now.\" \"I will.\" \"Then go.\"",
+        # A quotation mark inside a sentence.
+        "He said \"go\" today. Then a review. So it ended.",
+        # A paragraph break ends the run.
+        "Nobody used it. A named owner.\n\nThen a review.",
+        # Questions and exclamations are a different device.
+        "Who owns it? Nobody. Who checks it? Nobody.",
+        # Two short sentences are a pair.
+        "Ship it. Then find out if it was worth the effort and the wait.",
+        # One sentence over thirty characters breaks the run.
+        "Nobody used it. A named owner reviewed the draft again. Then a review.",
+        # Numbers are data, and an initial is not a sentence end.
+        "Hold cash. Expected value: 1000. Expected tax: none.",
+        "Alan W. Prosser loves officer Kane. Nobody else does.",
+        # An abbreviation is not a sentence end.
+        "She wrote to Prof. Ellis at the Dept. Nobody replied to her.",
+        # The tail of a hard-wrapped long sentence does not open a run.
+        "The build had been red since Tuesday and nobody could say quite why, so we\nbisected it. Then we found the flake. It was a clock skew.",
+        # Blanked text after a newline cannot weld two sentences.
+        "Nobody used it. A named owner.\n                                  Then a review.",
+        # Consecutive bullets are a list.
+        "- Fast setup.\n- No config.\n- Free tier.\n"
+      ],
+      rationale: "Short sentences in a row borrow force from their rhythm, and a model " \
+                 "falls into the rhythm whenever it wants to sound decisive. People do it " \
+                 "on purpose, about thirty times per million words, so one flag is a " \
+                 "question; a draft where the flag repeats should be read as a warning."
     ),
     Rule.new(
       id: "em-dash",
