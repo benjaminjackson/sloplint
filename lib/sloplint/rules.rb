@@ -16,6 +16,14 @@ module Sloplint
     end
   end
 
+  # The nouns "that's the whole N" closes on. thats-the-whole owns the
+  # demonstrative form and is-the-whole-x yields it, so both patterns
+  # interpolate this one fragment and the lists cannot drift. "value" and
+  # "fix" must end the sentence or run into a preposition, because "value
+  # chain", "value-add" and "fix list" name things; the older nouns do not
+  # compound that way.
+  WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball\s+game|(?:value|fix)(?=\s*(?:[^\w\s'’-]|\z|(?:of|to|for|in|on|at|with|here|there|behind)\b))/i
+
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
     Rule.new(
@@ -83,24 +91,27 @@ module Sloplint
       id: "thats-the-whole",
       category: "rhetorical-tic",
       severity: "warning",
-      # The noun list is closed. "value" and "fix" are the closers agents
+      # The nouns are WHOLE_CLOSERS. "value" and "fix" are the closers agents
       # write in technical prose ("That's the whole fix"), where the
-      # contraction keeps them out of is-the-whole-x, which sees only "is";
-      # "trick", "bet" and "job" are the nouns that rule already lists for
-      # the same closer. It repeats this list in a lookahead so the shape is
-      # reported once, and the "whole-* pair" spec holds the two in step.
-      pattern: /\b(?:that|this)(?:'s| is)\s+the\s+whole\s+(?:point|game|thing|deal|story|ballgame|ball\s+game|value|fix|trick|bet|job)\b/i,
+      # contraction keeps them out of is-the-whole-x, which sees only "is".
+      # Either apostrophe counts; editors emit the curly one.
+      pattern: /\b(?:that|this)(?:['’]s| is)\s+the\s+whole\s+(?:#{WHOLE_CLOSERS})\b/i,
       message: '"That\'s the whole point/game/…" is a stock LLM closer.',
       suggestion: "Say the point directly instead of announcing it.",
       examples_bad: [
         "That's the whole point.",
         "That's the whole value of a typed error.",
-        "That's the whole fix; the cache was already right."
+        "That's the whole fix; the cache was already right.",
+        "That’s the whole value here."
       ],
       examples_ok: [
         "This is the whole cake.",
         # An unlisted noun stays clean, however closer-shaped the sentence.
-        "That's the whole history of the case."
+        "That's the whole history of the case.",
+        # "value" and "fix" running on into a compound name a thing.
+        "That's the whole value chain, end to end.",
+        "That's the whole value-add of the consultant.",
+        "That's the whole fix list for the release."
       ],
       rationale: "The 'that's the whole X' flourish is a model tic for landing a paragraph."
     ),
@@ -114,9 +125,8 @@ module Sloplint
       # match opens on the subject's last word, so the note points at the
       # sentence and not at a space. Two older rules own two exact shapes,
       # and those are yielded so nothing is reported twice: "that/this is
-      # the whole N" for every N thats-the-whole lists to thats-the-whole
-      # (the lookahead repeats that rule's noun list, and the "whole-* pair"
-      # spec keeps the two in step), and "is the entire
+      # the whole N" for every N in WHOLE_CLOSERS to thats-the-whole (the
+      # lookahead interpolates the same fragment), and "is the entire
       # point/game/thing/deal/story" to is-the-entire; every
       # other subject and noun flags here, so "This is the real test." is
       # not lost. A question is not a closer, so an interrogative subject
@@ -128,7 +138,7 @@ module Sloplint
       # a paragraph break. Ships at info because "the real question" and
       # "the whole point" are also how people talk.
       pattern: /(?<![\w'’-])
-                (?!(?:that|this)(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+(?:whole)(?:[ \t]|\r?\n(?!\s*\n))+(?:point|game|thing|deal|story|ballgame|ball[ \t]+game|value|fix|trick|bet|job)(?![\w'’-]))
+                (?!(?:that|this)(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+(?:whole)(?:[ \t]|\r?\n(?!\s*\n))+(?:#{WHOLE_CLOSERS})(?![\w'’-]))
                 (?!(?:what|which|who|where|when|how)(?![\w'’-]))
                 [\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+(?:is)(?:[ \t]|\r?\n(?!\s*\n))+(?:the)(?:[ \t]|\r?\n(?!\s*\n))+
                 (?:(?:whole|real|actual)(?:[ \t]|\r?\n(?!\s*\n))+(?:tell|point|game|story|trick|question|problem|issue|lesson|job|work|move|test|signal|difference|answer|risk|goal|reason|pattern|insight|takeaway|shift|bet|win|catch|gap|bottleneck|value|skill|challenge|fix)
@@ -148,7 +158,7 @@ module Sloplint
         "Consistency\nis the real test."
       ],
       examples_ok: [
-        # Left to thats-the-whole, the old noun and a widened one.
+        # Left to thats-the-whole, an old noun and a widened one.
         "That is the whole point.",
         "That is the whole fix.",
         # Left to is-the-entire.

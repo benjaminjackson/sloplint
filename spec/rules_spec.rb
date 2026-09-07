@@ -79,14 +79,23 @@ RSpec.describe "Sloplint::RULES" do
   end
 
   # thats-the-whole and is-the-whole-x share the "that/this is the whole N"
-  # shape. is-the-whole-x yields it by repeating thats-the-whole's noun list
-  # in a lookahead, and nothing but this keeps the two lists in step: a noun
-  # added to one and not the other is reported twice, or not at all.
+  # shape and interpolate the same WHOLE_CLOSERS fragment, but each wraps it
+  # in its own subject, copula and whitespace syntax. This walks every noun
+  # through every form those wrappers treat differently, and expects one
+  # warning each time: a form that only is-the-whole-x sees is reported at
+  # info, and a form neither sees is not reported at all.
   describe "the whole-* pair" do
-    ["point", "game", "thing", "deal", "story", "ballgame", "ball game",
-     "value", "fix", "trick", "bet", "job"].each do |noun|
-      it "reports \"that is the whole #{noun}\" once, at warning" do
-        notes = Sloplint::Engine.scan("That is the whole #{noun}.")
+    nouns = ["point", "game", "thing", "deal", "story", "ballgame", "ball game", "value", "fix"]
+    forms = {
+      "uncontracted" => "That is the whole %s.",
+      "contracted" => "That's the whole %s.",
+      "curly apostrophe" => "That’s the whole %s.",
+      "this" => "This is the whole %s.",
+      "hard-wrapped" => "That is the whole\n%s."
+    }
+    nouns.product(forms.to_a).each do |noun, (name, form)|
+      it "reports the #{name} form on #{noun.inspect} once, at warning" do
+        notes = Sloplint::Engine.scan(format(form, noun))
         expect(notes.map { |n| [n.rule, n.severity] }).to eq([["thats-the-whole", "warning"]])
       end
     end

@@ -32,16 +32,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- `thats-the-whole` now takes `value`, `fix`, `trick`, `bet` and `job` after
-  "that's the whole", alongside `point`, `game`, `thing`, `deal` and `story`.
-  The contracted closer is the one an agent writes in technical prose
-  ("That's the whole value of the `info` tier", "That's the whole fix"), and
-  `is-the-whole-x` sees only the uncontracted "is", so the sentence slipped
-  both rules; `trick`, `bet` and `job` come along because `is-the-whole-x`
-  already lists them for the same closer. That rule now yields all five, so
-  nothing is reported twice and "That is the whole trick" moves from `info`
-  to `warning`; a spec holds the two lists together. None of the five
-  appears after "that's the whole" in 1.55M words of public-domain prose.
+- `thats-the-whole` now takes `value` and `fix` after "that's the whole",
+  alongside `point`, `game`, `thing`, `deal` and `story`. The contracted
+  closer is the one an agent writes in technical prose ("That's the whole
+  value of the `info` tier", "That's the whole fix"), and `is-the-whole-x`
+  sees only the uncontracted "is", so the sentence slipped both rules. The
+  two new nouns must end the sentence or run into a preposition, so "value
+  chain", "value-add" and "fix list" stay clean, and a curly apostrophe now
+  counts as a contraction. Both rules interpolate one `WHOLE_CLOSERS`
+  fragment, so the lists cannot drift, and a spec walks every noun through
+  every form the two wrappers treat differently. Neither noun appears after
+  "that's the whole" in 1.55M words of public-domain prose.
 
 - Empty or whitespace-only input
  is now exit 2 with `empty input: nothing to
