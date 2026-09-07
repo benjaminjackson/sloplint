@@ -109,10 +109,16 @@ RSpec.describe "Sloplint::RULES" do
       "is-the-whole-x" => %w[thats-the-whole is-the-entire]
     }
 
+    # Off-by-default rules never run unless named, so they are not part of
+    # the default catalog this check is about; epistrophe, for one, is off
+    # precisely because it fires on deliberate human rhetoric like the
+    # Federalist sentence not-just-x-but-y pins.
+    default_rules = Sloplint::RULES.select(&:default_on)
+
     Sloplint::RULES.each do |owner|
       owner.examples_ok.each do |example|
         it "#{owner.id}'s ok-fixture #{example.inspect} trips no other rule" do
-          notes = Sloplint::Engine.scan(example)
+          notes = Sloplint::Engine.scan(example, rules: default_rules)
           expect(notes.map(&:rule) - overlaps.fetch(owner.id, [])).to eq([])
         end
       end

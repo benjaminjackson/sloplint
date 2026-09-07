@@ -197,6 +197,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   of pre-2022 Hacker News. A draft that keeps doing it is the tell, and the
   rationale tells the agent to read that as a warning.
 
+- `epistrophe` (rhetorical-tic, info, off by default) flags two clauses
+  that end on the same two-word phrase, the second closing the sentence:
+  "built for one desk, and almost no job is done at one desk." It is
+  off by default like `rule-of-three`: the figure is one Emerson and Marcus
+  Aurelius use on purpose, and on pre-2022 Hacker News most of the 43 hits
+  per million words are plain phrase reuse. Select it when a draft is
+  suspected of leaning on it; several then should be read as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and

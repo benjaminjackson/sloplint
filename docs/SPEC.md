@@ -323,6 +323,7 @@ false-positive risk, which none has demonstrated.
 | `honest-x` | "an honest comparison", "the honest framing" | short noun list; "answer", "assessment", "account" excluded as ordinary; superlative yielded to the rule below |
 | `most-honest-x` | "the most honest framing", "the most honest way to put it" | wider noun list than `honest-x`; no human nouns, so "the most honest person" stays out |
 | `genuinely` | any "genuinely" | off by default; no narrowing holds |
+| `epistrophe` | two clauses ending on the same two-word phrase, the second closing the sentence | backreference; off by default; `info` |
 | `and-thats-fine` | "And that's fine/okay." as a whole sentence | "and" required; must open and close the sentence |
 | `and-nothing-else` | trailing ", and nothing else/more/further", ", and no more" | tail must close the sentence; comma required; bare "no more" needs "and"; "?" excluded |
 | `nothing-else-frag` | the same exclusion as a fragment: "Nothing else." | sentence-initial capital; semicolon excluded; must be the whole sentence; "No more." left out |

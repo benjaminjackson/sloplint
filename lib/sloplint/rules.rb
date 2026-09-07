@@ -213,6 +213,40 @@ module Sloplint
                  "a draft should be read as a warning."
     ),
     Rule.new(
+      id: "epistrophe",
+      category: "rhetorical-tic",
+      severity: "info",
+      default_on: false,
+      # Two clauses that end on the same two-word phrase, the second closing
+      # the sentence: "built for one desk, and almost no job is done at one
+      # desk." A backreference catches the repeat. The phrase may not open
+      # on an article, its second word must be four letters or more, and the
+      # second clause is five to sixty characters with no internal
+      # punctuation. Off by default: this is a named figure that Emerson and
+      # Marcus Aurelius use on purpose, and on Hacker News most hits are
+      # ordinary phrase reuse ("what they mean, not what the dictionary says
+      # they mean"), so the rate is above what an info rule should carry.
+      # Select it when a draft is suspected of leaning on it.
+      pattern: /\b((?!the\b|a\b|an\b)[\w'’-]+(?:[ \t]|\r?\n(?!\s*\n))+[\w'’-]{4,}),(?:[ \t]|\r?\n(?!\s*\n))+(?:and(?:[ \t]|\r?\n(?!\s*\n))+|but(?:[ \t]|\r?\n(?!\s*\n))+)?[^.,;:!?\n]{5,60}\b\1[.!?]/i,
+      message: "Two clauses ending on the same phrase (epistrophe) read as AI cadence.",
+      suggestion: "Vary the second ending, or cut the repeat.",
+      examples_bad: [
+        "The tool was built for one desk, and almost no job is done at one desk.",
+        "They wanted a shared file, but nobody would maintain a shared file."
+      ],
+      examples_ok: [
+        "The tool was built for one desk, and almost no job is done alone.",
+        # A repeat across a sentence boundary is two sentences.
+        "They wanted a shared file. Nobody would maintain a shared file.",
+        "It is what they mean, not the dictionary."
+      ],
+      rationale: "Ending consecutive clauses on the same phrase is a figure of emphasis, " \
+                 "and a model reaches for it whenever it wants a sentence to land. People " \
+                 "use it too, and much of what the pattern catches is plain phrase reuse, " \
+                 "which is why the rule is off by default; when selected, several in a " \
+                 "draft should be read as a warning."
+    ),
+    Rule.new(
       id: "did-not-x-did-not-y",
       category: "rhetorical-tic",
       severity: "warning",
