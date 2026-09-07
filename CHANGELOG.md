@@ -163,13 +163,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   should be read as a warning.
 
 - `bare-equative` (rhetorical-tic, info) flags a sentence that opens on an
-  abstract head noun and equates it with a definite noun phrase: "The unit
-  is the rate.", "The tell here is the periodicity." The copula must be
-  followed by "the", so "The problem is real" and "The answer is a mess" are
-  out, and so is a pointing complement ("the same", "the one"). Ships at
-  info: four per million words of pre-2022 Hacker News,
-  nothing in public-domain prose. Several in a draft should be read as a
-  warning.
+  abstract head noun and equates it with a definite noun phrase: "The tell
+  here is the periodicity.", "The lesson is the handoff." The head list is
+  the one `the-x-is-the-x` uses, so "The key is the brass thing on the hook"
+  is a definition and stays out; the copula (including "isn't") must be
+  followed by "the" and a lowercase word, so "The problem is real", "The
+  answer is a mess", "the same", "the first" and "the Slack thread" are all
+  out; a list marker may open it. Ships at info: about four per million
+  words of pre-2022 Hacker News, nothing in public-domain prose. Several in
+  a draft should be read as a warning.
 
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing

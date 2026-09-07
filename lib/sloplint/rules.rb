@@ -160,33 +160,52 @@ module Sloplint
       category: "rhetorical-tic",
       severity: "info",
       # A sentence that opens on an abstract head noun and equates it with
-      # something: "The unit is the rate.", "The tell is the periodicity.",
-      # "The problem here is the handoff." The head noun list is closed and
-      # abstract, the sentence must start on "The", and the copula must be
-      # followed by "the" (or "not the"), so a predicate adjective ("The
-      # problem is real") or an indefinite ("The answer is a mess") is out,
-      # and so is a pronoun-like complement ("the same", "the one", "the
-      # first"), which points rather than defines.
+      # something: "The tell here is the periodicity.", "The problem is not
+      # the tool.", "The lesson is the handoff." The head noun list is closed
+      # and holds only nouns that cannot name an object, the same list
+      # the-x-is-the-x uses: "the key is the brass thing on the hook" and
+      # "the cost is the price of the ticket" are definitions that tell the
+      # reader something. The sentence must start on "The", at a sentence
+      # start or after a list marker, and the copula ("is", "is not",
+      # "isn't") must be followed by "the" and a lowercase word, so a
+      # predicate adjective ("The problem is real"), an indefinite ("The
+      # answer is a mess"), a pointing complement ("the same", "the one",
+      # "the first"), and a proper noun ("the Slack thread") are all out.
+      # Gaps may cross a hard-wrapped newline but never a paragraph break.
       # Ships at info: "The problem is the cost" is how people write too, at
-      # five per million words on Hacker News; it is the density that tells.
-      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})The(?:[ \t]|\r?\n(?!\s*\n))+
-                (?:tell|point|question|problem|issue|lesson|difference|trick|move|job|work|risk|cost|goal|reason|pattern|insight|takeaway|shift|bet|catch|gap|bottleneck|unit|answer|signal|test|fix|failure|mistake|secret|magic|key|story|game)(?:[ \t]|\r?\n(?!\s*\n))+
-                (?:here(?:[ \t]|\r?\n(?!\s*\n))+)?is(?:[ \t]|\r?\n(?!\s*\n))+(?:not(?:[ \t]|\r?\n(?!\s*\n))+)?the(?:[ \t]|\r?\n(?!\s*\n))+(?!(?:one|same|only|first|last|best|worst|next|other|latter|former)\b)(?=[a-z])/x,
+      # about four per million words on Hacker News; it is the density that
+      # tells.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?:[-*+•][ \t]+|\d+[.)][ \t]+)?\KThe(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:tell|point|question|problem|issue|lesson|difference|trick|move|risk|goal|reason|pattern|insight|takeaway|shift|bet|catch|gap|bottleneck|failure|mistake|secret|magic|challenge|tension|trap)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:here(?:[ \t]|\r?\n(?!\s*\n))+)?is(?:n['’]t|(?:[ \t]|\r?\n(?!\s*\n))+not)?(?:[ \t]|\r?\n(?!\s*\n))+ the(?:[ \t]|\r?\n(?!\s*\n))+(?!(?:one|same|only|first|last|best|worst|next|other|latter|former)\b)(?-i:(?=[a-z]))/x,
       message: '"The X is the Y." is the AI definitional equative.',
       suggestion: "Say what the thing does or why it matters, instead of what it equals.",
       examples_bad: [
-        "The unit is the rate, not the sentence.",
         "The tell here is the periodicity.",
-        "The problem is not the tool. It is the habit."
+        "The lesson is the handoff, not the tool.",
+        "The problem is not the tool. It is the habit.",
+        "The problem isn't the handoff.",
+        # The pair's usual habitat.
+        "- The point is the cadence.",
+        # A hard-wrapped equative survives one newline.
+        "The problem is the\ncost."
       ],
       examples_ok: [
         "The problem is real.",
         "The answer is a mess of caveats.",
         # Not at a sentence start.
         "We think the problem is the handoff.",
-        "The key is under the mat.",
+        # Concrete heads are definitions.
+        "The key is the brass thing on the hook.",
+        "The cost is the price of the ticket plus tax.",
+        # Pointing complements.
         "The story is the one she told last week.",
-        "The reason is the same: space."
+        "The reason is the same: space.",
+        "The point is the first item on the list.",
+        # A proper noun.
+        "The tell is the Slack thread.",
+        # A paragraph break is not a gap.
+        "The problem is the\n\ncost."
       ],
       rationale: "Opening on an abstract noun and equating it with a second noun phrase " \
                  "states a diagnosis as a definition, which sounds settled and explains " \
