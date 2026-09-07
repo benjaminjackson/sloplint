@@ -2549,6 +2549,67 @@ module Sloplint
                  "in a draft should be read as a warning."
     ),
     Rule.new(
+      id: "mic-drop-closer",
+      category: "structure",
+      severity: "info",
+      # The kicker: a sentence of at least sixty characters, then a closer of
+      # two to eight words that ends the paragraph and opens on a quantifier
+      # or a deictic ("Nothing here needs a new login.", "Most teams end up
+      # with two.", "Then find out whether it paid off."). The long sentence
+      # must start a sentence itself, so the scan is linear, and \K drops it
+      # from the match so the note points at the closer. The closer must be
+      # the last thing in the paragraph: a blank line or the end of the text
+      # must follow, so the same sentence mid-paragraph, or a bullet followed
+      # by another bullet, is just a sentence. Both sentences may cross a
+      # hard-wrapped newline. Whitespace inside the long sentence is capped at
+      # two spaces a run, so a URL or code span blanked by --markdown cannot
+      # manufacture the sixty characters. The gap between the two sentences
+      # is one or two spaces, and the closer needs at least two words.
+      #
+      # Ships at info, and the rationale says why: people end paragraphs this
+      # way too, at about 150 per million words on Hacker News. One is
+      # nothing. A draft where most paragraphs end this way is the tell, and
+      # an agent that sees the flag repeat should read the family as a
+      # warning.
+      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,}[.!?][ \t]{1,2}\K
+                (?:Nothing|Most|None|Everything|Everyone|Nobody|Then|Neither|Both|That|This|It)
+                (?:,?(?:[ \t]|\r?\n(?!\s*\n))+[\w'’-]+){1,7}[.!?](?=[ \t]*(?:\r?\n[ \t]*(?:\r?\n|\z)|\z))/x,
+      message: "A short quantifier-led closer after a long sentence is the AI kicker.",
+      suggestion: "Cut the closer, or move the claim to the front of the paragraph.",
+      examples_bad: [
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here needs a new login.",
+        "Keep a private notebook for the drafts where taste matters, and a shared one for the work that passes between desks. Most teams end up with two.",
+        "Ship the shared notebook to a team that has agreed on the owner, the folder, and the first task it will hold. Then find out whether it paid off.\n\nNext week: the audit.",
+        # Both sentences may be hard-wrapped.
+        "Each step can be done in the app, pasted into whichever\nassistant the company allows, or run the way the team\nalready works. Nothing here\nneeds a new login.\n"
+      ],
+      examples_ok: [
+        # No long sentence before it.
+        "Nothing here needs a new login.",
+        # Not the end of the paragraph, wrapped or not.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here needs a new login. The prompts are in the appendix.",
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing here needs a new login.\nThe prompts are in the appendix.",
+        # A closer that does not open on the list.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. We kept the prompts short.",
+        # Too long to be a kicker.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Most of the teams we spoke to ended up using a mix of two of them.",
+        # Too short to be a kicker.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. Nothing.",
+        # More than two spaces is not a sentence gap.
+        "Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works.   Nothing here needs a new login.",
+        # A bullet followed by another bullet is not a paragraph end.
+        "- Each step can be done in the app, pasted into whichever assistant the company allows, or run the way the team already works. It works.\n- We moved the deploy script into the repo so the on-call rota could run it. It works.\n- The rest is in the appendix and needs no change from anyone on the team.\n",
+        # Blanked text cannot make the long sentence.
+        "See                                                                          here. It works.\n"
+      ],
+      rationale: "A short sentence after a long one borrows emphasis from the contrast, " \
+                 "and a model spends that emphasis at the end of nearly every paragraph, " \
+                 "restating the point it has just made. People write the shape too, at " \
+                 "about 150 per million words, so one flag means nothing; a draft " \
+                 "where the flag repeats paragraph after paragraph should be read as a " \
+                 "warning, and the fix is usually to delete the closer outright."
+    ),
+    Rule.new(
       id: "em-dash",
       category: "structure",
       severity: "info",
