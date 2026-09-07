@@ -20,7 +20,7 @@ module Sloplint
   # non-breaking space is a gap too, since the editors that emit curly
   # apostrophes emit those between words. is-the-whole-x and WHOLE_CLOSERS
   # share it.
-  WRAP_GAP = /(?:[ \t ]|\r?\n(?!\s*\n))/
+  WRAP_GAP = /(?:[ \t\u00A0]|\r?\n(?!\s*\n))/
 
   # The nouns "that's the whole N" closes on. thats-the-whole owns the
   # demonstrative form and is-the-whole-x yields it, so both patterns
@@ -138,7 +138,6 @@ module Sloplint
         # "value" and "fix" running on into a compound name a thing.
         "That's the whole value chain, end to end.",
         "That's the whole value\nchain, end to end.",
-        "That's the whole value chain, end to end.",
         "That's the whole value *chain*, end to end.",
         "That's the whole value-add of the consultant.",
         "That's the whole value's worth.",
