@@ -80,6 +80,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sentence. Nothing in 2.4M words of pre-2022 Hacker News or 1.25M words of
   public-domain prose.
 
+- `and-what-it-should` (rhetorical-tic, warning) flags the elliptical tail:
+  "List what the assistant knows about the client, and what it should." The
+  second
+  clause borrows its verb from the first and closes on a bare modal, so the
+  sentence ends on a contrast it never states. The comma, the conjunction,
+  and the full stop right after the modal are all required. Nothing in 2.4M
+  words of pre-2022 Hacker News or 1.25M words of public-domain prose.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and

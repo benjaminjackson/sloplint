@@ -281,6 +281,7 @@ false-positive risk, which none has demonstrated.
 | `did-not-x-did-not-y` | 2+ "did not …"/"didn't …" in a row | counts items |
 | `from-x-to-y-chain` | 2+ comma-separated "from X to Y" spans | counts spans; operands open with a letter, so ranges are out; skips the relay ("to B, from B") and the reduplication ("from X to X") |
 | `one-x-one-y` | 3+ comma-separated "one X" items standing on their own | counts items; must open a sentence or follow a colon, so a chain after a verb is counting; items letter-led; the distributive "one for …" skipped; a pair never flags |
+| `and-what-it-should` | ", and what it should." — a second "what" clause closing on a bare modal or auxiliary | comma, conjunction and full stop required; a completed clause is out |
 | `dont-verb-it` | "Don't call it X. Call it Y." (negated verb+it, same verb+it) | |
 | `sit-with-that` | "sit with that/this/it", "sit with the discomfort" | |
 | `hold-onto-that` | sentence-initial "hold onto/on to that/this" | imperative only |

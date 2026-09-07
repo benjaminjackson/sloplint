@@ -250,6 +250,38 @@ module Sloplint
                  "ordinary. Careful writers distribute in pairs and rarely stack three."
     ),
     Rule.new(
+      id: "and-what-it-should",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # The elliptical tail: "List what the assistant knows about the client,
+      # and what it should." The second "what" clause borrows its verb from the
+      # first and ends on a bare modal or auxiliary, so the sentence closes on
+      # a contrast it never states. The comma, the "and", and the full stop
+      # right after the modal are all required; "and what it should do" is a
+      # complete clause and does not flag. The gap after the comma is at most
+      # two spaces, so the tail never crosses a paragraph break.
+      pattern: /,[ \t]{1,2}(?:and|but|or)[ \t]+what[ \t]+(?:it|they|you|we|he|she|one)[ \t]+
+                (?:should|shouldn['’]t|could|couldn['’]t|would|wouldn['’]t|must|mustn['’]t|can|can['’]t|cannot|does|doesn['’]t|did|didn['’]t|is|isn['’]t|was|wasn['’]t|will|won['’]t)[.!?]/ix,
+      message: '"…, and what it should." is the AI elliptical tail.',
+      suggestion: "Finish the clause, or cut it.",
+      examples_bad: [
+        "List what the assistant knows about the client, and what it should.",
+        "List what the tool does, and what it doesn't.",
+        "Say what the team decided, but what it couldn't."
+      ],
+      examples_ok: [
+        "List what the assistant knows about the client, and what it should know.",
+        "He asked what it was, and what it should be called.",
+        "Nobody knew what it cost or what it should.",
+        "She wrote down what she saw. And what she should have seen, she added later.",
+        # A paragraph break is not a comma.
+        "List what the assistant knows,\n\nand what it should."
+      ],
+      rationale: "Ending on a bare modal makes the reader supply the verb and the " \
+                 "contrast, which reads as poise in a model and as an unfinished sentence " \
+                 "in a person. Careful writers finish the clause."
+    ),
+    Rule.new(
       id: "dont-verb-it",
       category: "rhetorical-tic",
       severity: "warning",
