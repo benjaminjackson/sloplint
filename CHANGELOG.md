@@ -129,6 +129,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   answer key" is not a repeat. Once in 2.4M words of pre-2022 Hacker News;
   nothing in 1.25M words of public-domain prose.
 
+- `same-determiner-chain` (rhetorical-tic, info) is the quiet cousin of
+  `one-x-one-y`: three or more comma-separated items opening on the same
+  determiner or quantifier, "every file, every branch, every deploy", caught
+  with a backreference. The narrative possessives (my, his, her, their, its)
+  are left out, since "his fame, his position, his life" is every
+  novelist's. It ships at info because the device is one humans use on
+  purpose: 7.5 per million words of pre-2022 Hacker News and 14 per million
+  in public-domain prose. One is a question; several in a draft should be
+  read as a warning.
+
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
   about either. "at" is not required, so "explores the intersection of art and
