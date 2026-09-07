@@ -2029,22 +2029,38 @@ module Sloplint
       # ("everyone may pitch, one editor decides"), joined by a bare comma, and
       # the second clause closes the sentence. The comma splice is the
       # evidence: with "and" or "but" it is an ordinary sentence, and with a
-      # period it is two. The first subject must open a clause, the two
-      # subjects must differ in polarity, so the anaphoric "nobody is on my
-      # side, nobody takes part with me" is not a hinge, and "one" may not be
-      # "one of". Neither clause may hold a newline, so a chain never crosses
-      # a paragraph break, and the comma gap is at most two spaces, so a
-      # blanked code span under --markdown cannot weld two clauses.
-      pattern: /(?:^|(?<=[.!?:;]\s))
-                (?:(?:everyone|everybody)[ \t]+[^,.;:!?\n]{2,40},[ \t]{1,2}(?:nobody|no[ \t]+one|none|one[ \t]+(?!of\b)(?=[a-z])[\w'’-]+)
-                  |(?:nobody|no[ \t]+one)[ \t]+[^,.;:!?\n]{2,40},[ \t]{1,2}(?:everyone|everybody|one[ \t]+(?!of\b)(?=[a-z])[\w'’-]+))
-                [ \t]+[^,.;:!?\n]{2,40}[.;!?]/ix,
+      # period it is two. The first subject must open a clause (one or two
+      # spaces after a stop, as elsewhere in the catalog), the two subjects
+      # must differ in polarity, so the anaphoric "nobody is on my side,
+      # nobody takes part with me" is not a hinge, and each clause is at most
+      # eighty characters with no newline, so a hinge never crosses a
+      # paragraph break and the comma gap is at most two spaces.
+      #
+      # The "one N" and "none" subjects need guards, because the comma slot
+      # also holds phrases that are not clauses. "one of them", "one by one",
+      # "one per ticket", and a measure ("one hour before the talk") are out;
+      # so is a capitalised "One" mid-sentence, a proper noun, which the
+      # case-sensitive lookahead catches under /i. "none of which" is a
+      # relative clause and "none louder than" a comparative, and both are
+      # out.
+      pattern: /(?:^|(?<=[.!?:;])[ \t]{1,2})\K
+                (?:(?:everyone|everybody)[ \t]+[^,.;:!?\n]{2,80},[ \t]{1,2}
+                     (?:nobody|no[ \t]+one|none(?![ \t]+(?:of|more|less|so)\b|[ \t]+\w+er\b)
+                       |one[ \t]+(?!of\b|by\b|per\b|(?:hour|minute|second|day|week|month|year|dollar|cent|mile|foot|inch|pound|kilo|metre|meter)s?\b)(?-i:(?=[a-z]))[\w'’-]+)
+                  |(?:nobody|no[ \t]+one)[ \t]+[^,.;:!?\n]{2,80},[ \t]{1,2}
+                     (?:everyone|everybody|one[ \t]+(?!of\b|by\b|per\b|(?:hour|minute|second|day|week|month|year|dollar|cent|mile|foot|inch|pound|kilo|metre|meter)s?\b)(?-i:(?=[a-z]))[\w'’-]+))
+                [ \t]+[^,.;:!?\n]{2,80}[.;!?]/ix,
       message: '"Everyone X, nobody Y." is the AI antithesis hinge.',
       suggestion: "Say which one is the problem, in its own sentence.",
       examples_bad: [
         "Everyone wants the dashboard, nobody maintains it.",
         "Run it like a newsroom desk: everyone may pitch, one editor decides.",
-        "Nobody owns the file, everyone edits it."
+        "Nobody owns the file, everyone edits it.",
+        "Everyone wanted the job, none applied.",
+        # Two spaces after the stop still open a clause.
+        "Ship it.  Everyone wants the dashboard, nobody maintains it.",
+        # Clauses may run to eighty characters.
+        "Everyone talks about observability in the abstract, nobody wants to own the pager rotation."
       ],
       examples_ok: [
         # A conjunction makes it a sentence, not a hinge.
@@ -2056,7 +2072,18 @@ module Sloplint
         "Everyone who came, nobody excepted, signed the book.",
         # A period is two sentences.
         "Everyone wants the dashboard. Nobody maintains it.",
-        "One of them left, everyone else stayed for the vote and the dinner afterwards.",
+        # "one of", "one by one", "one per", a measure, and a proper noun are
+        # not a second subject.
+        "Everyone signed up, one of them dropped out later.",
+        "Nobody moved for a moment, one by one they stood up.",
+        "Everybody got a ticket, one per person at the gate.",
+        "Everyone arrived by noon, one hour before the talk.",
+        "Nobody stirred in the hall, One Direction played on the radio.",
+        # A relative clause and a comparative are not a second subject.
+        "Everyone brought a dish, none of which we actually ate.",
+        "Everyone in the room laughed, none louder than the author himself.",
+        # A clause over eighty characters is a sentence of its own.
+        "Everyone who has ever tried to keep a dashboard alive through two reorganisations and a migration knows the cost, nobody maintains it.",
         # A paragraph break is not a comma.
         "Everyone wants the dashboard,\n\nnobody maintains it."
       ],
