@@ -255,25 +255,40 @@ module Sloplint
       severity: "warning",
       # The elliptical tail: "List what the assistant knows about the client,
       # and what it should." The second "what" clause borrows its verb from the
-      # first and ends on a bare modal or auxiliary, so the sentence closes on
-      # a contrast it never states. The comma, the "and", and the full stop
-      # right after the modal are all required; "and what it should do" is a
-      # complete clause and does not flag. The gap after the comma is at most
-      # two spaces, so the tail never crosses a paragraph break.
-      pattern: /,[ \t]{1,2}(?:and|but|or)[ \t]+what[ \t]+(?:it|they|you|we|he|she|one)[ \t]+
-                (?:should|shouldn['’]t|could|couldn['’]t|would|wouldn['’]t|must|mustn['’]t|can|can['’]t|cannot|does|doesn['’]t|did|didn['’]t|is|isn['’]t|was|wasn['’]t|will|won['’]t)[.!?]/ix,
+      # first and ends on a bare modal or a negated auxiliary, so the sentence
+      # closes on a contrast it never states. The comma, the conjunction, and
+      # the full stop right after the modal are all required; "and what it
+      # should do" is a complete clause and does not flag. The affirmative
+      # copula and do-verb ("and what he does.", "and what it is.") are left
+      # out: those are complete clauses with a main verb, not ellipsis. A
+      # question mark is left out too, because an interrogative licenses the
+      # ellipsis ("what does it cover, and what doesn't it?"). Gaps may cross
+      # a hard-wrapped newline but never a paragraph break.
+      pattern: /,(?:[ \t]|\r?\n(?!\s*\n))+(?:and|but|or)(?:[ \t]|\r?\n(?!\s*\n))+what(?:[ \t]|\r?\n(?!\s*\n))+(?:it|they|you|we|he|she|one|i)(?:[ \t]|\r?\n(?!\s*\n))+
+                (?:(?:should|could|would|must|can|will|might|may)(?:(?:[ \t]|\r?\n(?!\s*\n))+not|n['’]t)?
+                  |cannot|(?:does|did|is|was|has|have|had|are|were)(?:(?:[ \t]|\r?\n(?!\s*\n))+not|n['’]t))[.!]/ix,
       message: '"…, and what it should." is the AI elliptical tail.',
       suggestion: "Finish the clause, or cut it.",
       examples_bad: [
         "List what the assistant knows about the client, and what it should.",
         "List what the tool does, and what it doesn't.",
-        "Say what the team decided, but what it couldn't."
+        "List what the tool does, and what it does not.",
+        "Say what the team decided, but what it couldn't.",
+        "List what I know about the client, and what I should.",
+        "List what we cover, and what we haven't.",
+        # A hard-wrapped tail survives one newline.
+        "List what the model knows about the client,\nand what it should."
       ],
       examples_ok: [
         "List what the assistant knows about the client, and what it should know.",
         "He asked what it was, and what it should be called.",
         "Nobody knew what it cost or what it should.",
         "She wrote down what she saw. And what she should have seen, she added later.",
+        # A main verb is a complete clause.
+        "It is not what he says, but what he does.",
+        "They knew what he did, and what he was.",
+        # A question licenses the ellipsis.
+        "Who decides what the policy covers, and what it doesn't?",
         # A paragraph break is not a comma.
         "List what the assistant knows,\n\nand what it should."
       ],

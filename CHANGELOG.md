@@ -82,11 +82,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `and-what-it-should` (rhetorical-tic, warning) flags the elliptical tail:
   "List what the assistant knows about the client, and what it should." The
-  second
-  clause borrows its verb from the first and closes on a bare modal, so the
-  sentence ends on a contrast it never states. The comma, the conjunction,
-  and the full stop right after the modal are all required. Nothing in 2.4M
-  words of pre-2022 Hacker News or 1.25M words of public-domain prose.
+  second clause borrows its verb from the first and closes on a bare modal
+  or a negated auxiliary, so the sentence ends on a contrast it never
+  states. The comma, the conjunction, and the full stop right after the
+  modal are all required; the affirmative copula and do-verb ("and what he
+  does.") are complete clauses and stay out, and so does a question.
+  Nothing in 2.4M words of pre-2022 Hacker News or 1.25M words of
+  public-domain prose.
 
 - `intersection-of` (rhetorical-tic, warning) flags "the intersection of X and
   Y" used as positioning: a writer placed between two fields, saying nothing
