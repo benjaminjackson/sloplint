@@ -3228,81 +3228,95 @@ module Sloplint
                  "narrator who never appears. Careful writers put the verb in its own clause " \
                  "with a subject, or leave the significance to the reader."
     ),
-    Rule.new(
-      id: "trailing-restatement",
-      category: "structure",
-      severity: "info",
-      default_on: false,
-      # The restating tail: "…, which means working through the process
-      # rather than around it", where the clause after the comma says the
-      # clause before it again in other words. The connective is all a
-      # pattern can see. It cannot tell a restatement from a consequence
-      # ("the deadline is receipt, not postmark, which means a ballot mailed
-      # on the 30th does not count"), and the tail that prompted the rule
-      # shares no content words with its head, so no overlap test reaches it
-      # either. Off by default for that reason: every hit needs reading.
-      #
-      # Three connective frames: "which means", "which is to say", and the
-      # participle "meaning". The noun sense is kept out by the word after it
-      # ("meaning of", "meaning is"), the intention sense by "meaning to". A
-      # gloss ("_ma_, which means hand"; "_tatisitupe_, meaning six") closes
-      # a quoted or italicised word, so a quote mark, underscore or bracket
-      # right before the comma is not this; the lookbehind guards every
-      # frame, since a quoted head is a definition whichever connective
-      # follows.
-      #
-      # The neutral participles the same move borrows -- making, giving,
-      # leaving, allowing -- are ordinary English in the bare form ("she
-      # left, leaving the door open"; "cut the paper, leaving a margin"), so
-      # they enter only in the result frame the tell takes: "making it
-      # easier", "making the pipeline faster", "allowing us to", "giving them
-      # more", "leaving you with". A pronoun object is the guard for the last
-      # three, a closed set of degree and result words for the first. They
-      # are not on trailing-significance-participle's list because they carry
-      # a human subject in ordinary prose, the animacy line that rule draws.
-      pattern: /(?<![_"”’)\]]),(?:[ \t]|\r?\n(?![ \t]*\r?\n))+
-                (?:which[ \t]+means[ \t]+\S
-                  |which[ \t]+is[ \t]+to[ \t]+say[ \t]+\S
-                  |meaning(?![ \t]+(?:of|in|to|and|or|is|was)\b)[ \t]+\S
-                  |making(?:[ \t]+[\w'’-]+){1,4}?[ \t]+
-                     (?:easier|harder|faster|slower|simpler|cheaper|clearer|safer|
-                        possible|impossible|more|less)\b
-                  |allowing[ \t]+(?:us|you|them|it)[ \t]+to\b
-                  |giving[ \t]+(?:us|you|them)[ \t]+(?:more|less|time|room)\b
-                  |leaving[ \t]+(?:us|you|them|it)[ \t]+(?:with|to|without)\b)/ix,
-      message: "Trailing clause that restates the sentence in other words.",
-      suggestion: "Cut the tail, or if it states a real consequence, make it its own sentence.",
-      examples_bad: [
-        "We moved the checks into the build step, which means the errors show up before anyone opens a review.",
-        "The new queue drains in order, which is to say nothing jumps ahead of an older job.",
-        "Every job now records its own start time, meaning the log tells you when the run began.",
-        "We rebuilt the parser, making the whole pipeline faster.",
-        "The cache now lives beside the worker, allowing us to skip the round trip.",
-        "The report ships on Fridays, giving them more time to read it.",
-        "The old flags are gone, leaving you with one switch to learn."
-      ],
-      examples_ok: [
-        # A gloss: the head is a quoted or italicised word.
-        "The syllable _ma_, which means hand, appears in five and ten.",
-        "They count on with _tatisitupe_, meaning six.",
-        # The intention sense and the noun sense of "meaning".
-        "He left the room, meaning to come back before dark.",
-        "She read on, meaning of the word aside, and let it pass.",
-        # The bare participles are ordinary English.
-        "She left the room, leaving the door open.",
-        "Cut the paper around the frame, leaving a margin for pasting.",
-        "He handed over the keys, giving her a nod.",
-        "The lid lifts off, allowing the steam to escape.",
-        # A gerund list, and no comma.
-        "The work involves cutting, making and sanding the parts.",
-        "Which means what, exactly?"
-      ],
-      rationale: "The tail after the connective says the head again in other words, and a " \
-                 "model adds one whenever a sentence feels short of a point. Careful writers " \
-                 "use the same connective to state a consequence, and the pattern cannot " \
-                 "tell the two apart, so the rule is off by default: select it when a draft " \
-                 "feels padded, and read each hit."
-    ),
+Rule.new(
+  id: "trailing-restatement",
+  category: "structure",
+  severity: "info",
+  default_on: false,
+  # The restating tail: "…, which means working through the process
+  # rather than around it". A regex sees the connective and not whether
+  # the tail says the head again, and the sentence that prompted the rule
+  # shares no content words between the two, so no overlap test reaches
+  # it either. Hence off by default.
+  #
+  # Three connectives: "which means", "which is to say", and the
+  # participle "meaning", which must open on a determiner, a pronoun or
+  # "that". That frame keeps out the noun ("meaning of"), the intention
+  # ("meaning to come back") and the gloss ("_tatisitupe_, meaning six"),
+  # since all three continue without a determiner. A gloss on "which
+  # means" is caught by what precedes the comma: an emphasis marker, a
+  # backtick or a quote mark closing the glossed word, or a space where
+  # --markdown blanked a code span. A closing bracket is not in that set,
+  # since an aside before the comma is ordinary ("we fixed the bug (the
+  # null check), which means the crash is gone").
+  #
+  # Four participle frames the same move borrows. Each needs a pronoun
+  # object and a closing word, because the bare participle is ordinary
+  # English ("she left, leaving the door open"; "cut the paper, leaving a
+  # margin"): "allowing us to", "giving them more", "leaving you with",
+  # and "making it easier", where the closer is a comparative in -er or
+  # more, less, possible; "making" also takes a short "the" object, since
+  # the tell rebuilds the parser "making the whole pipeline faster". A
+  # gerund list ("cutting, making and sanding") has no object and falls
+  # out on its own. These verbs stay off trailing-significance-participle,
+  # whose list is closed to verbs an event can be the subject of.
+  pattern: /(?<![ \t_*`'"”’]),#{WRAP_GAP}+
+            (?:which#{WRAP_GAP}+means\b
+              |which#{WRAP_GAP}+is#{WRAP_GAP}+to#{WRAP_GAP}+say\b
+              |meaning#{WRAP_GAP}+(?:that|the|a|an|this|these|those|it|we|you|they|there|every|each|any|all|your|our|their|its)\b
+              |making#{WRAP_GAP}+(?:it|them|us|you|the(?:#{WRAP_GAP}+[\w'’-]+){1,2})#{WRAP_GAP}+(?:\w+er|more|less|(?:im)?possible)\b
+              |allowing#{WRAP_GAP}+(?:it|them|us|you)#{WRAP_GAP}+to\b
+              |giving#{WRAP_GAP}+(?:it|them|us|you)#{WRAP_GAP}+(?:more|less|time|room)\b
+              |leaving#{WRAP_GAP}+(?:it|them|us|you)#{WRAP_GAP}+(?:with|to|without)\b)/ix,
+  message: "Trailing clause that says the sentence again, or hangs a result off it.",
+  suggestion: "Cut the tail, or if it states a real consequence, make it its own sentence.",
+  examples_bad: [
+    "We moved the checks into the build step, which means the errors show up before anyone opens a review.",
+    "The new queue drains in order, which is to say nothing jumps ahead of an older job.",
+    "Every job now records its own start time, meaning the log tells you when the run began.",
+    "We rebuilt the parser, making the whole pipeline faster.",
+    "The cache is local now, making it easier to reason about.",
+    "The cache now lives beside the worker, allowing us to skip the round trip.",
+    "The report ships on Fridays, giving them more time to read it.",
+    "The old flags are gone, leaving you with one switch to learn.",
+    # An aside before the comma is not a gloss.
+    "We fixed the bug (the null check), which means the crash is gone.",
+    # Either gap may hard-wrap.
+    "We moved the checks into the build step,\nwhich means the errors show up first.",
+    "We moved the checks into the build step, which\nmeans the errors show up first."
+  ],
+  examples_ok: [
+    # A gloss: an emphasis marker, a backtick or a quote closes the glossed word.
+    "The syllable _ma_, which means hand, appears in five and ten.",
+    "The syllable *ma*, which means hand, appears in five and ten.",
+    "The token `ma`, which means hand, appears in five and ten.",
+    "The word ‘ma’, which means hand, appears in five and ten.",
+    # A code span blanked by --markdown leaves a space before the comma.
+    "The flag     , which means nothing is written, is the default.",
+    # "meaning" without a determiner: the gloss, the intention, the noun.
+    "They count on with _tatisitupe_, meaning six.",
+    "It is an old word, meaning caves.",
+    "He left the room, meaning to come back before dark.",
+    "She read on, meaning of the word aside, and let it pass.",
+    # The bare participles are ordinary English.
+    "She left the room, leaving the door open.",
+    "Cut the paper around the frame, leaving a margin for pasting.",
+    "He handed over the keys, giving her a nod.",
+    "The lid lifts off, allowing the steam to escape.",
+    # A pronoun object with no closing word.
+    "Rub down the leather, making it as smooth as possible.",
+    "The crowd parted, making room for more chairs.",
+    # A gerund list, and no comma.
+    "The work involves cutting, making and sanding the parts.",
+    "Which means what, exactly?",
+    # A paragraph break is not a comma.
+    "The checks moved into the build step\n\nWhich means the errors show up first."
+  ],
+  rationale: "The tail after the connective says the head again in other words, and a " \
+             "model adds one whenever a sentence feels short of a point. Careful writers " \
+             "use the same connective to state a consequence, and the pattern cannot " \
+             "tell the two apart, so the rule is off by default."
+),
     # ── hedging ───────────────────────────────────────────────────────────
     Rule.new(
       id: "vague-attribution",

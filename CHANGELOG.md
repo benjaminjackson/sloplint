@@ -13,10 +13,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   take (", making it easier", ", allowing us to", ", giving them more",
   ", leaving you with"). The connective is all a pattern can see, and the
   same connective states a real consequence in careful prose, so the rule
-  runs only when selected and every hit wants reading. A quoted or
-  italicised word before the comma is a gloss and is skipped. The bare
-  participles stay out: "she left, leaving the door open" is ordinary
-  English, and `trailing-significance-participle` keeps its closed list.
+  runs only when selected.
 
 ## [0.6.0] - 2026-09-08
 
