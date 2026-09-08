@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- `trailing-restatement` (structure, info, off by default) flags the tail
+  that says the sentence again in other words: ", which means …", ", which
+  is to say …", ", meaning …", and four participles that hang a result off
+  the sentence (", making it easier", ", allowing us to", ", giving them
+  more", ", leaving you with"). The connective is all a pattern can see, and the
+  same connective states a real consequence in careful prose, so the rule
+  runs only when selected.
+
 ## [0.6.0] - 2026-09-08
 
 The catalog grows from 50 rules to 75, and sloplint ships as a Claude Code
