@@ -353,27 +353,18 @@ module Sloplint
       # Three consecutive words, each four letters or more and each
       # lowercase-led, at least one of them six letters or more, and the
       # same three again within 400 words. That is the whole defence, and
-      # it is structural: "in order to" and "as well as" fall out on length,
-      # "would have been" and "from each other" on the six-letter word,
-      # "New York City" and a Title Case heading on case. The window is a
-      # lazy walk of word steps, each step deterministic, so nothing
-      # backtracks; the repeat sits in a lookahead so the match, and the
-      # excerpt, is the first occurrence alone rather than the whole span.
-      # One backreference per word, as in epistrophe, so either occurrence
-      # may be hard-wrapped.
-      # The repeat may not open on a quote mark: a quoted self-repeat is
-      # deliberate. The gap crosses paragraph breaks on purpose, since the
-      # repeat that prompted the rule was four paragraphs from its first use.
+      # it is structural: length drops the function-word runs, case drops
+      # the names and headings. The window is a lazy walk of word steps,
+      # each step deterministic, so nothing backtracks; the repeat sits in
+      # a lookahead so the match, and the excerpt, is the first occurrence
+      # alone rather than the whole span. One backreference per word, as
+      # in epistrophe, so either occurrence may be hard-wrapped. The gap
+      # crosses paragraph breaks on purpose, since the repeat that prompted
+      # the rule was four paragraphs from its first use.
       #
-      # Off by default. A term of art repeats because it must, a running
-      # epithet ("the pale young gentleman") repeats because the author
-      # chose it, and no pattern can tell either from a phrase the writer
-      # coined and reached for again. In reference prose the rate runs to
-      # thousands per million words, all of it names.
-      #
-      # ponytail: fixed 400-word window; make it a Rule field if a second
-      # rule ever needs one.
-      pattern: /\b(?=(?:[\w'’-]+#{WRAP_GAP}+){0,2}[a-z][\w'’-]{5,})
+      # Off by default: in reference prose the rate runs to thousands per
+      # million words, all of it terms of art and running epithets.
+      pattern: /\b(?=(?:[\w'’-]+#{WRAP_GAP}+){0,2}[\w'’-]{6,})
                 ([a-z][\w'’-]{3,})#{WRAP_GAP}+([a-z][\w'’-]{3,})#{WRAP_GAP}+([a-z][\w'’-]{3,})\b
                 (?=(?:\W+\w+){0,400}?[^\w"“‘]+\1#{WRAP_GAP}+\2#{WRAP_GAP}+\3\b)/x,
       message: "Three-word phrase repeated within a few hundred words -- a model reusing its own output.",
@@ -402,8 +393,7 @@ module Sloplint
       rationale: "A model reuses a phrase it has just minted because its own recent output is " \
                  "the likeliest continuation, so the same three words turn up again a few " \
                  "paragraphs on, doing no new work. Terms of art repeat too, and the pattern " \
-                 "cannot tell a coined phrase from a name, so the rule is off by default: " \
-                 "select it for a final pass over a draft and read each hit."
+                 "cannot tell a coined phrase from a name, so the rule is off by default."
     ),
     Rule.new(
       id: "did-not-x-did-not-y",

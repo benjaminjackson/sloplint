@@ -11,8 +11,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   phrase that comes back within a few hundred words, the model reusing a
   phrase it has just minted. Each word must be four letters or more and
   lowercase-led, and one of them six or more, so "in order to", "would have
-  been" and "New York City" never match. The match is the first occurrence;
-  the repeat sits in a lookahead. Off by default: a term of art repeats
+  been" and "New York City" never match. Off by default: a term of art repeats
   because it must, and in reference prose the pattern fires on names by the
   thousand per million words.
 - `trailing-restatement` (structure, info, off by default) flags the tail
