@@ -348,47 +348,79 @@ module Sloplint
       category: "rhetorical-tic",
       severity: "info",
       default_on: false,
-      # The same three words again a few paragraphs on: "the most useful
-      # thing that came out of it … the most useful thing you can send".
-      # Three consecutive words, each four letters or more and each
-      # lowercase-led, at least one of them six letters or more, and the
-      # same three again within 400 words. That is the whole defence, and
-      # it is structural: length drops the function-word runs, case drops
-      # the names and headings. The window is a lazy walk of word steps,
-      # each step deterministic, so nothing backtracks; the repeat sits in
-      # a lookahead so the match, and the excerpt, is the first occurrence
-      # alone rather than the whole span. One backreference per word, as
-      # in epistrophe, so either occurrence may be hard-wrapped. The gap
-      # crosses paragraph breaks on purpose, since the repeat that prompted
-      # the rule was four paragraphs from its first use.
+      # The same three words again a few paragraphs on. Three consecutive
+      # words, each four characters or more and lowercase-led, one of them
+      # six letters with nothing but letters, and the same three again
+      # within about 400 words. That is the whole defence, and it is
+      # structural: length drops the function-word runs, the all-letters
+      # word drops the contractions and hyphenated compounds that would
+      # otherwise pass on characters alone, case drops the names and
+      # headings. The gaps inside the phrase are capped at two spaces, as
+      # in epistrophe, so a code span blanked by --markdown cannot weld two
+      # words into a phrase.
+      #
+      # The window is a lazy walk of word steps in an atomic group, so
+      # nothing backtracks, and it counts Unicode words, since `\w` is
+      # ASCII in Ruby. Each gap in the walk is capped at 80 non-word
+      # characters and refuses to cross into a list item or a table row:
+      # a blanked code fence, a rule of dashes or a bullet is a wall, not a
+      # step. The repeat sits in a lookahead so the match, and the excerpt,
+      # is the first occurrence alone rather than the whole span; the
+      # suggestion says so. The repeat may not open on a quote mark, a
+      # backtick, an emphasis marker, a hyphen or a table bar: a quoted
+      # self-repeat is deliberate, and "re-shared" is not "shared". One
+      # backreference per word so either occurrence may be hard-wrapped.
       #
       # Off by default: in reference prose the rate runs to thousands per
       # million words, all of it terms of art and running epithets.
-      pattern: /\b(?=(?:[\w'’-]+#{WRAP_GAP}+){0,2}[\w'’-]{6,})
-                ([a-z][\w'’-]{3,})#{WRAP_GAP}+([a-z][\w'’-]{3,})#{WRAP_GAP}+([a-z][\w'’-]{3,})\b
-                (?=(?:\W+\w+){0,400}?[^\w"“‘]+\1#{WRAP_GAP}+\2#{WRAP_GAP}+\3\b)/x,
-      message: "Three-word phrase repeated within a few hundred words -- a model reusing its own output.",
-      suggestion: "Reword the second use, unless the phrase is a term the reader needs to see repeated.",
+      pattern: /(?<![\p{Word}'’-])
+                (?=(?:[\w'’-]+(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})){0,2}[a-z]{6,}(?![\w'’-]))
+                ([a-z][\w'’-]{3,})(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                ([a-z][\w'’-]{3,})(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                ([a-z][\w'’-]{3,})\b
+                (?=(?>(?:(?!\r?\n[ \t]*(?:[-*+•|]|\d+[.)])[ \t])\P{Word}){1,80}\p{Word}+){0,400}?
+                   (?:(?!\r?\n[ \t]*(?:[-*+•|]|\d+[.)])[ \t])[^\p{Word}"“‘'`*|-]){1,80}
+                   \1(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                   \2(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                   \3\b)/x,
+      message: "Three-word phrase that comes back within a few hundred words -- a model reusing its own output.",
+      suggestion: "This is the first use and the repeat is ahead. Reword the repeat, unless the phrase is a term the reader needs to see again.",
       examples_bad: [
-        "The most useful thing that came out of the review was a shorter list.\n\nWhen you write back, the most useful thing you can send is the framework.",
+        "The shortest honest answer that came out of the review was a list.\n\nWhen you write back, the shortest honest answer you can send is the list.",
         "We keep a shared review checklist in the repo, and it is short. Everyone who opens a pull request edits the shared review checklist first.",
         # A hard-wrapped first occurrence.
-        "We keep a shared review\nchecklist in the repo. Everyone edits the shared review checklist first."
+        "We keep a shared review\nchecklist in the repo. Everyone edits the shared review checklist first.",
+        # The last word inside the window.
+        "We keep a shared review checklist. #{"word " * 399}The shared review checklist is short."
       ],
       examples_ok: [
         # Function words fall out on length.
         "In order to ship we cut scope, and in order to ship again we cut it more.",
-        # Four-letter words alone are not enough; one word must be six letters or more.
+        # Four-letter words alone are not enough; one word must be six letters, letters only.
         "It would have been better, and it would have been faster.",
+        "It couldn't have been worse, and it couldn't have been better.",
+        "We saw every top-ten list here, and every top-ten list there.",
         # Proper nouns and Title Case headings fall out on case.
-        "New York City has one, and New York City wants two.",
+        "Grand Central Station has one, and Grand Central Station wants two.",
         "Incident Response Plan\n\nThe Incident Response Plan covers the first hour.",
-        # The repeat is beyond the window.
-        "We keep a shared review checklist. #{"word " * 401}The shared review checklist is short.",
-        # A quoted repeat is deliberate.
+        # The repeat is beyond the window, in words, in non-ASCII words, or past a wall of dashes.
+        "We keep a shared review checklist. #{"word " * 400}The shared review checklist is short.",
+        "We keep a shared review checklist. #{"слово " * 400}The shared review checklist is short.",
+        "We keep a shared review checklist.\n\n#{"-" * 100}\n\nThe shared review checklist is short.",
+        # A quoted repeat is deliberate, whatever the quote mark.
         "The shared review checklist is new. He wrote \"shared review checklist\" on the board.",
-        # A different word form is a different phrase.
-        "The shared review checklist grew, and then both shared review checklists grew."
+        "The shared review checklist is new. He wrote 'shared review checklist' on the board.",
+        "The shared review checklist is new. He wrote `shared review checklist` on the board.",
+        # A different word form is a different phrase, and so is a hyphenated compound.
+        "The shared review checklist grew, and then both shared review checklists grew.",
+        "The auto-generated review checklist was long. The hand-generated review checklist was longer.",
+        "We use a shared review checklist daily. Nobody re-shared review checklist edits.",
+        # A run of spaces where --markdown blanked a code span does not weld a phrase.
+        "We keep a shared          review checklist here. Everyone edits the shared review checklist first.",
+        # List items and table rows are furniture, not prose.
+        "- shared review checklist covers pull requests\n- shared review checklist covers deploys",
+        "1. Update the shared config file.\n2. Restart the shared config file watcher.",
+        "| Task | Status |\n|---|---|\n| A | needs manual review |\n| B | needs manual review |"
       ],
       rationale: "A model reuses a phrase it has just minted because its own recent output is " \
                  "the likeliest continuation, so the same three words turn up again a few " \
