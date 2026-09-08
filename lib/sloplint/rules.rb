@@ -344,6 +344,90 @@ module Sloplint
                  "draft should be read as a warning."
     ),
     Rule.new(
+      id: "phrase-echo",
+      category: "rhetorical-tic",
+      severity: "info",
+      default_on: false,
+      # The same three words again a few paragraphs on. Three consecutive
+      # words, each four characters or more and lowercase-led, one of them
+      # six letters with nothing but letters, and the same three again
+      # within about 400 words. That is the whole defence, and it is
+      # structural: length drops the function-word runs, the all-letters
+      # word drops the contractions and hyphenated compounds that would
+      # otherwise pass on characters alone, case drops the names and
+      # headings. The gaps inside the phrase are capped at two spaces, as
+      # in epistrophe, so a code span blanked by --markdown cannot weld two
+      # words into a phrase.
+      #
+      # The window is a lazy walk of word steps in an atomic group, so
+      # nothing backtracks, and it counts Unicode words, since `\w` is
+      # ASCII in Ruby. Each gap in the walk is capped at 80 non-word
+      # characters and refuses to cross into a list item or a table row:
+      # a blanked code fence, a rule of dashes or a bullet is a wall, not a
+      # step. The repeat sits in a lookahead so the match, and the excerpt,
+      # is the first occurrence alone rather than the whole span; the
+      # suggestion says so. The repeat may not open on a quote mark, a
+      # backtick, an emphasis marker, a hyphen or a table bar: a quoted
+      # self-repeat is deliberate, and "re-shared" is not "shared". One
+      # backreference per word so either occurrence may be hard-wrapped.
+      #
+      # Off by default: in reference prose the rate runs to thousands per
+      # million words, all of it terms of art and running epithets.
+      pattern: /(?<![\p{Word}'’-])
+                (?=(?:[\w'’-]+(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})){0,2}[a-z]{6,}(?![\w'’-]))
+                ([a-z][\w'’-]{3,})(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                ([a-z][\w'’-]{3,})(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                ([a-z][\w'’-]{3,})\b
+                (?=(?>(?:(?!\r?\n[ \t]*(?:[-*+•|]|\d+[.)])[ \t])\P{Word}){1,80}\p{Word}+){0,400}?
+                   (?:(?!\r?\n[ \t]*(?:[-*+•|]|\d+[.)])[ \t])[^\p{Word}"“‘'`*|-]){1,80}
+                   \1(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                   \2(?:[ \t ]{1,2}|\r?\n(?![ \t ]*\r?\n)[ \t ]{0,4})
+                   \3\b)/x,
+      message: "Three-word phrase that comes back within a few hundred words -- a model reusing its own output.",
+      suggestion: "This is the first use and the repeat is ahead. Reword the repeat, unless the phrase is a term the reader needs to see again.",
+      examples_bad: [
+        "The shortest honest answer that came out of the review was a list.\n\nWhen you write back, the shortest honest answer you can send is the list.",
+        "We keep a shared review checklist in the repo, and it is short. Everyone who opens a pull request edits the shared review checklist first.",
+        # A hard-wrapped first occurrence.
+        "We keep a shared review\nchecklist in the repo. Everyone edits the shared review checklist first.",
+        # The last word inside the window.
+        "We keep a shared review checklist. #{"word " * 399}The shared review checklist is short."
+      ],
+      examples_ok: [
+        # Function words fall out on length.
+        "In order to ship we cut scope, and in order to ship again we cut it more.",
+        # Four-letter words alone are not enough; one word must be six letters, letters only.
+        "It would have been better, and it would have been faster.",
+        "It couldn't have been worse, and it couldn't have been better.",
+        "We saw every top-ten list here, and every top-ten list there.",
+        # Proper nouns and Title Case headings fall out on case.
+        "Grand Central Station has one, and Grand Central Station wants two.",
+        "Incident Response Plan\n\nThe Incident Response Plan covers the first hour.",
+        # The repeat is beyond the window, in words, in non-ASCII words, or past a wall of dashes.
+        "We keep a shared review checklist. #{"word " * 400}The shared review checklist is short.",
+        "We keep a shared review checklist. #{"слово " * 400}The shared review checklist is short.",
+        "We keep a shared review checklist.\n\n#{"-" * 100}\n\nThe shared review checklist is short.",
+        # A quoted repeat is deliberate, whatever the quote mark.
+        "The shared review checklist is new. He wrote \"shared review checklist\" on the board.",
+        "The shared review checklist is new. He wrote 'shared review checklist' on the board.",
+        "The shared review checklist is new. He wrote `shared review checklist` on the board.",
+        # A different word form is a different phrase, and so is a hyphenated compound.
+        "The shared review checklist grew, and then both shared review checklists grew.",
+        "The auto-generated review checklist was long. The hand-generated review checklist was longer.",
+        "We use a shared review checklist daily. Nobody re-shared review checklist edits.",
+        # A run of spaces where --markdown blanked a code span does not weld a phrase.
+        "We keep a shared          review checklist here. Everyone edits the shared review checklist first.",
+        # List items and table rows are furniture, not prose.
+        "- shared review checklist covers pull requests\n- shared review checklist covers deploys",
+        "1. Update the shared config file.\n2. Restart the shared config file watcher.",
+        "| Task | Status |\n|---|---|\n| A | needs manual review |\n| B | needs manual review |"
+      ],
+      rationale: "A model reuses a phrase it has just minted because its own recent output is " \
+                 "the likeliest continuation, so the same three words turn up again a few " \
+                 "paragraphs on, doing no new work. Terms of art repeat too, and the pattern " \
+                 "cannot tell a coined phrase from a name, so the rule is off by default."
+    ),
+    Rule.new(
       id: "did-not-x-did-not-y",
       category: "rhetorical-tic",
       severity: "warning",
