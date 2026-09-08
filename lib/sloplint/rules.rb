@@ -344,6 +344,68 @@ module Sloplint
                  "draft should be read as a warning."
     ),
     Rule.new(
+      id: "phrase-echo",
+      category: "rhetorical-tic",
+      severity: "info",
+      default_on: false,
+      # The same three words again a few paragraphs on: "the most useful
+      # thing that came out of it … the most useful thing you can send".
+      # Three consecutive words, each four letters or more and each
+      # lowercase-led, at least one of them six letters or more, and the
+      # same three again within 400 words. That is the whole defence, and
+      # it is structural: "in order to" and "as well as" fall out on length,
+      # "would have been" and "from each other" on the six-letter word,
+      # "New York City" and a Title Case heading on case. The window is a
+      # lazy walk of word steps, each step deterministic, so nothing
+      # backtracks; the repeat sits in a lookahead so the match, and the
+      # excerpt, is the first occurrence alone rather than the whole span.
+      # One backreference per word, as in epistrophe, so either occurrence
+      # may be hard-wrapped.
+      # The repeat may not open on a quote mark: a quoted self-repeat is
+      # deliberate. The gap crosses paragraph breaks on purpose, since the
+      # repeat that prompted the rule was four paragraphs from its first use.
+      #
+      # Off by default. A term of art repeats because it must, a running
+      # epithet ("the pale young gentleman") repeats because the author
+      # chose it, and no pattern can tell either from a phrase the writer
+      # coined and reached for again. In reference prose the rate runs to
+      # thousands per million words, all of it names.
+      #
+      # ponytail: fixed 400-word window; make it a Rule field if a second
+      # rule ever needs one.
+      pattern: /\b(?=(?:[\w'’-]+#{WRAP_GAP}+){0,2}[a-z][\w'’-]{5,})
+                ([a-z][\w'’-]{3,})#{WRAP_GAP}+([a-z][\w'’-]{3,})#{WRAP_GAP}+([a-z][\w'’-]{3,})\b
+                (?=(?:\W+\w+){0,400}?[^\w"“‘]+\1#{WRAP_GAP}+\2#{WRAP_GAP}+\3\b)/x,
+      message: "Three-word phrase repeated within a few hundred words -- a model reusing its own output.",
+      suggestion: "Reword the second use, unless the phrase is a term the reader needs to see repeated.",
+      examples_bad: [
+        "The most useful thing that came out of the review was a shorter list.\n\nWhen you write back, the most useful thing you can send is the framework.",
+        "We keep a shared review checklist in the repo, and it is short. Everyone who opens a pull request edits the shared review checklist first.",
+        # A hard-wrapped first occurrence.
+        "We keep a shared review\nchecklist in the repo. Everyone edits the shared review checklist first."
+      ],
+      examples_ok: [
+        # Function words fall out on length.
+        "In order to ship we cut scope, and in order to ship again we cut it more.",
+        # Four-letter words alone are not enough; one word must be six letters or more.
+        "It would have been better, and it would have been faster.",
+        # Proper nouns and Title Case headings fall out on case.
+        "New York City has one, and New York City wants two.",
+        "Incident Response Plan\n\nThe Incident Response Plan covers the first hour.",
+        # The repeat is beyond the window.
+        "We keep a shared review checklist. #{"word " * 401}The shared review checklist is short.",
+        # A quoted repeat is deliberate.
+        "The shared review checklist is new. He wrote \"shared review checklist\" on the board.",
+        # A different word form is a different phrase.
+        "The shared review checklist grew, and then both shared review checklists grew."
+      ],
+      rationale: "A model reuses a phrase it has just minted because its own recent output is " \
+                 "the likeliest continuation, so the same three words turn up again a few " \
+                 "paragraphs on, doing no new work. Terms of art repeat too, and the pattern " \
+                 "cannot tell a coined phrase from a name, so the rule is off by default: " \
+                 "select it for a final pass over a draft and read each hit."
+    ),
+    Rule.new(
       id: "did-not-x-did-not-y",
       category: "rhetorical-tic",
       severity: "warning",
