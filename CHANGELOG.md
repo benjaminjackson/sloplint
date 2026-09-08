@@ -3,7 +3,10 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.6.0] - 2026-09-08
+
+The catalog grows from 50 rules to 75, and sloplint ships as a Claude Code
+plugin as well as a gem.
 
 ### Added
 

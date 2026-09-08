@@ -1,6 +1,6 @@
 {
   "name": "sloplint",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Checks your writing for the phrases and rhythms that make it read as AI-written, and shows you each one. It runs a real scanner, so it needs somewhere to run code — it will tell you plainly if it cannot.",
   "author": { "name": "Benjamin Jackson", "email": "ben@benjaminjackson.co" },
   "homepage": "https://github.com/benjaminjackson/sloplint",
