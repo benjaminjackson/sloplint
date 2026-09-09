@@ -53,6 +53,16 @@ module Sloplint
   # letter is a letter.
   WHOLE_CLOSERS = /point|game|thing|deal|story|ballgame|ball#{WRAP_GAP}+game|(?:value|fix)(?=[^[:word:][:space:]'’-]|#{WRAP_GAP}+(?:[^[:word:][:space:]*_`"'‘“(\[{~]|\d+[.)][ \t])|#{WRAP_GAP}*(?:\z|#{PARA_BREAK}|(?:of|to|for|in|on|at|with|here|there|behind|right|though|now|anyway|really|from|over|after|and|but|so|as|that|which|if|when|because|since|unless|until|once|while|where|i|we|you|he|she|it|they|the|a|an|this|these|those|every|any|my|our|your|his|her|their|its)\b))/i
 
+  # Nouns that only ever name the writer's own construction -- never a
+  # concrete object, a person, or an idiom -- and that all four of
+  # clean-x, cleanest-x, honest-x and most-honest-x already matched before
+  # this constant existed. "comparison" and "through-line" read the same way
+  # but are each missing from one rule's original list (clean-x never had
+  # "comparison", cleanest-x never had "through-line"), so both stay out of
+  # this constant and inline in the three rules that carry them -- putting
+  # either one here would add a match the fourth rule never had.
+  WRITERS_OWN_CONSTRUCTION_NOUNS = "framing|formulation|mapping|abstraction"
+
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
     Rule.new(
@@ -892,9 +902,9 @@ module Sloplint
       # in front of a speech verb, and the concrete-capable nouns (cut, line,
       # version, split) are left out entirely.
       pattern: /\bcleanest\s+(?:\w+\s+){0,2}
-                 (?:framing|formulation|statement|account|argument|idea|definition|summary
-                   |reading|take|point|story|explanation|distinction|comparison|mapping
-                   |abstraction)\b
+                 (?:#{WRITERS_OWN_CONSTRUCTION_NOUNS}|comparison
+                   |statement|account|argument|idea|definition|summary
+                   |reading|take|point|story|explanation|distinction)\b
                 |\bcleanest\s+way\s+to\s+(?:say|put|frame|state|describe|phrase|express
                    |think\s+about)\b/ix,
       message: '"The cleanest framing/way to put it…" ranks your own claim for the reader.',
@@ -922,7 +932,7 @@ module Sloplint
       # "break" is admitted only in "clean break between", never bare, because
       # "make a clean break with the past" is an idiom and not a tell.
       pattern: /\b(?:a|the|one)\s+(?:\w+\s+)?clean\s+(?:\w+\s+)?
-                 (?:abstraction|distinction|framing|formulation|mapping|through-line
+                 (?:#{WRITERS_OWN_CONSTRUCTION_NOUNS}|distinction|through-line
                    |story|answer|argument|split|divide)\b
                 |\bclean\s+(?:line|break|split)\s+between\b/ix,
       message: '"A clean abstraction / clean framing" praises the idea instead of showing it.',
@@ -2035,8 +2045,7 @@ module Sloplint
       # superlative belongs to most-honest-x alone.
       pattern: /\b(?:an|the|one|this|that)[ \t]+(?:(?!most\b|more\b)\w+[ \t]+)?
                 honest[ \t]+(?:\w+[ \t]+)?
-                (?:comparison|framing|formulation|accounting|abstraction|mapping
-                  |through-line)\b/ix,
+                (?:#{WRITERS_OWN_CONSTRUCTION_NOUNS}|comparison|accounting|through-line)\b/ix,
       message: '"An honest comparison / the honest framing" praises the writing, not the thing.',
       suggestion: "Cut the adjective and make the comparison; the reader decides if it is honest.",
       examples_bad: [
@@ -2073,9 +2082,10 @@ module Sloplint
       # politician" is, so no human nouns go in. Nothing in either corpus
       # matches. "way to" gets its own branch, mirroring cleanest-x.
       pattern: /\bmost[ \t]+honest[ \t]+(?:(?!way\b)\w+[ \t]+){0,2}
-                (?:comparison|framing|formulation|accounting|assessment|appraisal
-                  |reading|account|answer|version|summary|take|signal|abstraction
-                  |mapping|through-line)\b
+                (?:#{WRITERS_OWN_CONSTRUCTION_NOUNS}|comparison
+                  |accounting|assessment|appraisal
+                  |reading|account|answer|version|summary|take|signal
+                  |through-line)\b
                |\bmost[ \t]+honest[ \t]+way[ \t]+to[ \t]+
                 (?:say|put|frame|state|describe|phrase|think[ \t]+about)\b/ix,
       message: '"The most honest framing…" ranks your own claim for the reader.',
