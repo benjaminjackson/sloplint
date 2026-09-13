@@ -989,23 +989,49 @@ module Sloplint
       id: "is-real-and-not",
       category: "rhetorical-tic",
       severity: "info",
-      pattern: /\bis\s+real,?\s+(?:and|but|not)\b/i,
-      message: '"The X is real, and…" is a stock LLM concession move.',
-      suggestion: "Drop the 'is real, and' scaffolding; assert the point directly.",
+      pattern: /\bis\s+real,?\s+(?:and|but|not)\b|\b(?:no|not\s+a)\s+real\s+\w+(?:\s+\w+){0,2},?\s*but\s+(?:a\s+)?real\b/i,
+      message: '"The X is real, and…" / "no real X, but a real Y" is a stock LLM concession move.',
+      suggestion: "Drop the 'is real, and' or 'no real X, but a real Y' scaffolding; assert the point directly.",
       # No skip: for "real estate"/"real time" -- with a word between "real"
       # and the conjunction ("is real estate, and"), the pattern's ,?\s+
       # never reaches the conjunction in the first place, so those compound
       # nouns can't produce a false positive here to begin with. A skip: for
       # them was here before and never fired; confirmed by testing every
       # phrasing it could plausibly have been guarding against.
-      examples_bad: ["The risk is real, and it is growing."],
-      examples_ok: ["This is real leather.", "This is real estate, and it is expensive."],
+      #
+      # The second alternative catches the antithesis form of the same tic:
+      # a writer denies one thing is real ("no real X" / "not a real X") and
+      # in the same breath asserts another is ("but a real Y"), with "real"
+      # doing the work on both sides. The noun phrase after the first "real"
+      # is capped at three words, built from \w+ so it can't cross a full
+      # stop, and "but" has to sit right up against "real" (at most the
+      # article "a" between them). A contrast that spells the distinction
+      # out in full, rather than landing it in the terse two- or three-word
+      # form the tell actually takes, falls outside the cap.
+      examples_bad: [
+        "The risk is real, and it is growing.",
+        "No real financial loss, but a real failure.",
+        "There was no real damage, but a real breach occurred."
+      ],
+      examples_ok: [
+        "This is real leather.",
+        "This is real estate, and it is expensive.",
+        "There's no real cost with the free trial, but a real charge once it converts to a paid plan.",
+        "The demo bug isn't real, but a real one is coming next sprint."
+      ],
       rationale: "The pattern requires nothing about what follows the conjunction, so it fires " \
                  "on any 'is real' sentence that happens to continue with and/but/not, concession " \
                  "or not. Emerson's 'my debt to my senses is real and constant' is two predicate " \
                  "adjectives, not a both-sidesing move -- the AI cadence and the plain sentence " \
                  "are three words apart and identical on the surface. An agent reading the flag " \
-                 "has the rest of the sentence to judge; the pattern alone doesn't."
+                 "has the rest of the sentence to judge; the pattern alone doesn't. The 'no real " \
+                 "X, but a real Y' branch has the same limit: a free trial with no real cost " \
+                 "against a real charge once it ends is a genuine, earned distinction that can " \
+                 "share the identical shape, and a regex can't check whether the surrounding text " \
+                 "actually earns the contrast. The three-word cap also lets a short 'no real " \
+                 "estate ..., but a real ...' sentence through, since 'estate' is an ordinary noun " \
+                 "to the pattern; narrowing that by name would mean a growing exclusion list rather " \
+                 "than a structural bound, so it's left as a disclosed limit instead."
     ),
     Rule.new(
       id: "the-punchline-is",
