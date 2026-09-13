@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `actually-not-x`: the adverb and a trailing "…, not X" in one clause, as in
+  "The disclosure actually covered two incidents, not one". Either marker
+  alone is ordinary technical English and neither is matched on its own; the
+  tell is the two of them doubled up, correcting an alternative the reader was
+  never offered. The narrowing is structural, not a word list: the comma in
+  front of "not" has to be the first comma of its clause and has to follow a
+  word, so a fronted setup ("Despite the name, …") and a parenthetical both
+  drop it. Nothing crosses a line break, so two rows of a table cannot weld
+  into one correction.
 - `real-x-real-y` (rhetorical-tic, info) flags the same "real" used twice
   attributively in one sentence, in front of two different nouns: "it can
   trigger real API calls or hold real credentials". Bare "real" is an
