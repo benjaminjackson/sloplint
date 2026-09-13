@@ -63,6 +63,14 @@ module Sloplint
   # either one here would add a match the fourth rule never had.
   WRITERS_OWN_CONSTRUCTION_NOUNS = "framing|formulation|mapping|abstraction"
 
+  # A sentence of at least sixty characters, ending in sentence-ending
+  # punctuation followed by one or two spaces -- the setup mic-drop-closer's
+  # kicker needs before it looks for the closer. The atomic group (?>...) is
+  # load-bearing against catastrophic backtracking; see the comment on
+  # mic-drop-closer's pattern for the incident that made it necessary.
+  SENTENCE_OF_SIXTY_CHARACTERS_ENDING_IN_PUNCTUATION_AND_SPACE =
+    /(?:^|(?<=[.!?])[ \t]{1,2})(?>(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,})[.!?][ \t]{1,2}/
+
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
     Rule.new(
@@ -2966,7 +2974,7 @@ module Sloplint
       # long unpunctuated stretches (the Columbia report has an 864-character
       # one) sent this into catastrophic backtracking, 62 seconds for a 2 KB
       # window and no completion on the 1.1 MB document.
-      pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?>(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,})[.!?][ \t]{1,2}\K
+      pattern: /#{SENTENCE_OF_SIXTY_CHARACTERS_ENDING_IN_PUNCTUATION_AND_SPACE}\K
                 (?:Nothing|Most|None|Everything|Everyone|Nobody|Then|Neither|Both)
                 (?:,?(?:[ \t]|\r?\n(?!\s*\n))+[\w'’-]+){1,7}[.!?](?=[ \t]*(?:\r?\n[ \t]*(?:\r?\n|\z)|\z))/x,
       message: "A short quantifier-led closer after a long sentence is the AI kicker.",
