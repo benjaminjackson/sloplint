@@ -2338,6 +2338,72 @@ module Sloplint
                  "which is why this one runs only when you ask for it."
     ),
     Rule.new(
+      id: "actually-not-x",
+      category: "rhetorical-tic",
+      severity: "warning",
+      # Two markers that each correct the reader, doubled up in one clause:
+      # the adverb and the trailing "…, not X". Bare "actually" is not the
+      # tell and is not matched, because "the build actually failed on the
+      # second run" names which run and that is a fact with something behind
+      # it to check.
+      #
+      # The narrowing is one structural constraint, not a word list: the
+      # comma in front of "not" has to be the first comma of its clause and
+      # has to follow a word. A writer correcting an assumption the reader
+      # does hold names it first, and that setup is either a fronted clause
+      # with a comma after it ("Despite the name, …") or a parenthetical
+      # whose closing bracket the comma follows. No earlier comma means
+      # nothing in the clause set the alternative up. A clause starts at the
+      # beginning of the text, at a full stop, question mark, exclamation
+      # mark, semicolon or colon, or at a line break.
+      #
+      # Nothing crosses a line break, so the rule cannot weld two rows of a
+      # table or two items of a list into one correction. The deliberate
+      # misses: a hard-wrapped correction, and a correction whose clause
+      # carries an earlier comma of any kind, an apposition ("The report,
+      # filed late, says the id is actually a byte string, not text.")
+      # included. No pattern tells an apposition from a fronted setup, and
+      # the rule would rather say nothing than guess.
+      pattern: /(?:\A|(?<=[.;:!?\n]))[^.;:!?,\n]{0,200}\K
+                \bactually\b[^.;:!?,\n]{0,120}(?<=[\p{Word}]),[ \t]*not\b/ix,
+      message: '"Actually …, not X" corrects an assumption the text never offered.',
+      suggestion: "State the fact plainly, or name the belief the correction answers.",
+      examples_bad: [
+        "The disclosure actually covered two incidents, not one.",
+        "The identifier is actually a byte string, not text.",
+        "It actually reads the file at startup, not on the first request.",
+        # A colon opens a clause, so the correction after it is still the tell.
+        "Note: the endpoint actually returns two fields, not one."
+      ],
+      examples_ok: [
+        # The bare adverb, which names which run failed. Not matched.
+        "The build actually failed on the second run.",
+        # The setup sits in a fronted clause, so the correction answers
+        # something the reader was given. The earlier comma drops both.
+        "Despite the name, the identifier is actually a byte string, not text.",
+        "Although the name suggests otherwise, it is actually a byte string, not text.",
+        # The correction on its own, with no adverb in front of it.
+        "The run that failed was the second, not the first.",
+        # Negation in front of the adverb with no trailing correction. This
+        # was the other candidate shape; every real instance of it carried
+        # its own setup ("normally reserved but not actually registered"),
+        # so it was rejected, and this fixture pins the rejection.
+        "The provider was not actually billed for the usage.",
+        # The correction's comma closes a parenthesis, and the assumption
+        # being corrected is inside it.
+        "The party actually sending the mail (which we assumed was the relay), not the sender.",
+        # Two rows of a table, not a wrapped sentence. The rule never crosses
+        # a line break, so it cannot join them.
+        "Actually running processes\nThreads, not processes"
+      ],
+      rationale: "The adverb and the trailing \"not X\" both correct the reader, and a writer " \
+                 "needs one or the other, never both. Doubling them marks a contrast against " \
+                 "an alternative the reader was never offered: nothing said one incident, so " \
+                 "\"not one\" answers nobody. The setup can also sit in the sentence before, " \
+                 "which no pattern sees, so a flag on a correction that a previous sentence " \
+                 "genuinely set up is the known cost."
+    ),
+    Rule.new(
       id: "and-thats-fine",
       category: "rhetorical-tic",
       severity: "info",
