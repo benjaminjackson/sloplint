@@ -3193,6 +3193,90 @@ module Sloplint
                  "warning, and the fix is usually to delete the closer outright."
     ),
     Rule.new(
+      id: "ellipsis-closer",
+      category: "structure",
+      severity: "info",
+      # The same long-sentence-then-short-closer shape as mic-drop-closer,
+      # but the tell lives in the verb, not the subject. mic-drop-closer's
+      # closer opens on a quantifier and keeps a full verb with its object
+      # ("Nothing here needs a new login."). This one carries no verb at
+      # all: the closer's verb phrase has been elided down to the bare
+      # auxiliary that would have introduced it, and the object it
+      # promised never arrives -- "They found an exposed dashboard and
+      # asked the agent running on it to hand over its own key. The agent
+      # did." Because the tell is the missing verb, this rule needs no
+      # subject list the way mic-drop-closer does, and "That", "This" and
+      # "It" are not excluded here the way they are there: "This completes
+      # the roughing operations." ends on a full verb with an object and
+      # never matches (there is no auxiliary at the sentence's end), while
+      # "This did." would, on the same subject mic-drop-closer had to bar.
+      #
+      # The closer is a one-to-three word subject running straight into the
+      # bare auxiliary and a period, and, same as mic-drop-closer, it must
+      # be the last thing in the paragraph -- a blank line or the end of
+      # the text follows it. A closing quotation mark after the period is
+      # not blank, so quoted dialogue never satisfies this and is excluded
+      # the same way short-run excludes it. A negative lookahead drops any
+      # closer that still holds "what", "that", "which", "who", "why" or
+      # "how", because those mark a subordinate clause supplying its own
+      # complement rather than an elided one: "Nobody knew who did." asks
+      # "who did it", which the subject cap alone does not catch, since
+      # "Nobody knew who" is itself only three words.
+      #
+      # Reuses mic-drop-closer's long-sentence prefix rather than pasting a
+      # second copy of it; see that constant's comment for the atomic group
+      # that keeps the scan linear.
+      #
+      # The negated form is bolted on with "n't" for every auxiliary except
+      # two irregular ones: "can" already ends in n, so its negation is
+      # "can't", not "cann't", and "will" negates to the different stem
+      # "won't" rather than "willn't". Both are spelled out rather than
+      # built by suffix, so the two most common contractions in the list
+      # are not silently unmatchable.
+      pattern: /#{SENTENCE_OF_SIXTY_CHARACTERS_ENDING_IN_PUNCTUATION_AND_SPACE}\K
+                (?![^.!?\n]*\b(?:what|that|which|who|why|how)\b)
+                [A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,2}[ \t]+
+                (?:(?:did|does|do|was|were|is|are|had|has|could|would|should|might|must)(?:n['’]t)?
+                   |can(?:['’]t)?|will|won['’]t)\.
+                (?=[ \t]*(?:\r?\n[ \t]*(?:\r?\n|\z)|\z))/x,
+      message: "A closer that ends on a bare auxiliary is the AI verb-phrase-ellipsis kicker.",
+      suggestion: "Cut the closer, or say what actually happened.",
+      examples_bad: [
+        "They found an exposed dashboard and asked the agent running on it to hand over its own key. The agent did.",
+        "The team spent three weeks arguing about whether the migration was worth the downtime it would cost the on-call rotation. It wasn't.",
+        "The reviewer asked whether a contractor with read access to the shared drive could still open the finance folder after the offboarding ran. She could.",
+        "He asked whether the on-call engineer had actually paged the second responder before escalating past the fifteen-minute window. She had.",
+        # The two irregular negated forms, pinned so a later rewrite of the
+        # suffix can't quietly drop them again.
+        "They double-checked whether the fallback path could still serve read traffic once the primary region failed over during the drill. It can't.",
+        "The team hoped the migration window would close before the seasonal freight peak began overwhelming the warehouse systems. It won't."
+      ],
+      examples_ok: [
+        # Not the end of the paragraph.
+        "They found an exposed dashboard and asked the agent running on it to hand over its own key. The agent did. We logged the incident and rotated the key within the hour.",
+        # A subordinate clause, not an elided one -- caught by the wh-word guard.
+        "The team spent three weeks arguing about whether the migration was worth the downtime it would cost the on-call rotation. That is what it did.",
+        # No long sentence in front of it.
+        "The agent did.",
+        # A subject longer than three words -- the cap, not the wh-guard, excludes it.
+        "The engineer who had been paged in the middle of the night finally agreed with what the on-call reviewer had been saying for the better part of an hour about the rollback plan. The whole team already did.",
+        # A full verb with an object, not a bare auxiliary.
+        "Each step already passed local review before it reached the pipeline that runs on every push to the shared branch. It worked.",
+        # A bare demonstrative closing a step is how procedural writing ends
+        # a paragraph, and it ends on a full verb, not an auxiliary. Wording
+        # follows Turning and Boring (1919) and Aviation Engines (1917),
+        # both public domain by date; mic-drop-closer carries the same two
+        # examples for the same reason.
+        "The cutting tools are set to the dimensions required for the finished work, and the stops are locked. This completes the roughing operations.",
+        "The magneto is protected from oil and grit by a cover that is easy to remove for service. This means prolonged life for the magneto."
+      ],
+      rationale: "The closer withholds exactly the thing the long setup built toward -- the " \
+                 "verb and its object are gone, and only the bare confirmation that something " \
+                 "happened is left standing. Ships at info: plenty of ordinary writing drops " \
+                 "the verb the same way when it confirms an expectation, and one flag proves " \
+                 "nothing; a draft where it repeats is the tell."
+    ),
+    Rule.new(
       id: "short-run",
       category: "structure",
       severity: "info",
