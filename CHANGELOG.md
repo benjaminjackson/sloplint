@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `ellipsis-closer` (structure, info) flags the long-sentence-then-short-closer
+  kicker `mic-drop-closer` catches, but built on the opposite verb shape: the
+  closer's verb phrase is elided down to a bare auxiliary with no object,
+  "The agent did." rather than a quantifier plus a full verb. No subject list
+  is needed — the tell is the missing verb, not the subject — so "That",
+  "This" and "It" are not excluded the way `mic-drop-closer` excludes them.
+  A negative lookahead drops a closer that still holds a wh-word, since that
+  marks a subordinate clause with its own complement rather than an elided
+  one. Reuses `mic-drop-closer`'s long-sentence prefix.
 - `actually-not-x`: the adverb and a trailing "…, not X" in one clause, as in
   "The disclosure actually covered two incidents, not one". Either marker
   alone is ordinary technical English and neither is matched on its own; the
