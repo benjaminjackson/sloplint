@@ -71,6 +71,17 @@ module Sloplint
   SENTENCE_OF_SIXTY_CHARACTERS_ENDING_IN_PUNCTUATION_AND_SPACE =
     /(?:^|(?<=[.!?])[ \t]{1,2})(?>(?:[^.!?\n\s]|(?<![ \t])[ \t]{1,2}(?![ \t])|\r?\n(?!\s*\n)[ \t]*){60,})[.!?][ \t]{1,2}/
 
+  # real-x-real-y interpolates this fragment after each of its two "real"s, so
+  # a later narrowing can only ever apply to both at once -- two copies typed
+  # out separately could drift, one gaining an exception the other never
+  # sees. Function words that only ever continue a predicative "is real",
+  # then the fixed senses common in this register that are never the
+  # doubled-intensifier tell: real time, real-world, the math sense (real
+  # numbers/roots), real user (monitoring), real estate, real money.
+  REAL_X_REAL_Y_EXCLUDED_NEXT_WORD =
+    "and|but|or|nor|yet|too|enough|itself|indeed|which|that|here|there|so" \
+    "|time|world|numbers?|roots?|money|estate|user"
+
   RULES = [
     # ── rhetorical-tic ────────────────────────────────────────────────────
     Rule.new(
@@ -1098,6 +1109,104 @@ module Sloplint
                  "adjectives, not a both-sidesing move -- the AI cadence and the plain sentence " \
                  "are three words apart and identical on the surface. An agent reading the flag " \
                  "has the rest of the sentence to judge; the pattern alone doesn't."
+    ),
+    Rule.new(
+      id: "real-x-real-y",
+      category: "rhetorical-tic",
+      severity: "info",
+      # Ships at info, not warning: the only two hits the probe found in
+      # 1.28M words were both false positives, and one corpus of one
+      # register is thin evidence next to honestly, which sits at warning
+      # on 9.7M words across two. A doubled "real" is also defensible on
+      # its own ("No real financial loss, but a real failure") in a way
+      # the warning rules around it are not. The agent reading the flag
+      # decides.
+      #
+      # "If it can trigger real API calls or hold real credentials, it needs
+      # the same rigor." -- the same intensifier, said twice in one sentence,
+      # each time in front of a different noun. Bare "real" is an ordinary
+      # word (a real number, real time, a real problem) and cannot be flagged
+      # on its own; the narrowing here is repetition, not a noun list --
+      # requiring two attributive uses in one sentence, naming two different
+      # things, is what tells the doubled intensifier apart from plain
+      # English, and it needs no list of nouns to do it.
+      #
+      # "Attributive" is enforced by requiring "real" to run straight into
+      # the word it modifies: a space, then a letter, with no comma or
+      # conjunction between. That already keeps the predicative use out
+      # ("The risk is real, and it is growing" -- its own rule, above) since
+      # a predicate "real" is followed by punctuation or "and", never
+      # directly by the next noun.
+      #
+      # A hyphen touching "real" on either side takes it out of the running:
+      # "real-time" and "real-world" are compounds, one modifier, not two
+      # independent uses of the intensifier, and "non-real" is a negation,
+      # not the intensifier at all. (?<!-) and (?!-) drop all three.
+      #
+      # The second "real" must name a word the first one didn't -- a
+      # backreference, so "a real risk ... that real risk" (the same thing,
+      # referred to twice) is ordinary reference, not the tic. Two mentions
+      # only look alike when they're both new: two different real things.
+      #
+      # The closed list after each "real" (REAL_X_REAL_Y_EXCLUDED_NEXT_WORD,
+      # above) is the handful of fixed senses that are common in this
+      # register and are never the tell, plus the function words that only
+      # ever continue a predicative "is real". This gives up "real user"
+      # outside "real user monitoring" and any doubled "real name"/"real
+      # names" pairing that differs only by a plural -- known, deliberate
+      # recall losses rather than a growing list.
+      #
+      # The gap between the two "real"s crosses a hard-wrapped line the same
+      # way WRAP_GAP does (a newline is fine unless it opens a paragraph
+      # break, PARA_BREAK, since a non-breaking space alone on the line in
+      # between still reads as a blank line to the editors that emit one),
+      # but never a sentence-ending mark, so the two "real"s must fall in
+      # one sentence.
+      pattern: /
+        (?<!-)\breal(?!-)[ \t]+
+        (?!(?:#{REAL_X_REAL_Y_EXCLUDED_NEXT_WORD})\b)
+        (?>([a-z][\w'’-]*))\b
+        (?:(?!\breal\b)[^.!?\n]|(?!#{PARA_BREAK})\r?\n){1,200}?
+        (?<!-)\breal(?!-)[ \t]+
+        (?!(?:#{REAL_X_REAL_Y_EXCLUDED_NEXT_WORD})\b)
+        (?!\1\b)
+        (?>[a-z][\w'’-]*)\b
+      /ix,
+      message: 'Doubled "real" ("real X … real Y") repeats the intensifier for emphasis.',
+      suggestion: "Cut one 'real,' or say what actually makes each thing real -- a name, a number, a log line.",
+      examples_bad: [
+        "If it can trigger real API calls or hold real credentials, it needs the same rigor.",
+        "The demo used real customer data and exposed real financial records to the whole team.",
+        "This isn't a mockup; it hits a real database and charges a real credit card.",
+        "The incident caused real financial losses and real reputational damage to the company."
+      ],
+      examples_ok: [
+        # The second "real" must name something the first didn't.
+        "The system exposes a real risk, and that real risk must be tracked.",
+        # A hyphen on either side makes it a compound, not two uses.
+        "The dashboard shows real-time metrics and real-time alerts.",
+        # "real world" is on the closed list even unhyphenated.
+        "In the real world this rarely happens, and the real world rewards patience.",
+        # The math sense, both nouns.
+        "The equation has two real roots and no real numbers outside that range.",
+        # "real user" (monitoring) and a hyphenated compound together.
+        "The tool combines real user monitoring with real-time dashboards.",
+        # Two more closed-list nouns.
+        "She invested in real estate and lost real money.",
+        # "non-real" is a negation, not a second use of the intensifier.
+        "The audit flagged real deployment risk but no non-real anomalies.",
+        # Only one "real" in the sentence.
+        "This is a real problem worth solving.",
+        # A paragraph break -- even one where the blank line holds only a
+        # non-breaking space -- ends the sentence; the two paragraphs are
+        # never joined into one hit.
+        "This plan needs real signoff\n \nbefore it touches real production data."
+      ],
+      rationale: "\"Real\" is the plainest way to say a thing isn't fake or hypothetical, and it " \
+                 "only needs saying once a sentence -- naming it again in front of a second noun " \
+                 "doesn't add information, it repeats the reassurance. A person defending a claim " \
+                 "from two directions in the same breath writes the two facts and lets one " \
+                 "\"real\" cover both."
     ),
     Rule.new(
       id: "the-punchline-is",

@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `real-x-real-y` (rhetorical-tic, info) flags the same "real" used twice
+  attributively in one sentence, in front of two different nouns: "it can
+  trigger real API calls or hold real credentials". Bare "real" is an
+  ordinary word, so the narrowing is the repetition itself, not a noun
+  list. A hyphen on either side takes it out ("real-time", "non-real"), a
+  backreference requires the second noun to differ from the first, and a
+  short closed list drops the fixed senses of this register (real time,
+  real-world, real numbers, real user monitoring, real estate, real money).
 - `phrase-echo` (rhetorical-tic, info, off by default) flags a three-word
   phrase that comes back within a few hundred words, the model reusing a
   phrase it has just minted. Each word must be four characters or more and
