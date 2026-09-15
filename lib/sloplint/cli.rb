@@ -19,7 +19,14 @@ module Sloplint
       opts = { format: "full" }
       parser = global_parser(opts, out:)
       # Split global options from the subcommand and its args.
-      parser.order!(argv)
+      begin
+        parser.order!(argv)
+      rescue OptionParser::InvalidOption => e
+        # `check` is the default command, so its options are accepted before
+        # any command word: `sloplint --markdown -`. The global parser does not
+        # know them, so put the option back and let check's parser judge it.
+        argv.unshift("check", *e.args)
+      end
       return 0 if opts[:help_shown] || opts[:version_shown]
 
       command = argv.shift

@@ -256,6 +256,26 @@ RSpec.describe Sloplint::CLI do
     end
   end
 
+  describe "check options before the command word" do
+    it "accepts --strict without `check`, since check is the default" do
+      _, out = run(["-o", "json", "--strict", "-"], stdin_text: "It was fast, cheap, and simple.")
+      expect(JSON.parse(out).map { |n| n["rule"] }).to include("rule-of-three")
+    end
+
+    it "accepts --markdown with a value-taking option after it" do
+      text = "<!--\nIt isn't a budget, it's a ceiling.\n-->\nIt was fast, cheap, and simple."
+      code, out = run(["--markdown", "--select", "rule-of-three", "-o", "json", "-"], stdin_text: text)
+      expect(code).to eq(1)
+      expect(JSON.parse(out).map { |n| n["rule"] }).to eq(["rule-of-three"])
+    end
+
+    it "still rejects an option nobody knows" do
+      code, _, err = run(["--bogus", "-"], stdin_text: "Fine.")
+      expect(code).to eq(2)
+      expect(err).to include("invalid option: --bogus")
+    end
+  end
+
   describe "--markdown" do
     it "skips HTML comments" do
       text = "Fine sentence.\n\n<!--\nIt isn't a budget, it's a ceiling.\n-->\n\nAnother fine sentence."
