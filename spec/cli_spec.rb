@@ -441,7 +441,7 @@ RSpec.describe Sloplint::CLI do
     end
 
     it "shows the real output for its sample check run" do
-      match = readme.match(/```\n\$ printf '(.*)' \| sloplint check -\n(.*?)```/m)
+      match = readme.match(/```\n\$ printf '(.*?)' \| sloplint check -\n(.*?)```/m)
       raise "sample check block not found in README" unless match
 
       input = match[1].gsub('\n', "\n")

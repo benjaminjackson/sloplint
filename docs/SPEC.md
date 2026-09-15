@@ -445,8 +445,9 @@ This is a first-class requirement, not an afterthought.
   one-line description — and with `--json`, the machine version an agent can
   enumerate, including each rule's `severity`, `confidence` and `rationale`.
 - Naming a category in `check --select` runs only that category's non-low
-  rules; naming a rule's own id runs it regardless, and `--strict` turns on
-  the whole catalog including every low-confidence rule.
+  rules; naming a rule's own id runs it regardless. `--strict` alone runs the
+  whole catalog, low-confidence rules included; with `--select` it only widens
+  the named categories to include their low-confidence members.
 - `sloplint explain no-x-no-y` prints the rule's message, rationale, a bad
   example and an ok (non-matching) example. Agents call this to decide whether a
   flag is worth acting on.

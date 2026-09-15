@@ -115,8 +115,8 @@ RSpec.describe "Sloplint::RULES" do
   # shape and interpolate the same WHOLE_CLOSERS fragment, but each wraps it
   # in its own subject, copula and whitespace syntax. This walks every noun
   # through every form those wrappers treat differently, and expects one
-  # warning each time: a form that only is-the-whole-x sees is reported at
-  # info, and a form neither sees is not reported at all.
+  # warning each time: a form that only is-the-whole-x sees is still
+  # reported, and a form neither sees is not reported at all.
   describe "the whole-* pair" do
     nouns = ["point", "game", "thing", "deal", "story", "ballgame", "ball game", "value", "fix"]
     forms = {
@@ -135,7 +135,7 @@ RSpec.describe "Sloplint::RULES" do
 
     # The compound guard on the two newer nouns is thats-the-whole's alone.
     # is-the-whole-x keeps its own bare "value" and "fix", so the
-    # uncontracted compound still reads at info there, as it did before.
+    # uncontracted compound still flags there, as it did before.
     %w[value fix].each do |noun|
       it "leaves the contracted compound on #{noun.inspect} alone" do
         expect(Sloplint::Engine.scan("That's the whole #{noun} chain.")).to eq([])

@@ -110,7 +110,7 @@ module Sloplint
       severity: "warning",
       confidence: "medium",
       # The same cadence built from sentence fragments: "No fluff. No filler."
-      # Ships at info, not warning, because the shape is genuinely ambiguous --
+      # Medium confidence, because the shape is genuinely ambiguous --
       # two short "no" sentences in a row is also just writing ("No one moved.
       # No one spoke."). The agent reading the flag decides; see rationale.
       #
@@ -221,7 +221,7 @@ module Sloplint
       # "cost" because "the real deal", "the real thing" and "the whole cost"
       # are idioms or quantities. The noun may not run on into a compound
       # ("problem-solver"). Gaps may cross a hard-wrapped newline but never
-      # a paragraph break. Ships at info because "the real question" and
+      # a paragraph break. Medium confidence: "the real question" and
       # "the whole point" are also how people talk.
       pattern: /(?<![\w'’-])
                 (?!(?:that|this)#{WRAP_GAP}+(?:is)#{WRAP_GAP}+(?:the)#{WRAP_GAP}+(?:whole)#{WRAP_GAP}+(?:#{WHOLE_CLOSERS})(?![\w'’-]))
@@ -286,8 +286,8 @@ module Sloplint
       # answer is a mess"), a pointing complement ("the same", "the one",
       # "the first"), and a proper noun ("the Slack thread") are all out.
       # Gaps may cross a hard-wrapped newline but never a paragraph break.
-      # Ships at info: "The problem is the cost" is how people write too, at
-      # about four per million words on Hacker News; it is the density that
+      # Medium confidence: "The problem is the cost" is how people write too,
+      # at about four per million words on Hacker News; it is the density that
       # tells.
       pattern: /(?:^|(?<=[.!?])[ \t]{1,2})(?:[-*+•][ \t]+|\d+[.)][ \t]+)?\KThe(?:[ \t]|\r?\n(?!\s*\n))+
                 (?:tell|point|question|problem|issue|lesson|difference|trick|move|risk|goal|reason|pattern|insight|takeaway|shift|bet|catch|gap|bottleneck|failure|mistake|secret|magic|challenge|tension|trap)(?:[ \t]|\r?\n(?!\s*\n))+
@@ -692,7 +692,7 @@ module Sloplint
       # lies in the assumption") and "resides in" are ordinary English for
       # where a fault or an authority is, at any register.
       #
-      # Ships at info. The same shape states where information literally is
+      # Medium confidence. The same shape states where information literally is
       # ("the knowledge lives in our heads", "the instructions live in the
       # README"), and a sample of pre-2022 Hacker News biased toward the
       # construction turns up a few of those per million words, all human.
@@ -903,7 +903,7 @@ module Sloplint
                  "The object does not matter: the tic is telling the reader to dwell instead " \
                  "of giving them something to dwell on. The sentence-initial imperative does " \
                  "flag the plain companion sense (\"Sit with the baby while I run out\"), " \
-                 "which is accepted -- hence warning, not error."
+                 "which is accepted."
     ),
     Rule.new(
       id: "hold-onto-that",
@@ -953,7 +953,7 @@ module Sloplint
       # parts. The clause-final form ("the objection breaks down cleanly, and
       # neither half survives") is the same tell and is left out.
       #
-      # The frame is not the sense, and this rule ships at info because of it.
+      # The frame is not the sense, and the confidence here is medium because of it.
       # "The argument splits cleanly into two parts" and "the gear retracted
       # cleanly into the well" are one pattern apart only in their subject,
       # and a regex cannot see the subject -- the same limit that keeps the
@@ -1049,8 +1049,8 @@ module Sloplint
       category: "self-rating",
       severity: "warning",
       confidence: "medium",
-      # The quiet half of cleanest-x, at info because the positive degree is
-      # where ordinary usage lives. "A clean separation of concerns" is
+      # The quiet half of cleanest-x, at medium confidence because the positive
+      # degree is where ordinary usage lives. "A clean separation of concerns" is
       # standard engineering English, so "separation" stays out of the list;
       # "break" is admitted only in "clean break between", never bare, because
       # "make a clean break with the past" is an idiom and not a tell.
@@ -1072,8 +1072,8 @@ module Sloplint
         "The report gives a clean bill of health."
       ],
       rationale: "'Clean' in front of an idea is evaluation, not description -- it says the " \
-                 "writer approves, and nothing about the idea. It ships at info because the " \
-                 "same words carry a plain sense a regex cannot separate from the tic."
+                 "writer approves, and nothing about the idea. The same words carry a plain " \
+                 "sense a regex cannot separate from the tic."
     ),
     Rule.new(
       id: "you-already-know",
@@ -1767,8 +1767,8 @@ module Sloplint
       severity: "error",
       confidence: "high",
       # Only the puffed shapes: an intensity adjective, or make/have plus an
-      # article. "the impact of X" is left to impact-noun-bare, which sits at
-      # info because it is the standard word in research prose. "positive" and
+      # article. "the impact of X" is left to impact-noun-bare, which takes the
+      # bare form because it is the standard word in research prose. "positive" and
       # "negative" stay out of the adjective list on purpose -- they name a
       # direction, which is more than the intensity words do. "statistically"
       # is pulled into the match as an optional leading word so skip: can see
@@ -1855,9 +1855,9 @@ module Sloplint
         "Torque the bolts with an impact wrench.",
         "Will the impact be permanent?"
       ],
-      rationale: "This one sits at info because 'the impact of X on Y' is the ordinary word in " \
-                 "research and policy writing, not a tell. Elsewhere it postpones the sentence: " \
-                 "the writer announces that an effect exists and stops before naming it."
+      rationale: "'The impact of X on Y' is the ordinary word in research and policy writing, " \
+                 "not a tell. Elsewhere it postpones the sentence: the writer announces that " \
+                 "an effect exists and stops before naming it."
     ),
     Rule.new(
       id: "thats-how-x",
@@ -2206,7 +2206,7 @@ module Sloplint
       severity: "warning",
       confidence: "medium",
       # The "being honest" frame only. Plain "to be honest" and "I'll be
-      # honest" are how people talk and are excluded. info, not warning:
+      # honest" are how people talk and are excluded. Medium confidence:
       # writers really do say this out loud.
       pattern: /\bif\s+(?:I['’]?m|I\s+am|we['’]?re|we\s+are)\s+(?:being\s+)?honest\b
                 |\bhonestly,\s+the\s+(?:answer|truth)\b/ix,
@@ -2581,12 +2581,12 @@ module Sloplint
         # letter guard is there to exclude.
         "and so on; nothing more."
       ],
-      rationale: "The fragment form of the same leaked instruction, and it reads the same way: " \
-                 "a second sentence that only says the first one was complete. It ships at " \
-                 "warning rather than info because the capital letter and the whole-sentence " \
-                 "requirement keep it off the continuation sense, which is where ordinary prose " \
-                 "puts the phrase: one hit in 1.92M words of public-domain prose and one in " \
-                 "461k words of pre-2022 Hacker News."
+      rationale: "The fragment form of the same leaked instruction, and it reads the same " \
+                 "way: a second sentence that only says the first one was complete. The " \
+                 "capital letter and the whole-sentence requirement keep it off the " \
+                 "continuation sense, which is where ordinary prose puts the phrase: one hit " \
+                 "in 1.92M words of public-domain prose and one in 461k words of pre-2022 " \
+                 "Hacker News."
     ),
     Rule.new(
       id: "puffery-words",
@@ -2628,7 +2628,7 @@ module Sloplint
     Rule.new(
       id: "stands-serves-as",
       category: "puffery",
-      severity: "error",
+      severity: "warning",
       confidence: "medium",
       pattern: /\b(?:stands|serves)\s+as\b|\bis\s+a\s+(?:testament|reminder)\s+to\b/i,
       message: '"stands/serves as", "is a testament/reminder to" is puffed AI framing.',
@@ -2652,7 +2652,7 @@ module Sloplint
     Rule.new(
       id: "underscores-highlights",
       category: "puffery",
-      severity: "error",
+      severity: "warning",
       confidence: "medium",
       # "underscored/underscoring" are unambiguously the verb and flag bare.
       # "underscore/underscores" is also the character noun (a leading
@@ -2694,10 +2694,10 @@ module Sloplint
         "Numbers accept underscores\n\nThe next section covers floats."
       ],
       rationale: "Models reach for 'underscore' as an all-purpose emphasis verb -- findings " \
-                 "underscore, outages underscore -- asserting significance without earning it. " \
-                 "Sincere journalistic and academic use exists, hence info: a flag means the " \
-                 "move is present, not that it's slop. The character noun never takes the " \
-                 "verb's frame and stays out."
+                 "underscore, outages underscore -- asserting significance without earning " \
+                 "it. Sincere journalistic and academic use exists: a flag means the move is " \
+                 "present, not that it's slop. The character noun never takes the verb's " \
+                 "frame and stays out."
     ),
     Rule.new(
       id: "rich-tapestry",
@@ -2764,7 +2764,7 @@ module Sloplint
       severity: "warning",
       confidence: "medium",
       # The bare corrective: "is not A but B", no escalation word, comma or no
-      # comma. Ships at info because the line between a corrective ("not an
+      # comma. Medium confidence, because the line between a corrective ("not an
       # accident but a strategy") and an ordinary concession ("not warm but the
       # fire helped") is syntactic, and a regex cannot see syntax. What is here
       # is a set of cheap narrowings that cut the worst of the noise: A is
@@ -2778,7 +2778,8 @@ module Sloplint
       # ("was not warm but the fire helped") or a bare lexical verb ("was not
       # perfect but got us there"), because neither is distinguishable from the
       # corrective by surface form. That is the cost of the rule and the reason
-      # it is info: the agent reading the flag has the context to judge, and
+      # its confidence is medium: the agent reading the flag has the context
+      # to judge, and
       # should. Do not chase these by growing the B-list -- every word added
       # silently narrows recall with nothing pinning it.
       pattern: /(?:\bis|\bare|\bwas|\bwere|\bisn['’]t|\baren['’]t|\bwasn['’]t|\bweren['’]t|
@@ -2825,10 +2826,10 @@ module Sloplint
                  "escalation word dropped, and models reach for it constantly. It is the " \
                  "noisiest rule in the catalog by design: a loose version scored 174 hits " \
                  "before narrowing, cut to 15 here -- but not all 15 are correctives. Some " \
-                 "are concessions with an elided subject (Walden's " \
-                 "'It was not lonely, but made all the earth lonely beneath it'), which no " \
-                 "surface pattern can tell apart from the real thing. Hence info: a flag here " \
-                 "means 'this has the shape', not 'this is slop'."
+                 "are concessions with an elided subject (Walden's 'It was not lonely, but " \
+                 "made all the earth lonely beneath it'), which no surface pattern can tell " \
+                 "apart from the real thing. A flag here means 'this has the shape', not " \
+                 "'this is slop'."
     ),
     Rule.new(
       id: "isnt-x-its-y",
@@ -2850,7 +2851,8 @@ module Sloplint
       # guards cut a loose version from 19 hits to 4 over 889k words of
       # 19th-century fiction.
       #
-      # What survives is the reason for info. An adjective outside the list
+      # What survives is the reason the confidence is medium. An adjective
+      # outside the list
       # still slips through, and some hits are the same shape written by a
       # person -- "was not the wife; it was the children" is Conan Doyle. A flag
       # here says the sentence has the frame, not that a model wrote it.
@@ -2922,8 +2924,8 @@ module Sloplint
                  "one, so the sentence sounds like a correction while correcting nobody. It " \
                  "is 'not A but B' with the conjunction dropped and the second half promoted " \
                  "to its own clause, which is the form models reach for most. Ordinary prose " \
-                 "contrasts two things this way too, so the rule ships at info: it reports " \
-                 "the shape, not a verdict."
+                 "contrasts two things this way too, so the rule reports the shape, not a " \
+                 "verdict."
     ),
     Rule.new(
       id: "not-by-x-but-by-y",
@@ -2970,10 +2972,10 @@ module Sloplint
         "We won not by luck\n\nBut by then it hardly mattered."
       ],
       rationale: "The 'not A but B' corrective with the copula swapped for a repeated " \
-                 "preposition, which is how a model corrects a claim about means or " \
-                 "cause ('not by luck, but by design'). People write it too -- Thoreau " \
-                 "and Melville both lean on it -- so the rule ships at info. It reports " \
-                 "the shape; a human reader decides whether it earned its place."
+                 "preposition, which is how a model corrects a claim about means or cause " \
+                 "('not by luck, but by design'). People write it too -- Thoreau and Melville " \
+                 "both lean on it -- and the rule reports the shape; a human reader decides " \
+                 "whether it earned its place."
     ),
     Rule.new(
       id: "rule-of-three",
@@ -3092,7 +3094,7 @@ module Sloplint
       # anywhere in it, contractions included, so "A man and a woman were
       # there." and "A man and a woman aren't here." never match.
       #
-      # Ships at info, and this is why: a lexical verb is invisible to the
+      # Medium confidence, and this is why: a lexical verb is invisible to the
       # pattern, so "A car and a truck collided." has the same shape and
       # flags. The corpora say that sentence is rare (one hit in 1.25M words
       # of public-domain prose, most of it narrative), but it is a complete
@@ -3208,7 +3210,7 @@ module Sloplint
       # position." The quantifiers carry the tell; the demonstratives are
       # ordinary, and no examples_bad used one.
       #
-      # Ships at info, and the rationale says why: people end paragraphs this
+      # Medium confidence, and the rationale says why: people end paragraphs this
       # way too, at about 150 per million words on Hacker News. One is
       # nothing. A draft where most paragraphs end this way is the tell, and
       # an agent that sees the flag repeat should read the family as a
@@ -3267,7 +3269,7 @@ module Sloplint
     Rule.new(
       id: "bare-auxiliary-closer",
       category: "cadence",
-      severity: "warning",
+      severity: "info",
       confidence: "medium",
       # The same long-sentence-then-short-closer shape as mic-drop-closer,
       # but the tell lives in the verb, not the subject. mic-drop-closer's
@@ -3345,9 +3347,9 @@ module Sloplint
       ],
       rationale: "The closer withholds exactly the thing the long setup built toward -- the " \
                  "verb and its object are gone, and only the bare confirmation that something " \
-                 "happened is left standing. Ships at info: plenty of ordinary writing drops " \
-                 "the verb the same way when it confirms an expectation, and one flag proves " \
-                 "nothing; a draft where it repeats is the tell."
+                 "happened is left standing. Plenty of ordinary writing drops the verb the " \
+                 "same way when it confirms an expectation, and one flag proves nothing; a " \
+                 "draft where it repeats is the tell."
     ),
     Rule.new(
       id: "short-run",
@@ -3512,7 +3514,7 @@ module Sloplint
     Rule.new(
       id: "em-dash-overuse",
       category: "punctuation",
-      severity: "info",
+      severity: "warning",
       confidence: "high",
       pattern: /—(?:[^\n]|\n(?!\s*\n))*—(?:[^\n]|\n(?!\s*\n))*—/,
       message: "Three or more em dashes in one paragraph — an AI punctuation tell.",

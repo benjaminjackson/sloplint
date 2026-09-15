@@ -32,6 +32,19 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `--select <category>` no longer turns on that category's low-confidence
   rules. Naming a category now selects only its default-on rules; to run a
   low-confidence rule, pass `--strict` or name the rule's own id.
+- Every rule's severity was re-rated for what the construct costs the prose,
+  now that confidence carries the false-positive question on its own. The
+  catalog reads 11 `error`, 56 `warning`, 13 `info`. Nothing shipped at
+  `error` before: the eleven that do now are the ones that hurt a sentence in
+  any register, the puffery family (`puffery-words`, `rich-tapestry`,
+  `vital-role`, `impact-noun-vague`,
+  `trailing-significance-participle`), the tautology and self-ranking moves
+  (`the-x-is-the-x`, `cleanest-x`, `most-honest-x`), the fake balance
+  (`two-things-true`, `none-of-this-is-to-say`) and `vague-attribution`.
+  Twenty rules moved from `info` to `warning`, among them `em-dash-overuse`:
+  one em dash is a style choice, three in a paragraph is the tell, so the
+  dense form now costs more than `em-dash`. Any tool that keys off severity
+  sees different values for the same text.
 
 ### Fixed
 
