@@ -181,6 +181,7 @@ path when multiple files are scanned).
   "line": 12,
   "column": 5,
   "severity": "warning",
+  "confidence": "high",
   "rule": "no-x-no-y",
   "category": "cadence",
   "message": "\"No X, no Y\" chain (3 items) reads as AI cadence.",
@@ -192,6 +193,10 @@ path when multiple files are scanned).
 }
 ```
 
+- `severity` is what the construct costs the prose (`error`, `warning`, `info`);
+  `confidence` is how likely the match is a false positive (`high`, `medium`,
+  `low`). Two axes, not one: a cheap tell we are sure about and an expensive
+  one we are guessing at no longer share a word.
 - `line`/`column` are 1-indexed, pointing at the start of the match.
 - `excerpt` is the bare match, nothing else. It is what `column` points at.
 - `context` is the match bracketed inside ~40 characters of surrounding prose,
@@ -204,7 +209,7 @@ path when multiple files are scanned).
 - `count` present when the rule counts items (the "badge" in the examples).
 - `rationale` is the same text `sloplint explain` prints under `Why:` — why the
   pattern reads as a tell. `check` carries it on every note so an agent acting
-  on an `info` flag (or deciding whether to) doesn't have to shell out to
+  on a flag (or deciding whether to) doesn't have to shell out to
   `explain` first; that's the whole point of the field.
 - `suggestion` is a short fix hint; agents may use it, humans see it too.
 
@@ -215,18 +220,19 @@ built with `Data.define` (immutable value objects, Ruby 3.2+):
 
 ```ruby
 Rule = Data.define(
-  :id, :category, :severity, :pattern, :message, :suggestion,
-  :examples_bad, :examples_ok, :count_group, :skip, :rationale, :default_on
+  :id, :category, :severity, :confidence, :pattern, :message, :suggestion,
+  :examples_bad, :examples_ok, :count_group, :skip, :rationale
 ) do
   # sensible defaults for the optional fields
-  def initialize(count_group: nil, skip: [], rationale: nil, default_on: true, **rest) = super
+  def initialize(count_group: nil, skip: [], rationale: nil, **rest) = super
 end
 
 RULES = [
   Rule.new(
     id:          "no-x-no-y",
     category:    "cadence",
-    severity:    "warning",
+    severity:    "warning",                   # error, warning, info -- cost to the prose
+    confidence:  "high",                      # high, medium, low -- false-positive risk
     pattern:     /.../i,                       # regex literal; add /m if multiline
     message:     "...",                         # may reference %{count}
     suggestion:  "...",
@@ -273,9 +279,18 @@ rhetorical move the construct makes, so a new rule goes where its move goes:
 - `borrowed-metaphor` — an engineering term applied to an argument
 - `punctuation` — the mark itself
 
-Severities: `warning` for strong tells, `info` for weak/contextual ones. No
-rule ships at `error` yet -- reserved for a pattern with essentially zero
-false-positive risk, which none has demonstrated.
+Two ratings, answering two questions. **Severity** is what the construct
+costs the prose: `error` when the sentence is worse for it in any register
+(the puffery family, the tautology closers, the self-ranking superlatives),
+`warning` when it dates the draft as model output but the sentence still
+says something, `info` when it is mostly harmless and worth knowing (the em
+dash). **Confidence** is how likely a match is a false positive: `high` when
+almost every hit is the real tell, `medium` when ordinary prose makes the
+same shape often enough that an agent should read the rationale first, `low`
+when the pattern cannot separate the tell from the ordinary use at all. The
+five `low` rules are the ones that stay out of the default run; `--strict`,
+or naming one by its own id, turns them on. The catalog below tags each
+rule's confidence, not its severity.
 
 ## Rule catalog (v1)
 
@@ -283,19 +298,19 @@ false-positive risk, which none has demonstrated.
 
 The writer grades their own prose or claim.
 
-- `clean-x` — "a clean abstraction/distinction/framing", "clean line between"; `info`
+- `clean-x` — "a clean abstraction/distinction/framing", "clean line between"; `medium` confidence
 - `clean-count` — "two/three clean parts/buckets/categories…"; needs a partition noun
 - `cleanest-x` — "the cleanest framing/formulation", "cleanest way to put it"; noun list only
-- `cleanly` — "cleanly" into/onto/in two/in half — the partition frame; the preposition is the narrowing; the engineering idiom ("applies cleanly", "separated cleanly", "cleanly compiled") is a checkable fact and stays out, and the clause-final form is left out. `info`: the frame is not the sense, and separating "splits cleanly into two parts" from "retracted cleanly into the well" needs the subject
+- `cleanly` — "cleanly" into/onto/in two/in half — the partition frame; the preposition is the narrowing; the engineering idiom ("applies cleanly", "separated cleanly", "cleanly compiled") is a checkable fact and stays out, and the clause-final form is left out. `medium` confidence: the frame is not the sense, and separating "splits cleanly into two parts" from "retracted cleanly into the well" needs the subject
 - `honest-x` — "an honest comparison", "the honest framing"; short noun list; "answer", "assessment", "account" excluded as ordinary; superlative yielded to the rule below
 - `most-honest-x` — "the most honest framing", "the most honest way to put it"; wider noun list than `honest-x`; no human nouns, so "the most honest person" stays out
 - `honestly` — a word, then "honestly", then a full stop or comma; terminal position required; discourse-marker slot guarded ("and/quite/but honestly,"); no animacy test
-- `worth-naming` — "worth naming/flagging/separating/spelling out"; skip "naming names"; yields to the rule below when a manner adverb follows; `info`
+- `worth-naming` — "worth naming/flagging/separating/spelling out"; skip "naming names"; yields to the rule below when a manner adverb follows; `medium` confidence
 - `worth-saying-plainly` — "it's worth saying plainly / better put bluntly…", plus the bare "Put plainly," / "Said bluntly,"; sentence-initial; the bare branch drops "simply"/"clearly" so "put simply" and "simply put" stay clean
-- `earns-its-place` — "earns its place/keep" (any possessive); possessive required; `warning`
+- `earns-its-place` — "earns its place/keep" (any possessive); possessive required; `high` confidence
 - `does-a-lot-of-work` — "does a lot of work here/in that sentence", "a lot of heavy lifting"; plain "the heavy lifting" excluded
-- `exact-exactly` — the reflexive intensifier: "that's exactly", "exactly right", "exactly the point", "the exact problem", "know exactly why"; matches the tell as a closed set of frames rather than matching the word and subtracting an allow-list; a measured quantity ("the exact diameter", "the exact CPU time") is silent by construction. `info`
-- `genuinely` — any "genuinely"; off by default; no narrowing holds
+- `exact-exactly` — the reflexive intensifier: "that's exactly", "exactly right", "exactly the point", "the exact problem", "know exactly why"; matches the tell as a closed set of frames rather than matching the word and subtracting an allow-list; a measured quantity ("the exact diameter", "the exact CPU time") is silent by construction. `medium` confidence
+- `genuinely` — any "genuinely"; `low` confidence, off by default; no narrowing holds
 - `the-punchline-is` — "the punchline is/:/?", "the honest answer/version is"; "short version" left out; ordinary writing
 - `announced-takeaway` — colon-led label: "The pattern/lesson/takeaway…:"; sentence-initial
 
@@ -304,7 +319,7 @@ The writer grades their own prose or claim.
 Closes by restating or announcing the point.
 
 - `thats-the-whole` — "that/this is the whole point/game/thing…"; also value and fix, the closers agents write in technical prose, when they end the sentence or the paragraph or run into a closer's tail word; either apostrophe; `is-the-whole-x` yields the same list
-- `is-the-whole-x` — any subject + "is the whole/real/actual/entire N" (tell, point, test, work, …); opens on the subject word; yields only the exact sentences `thats-the-whole` and `is-the-entire` own; interrogative subjects out; "only", "deal", "thing", "cost" left out; `info`
+- `is-the-whole-x` — any subject + "is the whole/real/actual/entire N" (tell, point, test, work, …); opens on the subject word; yields only the exact sentences `thats-the-whole` and `is-the-entire` own; interrogative subjects out; "only", "deal", "thing", "cost" left out; `medium` confidence
 - `is-the-entire` — "X is the entire point/game/business model"
 - `the-entire-is` — "the entire point/game/… is" (flip of above)
 - `thats-how-x` — sentence-initial "that's how…"
@@ -312,8 +327,8 @@ Closes by restating or announcing the point.
 - `right-up-until` — "right up until it doesn't/isn't/stops/breaks"; bare "until it doesn't" excluded
 - `and-nothing-else` — trailing ", and nothing else/more/further", ", and no more"; tail must close the sentence; comma required; bare "no more" needs "and"; "?" excluded
 - `nothing-else-frag` — the same exclusion as a fragment: "Nothing else."; sentence-initial capital; semicolon excluded; must be the whole sentence; "No more." left out
-- `bare-equative` — sentence-initial "The N (here) is (not) the …" with an abstract head noun; the-x-is-the-x's head list, so concrete heads are out; the copula (is, is not, isn't) must be followed by "the" and a lowercase word, so predicate adjectives, indefinites, pointing complements ("the same/one/first/…") and proper nouns are out; a list marker may open it; `info`
-- `trailing-restatement` — comma plus "which means", "which is to say", or "meaning" opening on one of a closed set of determiners and pronouns; or one of four participle frames with a pronoun object and a closing word ("making it easier", "allowing us to", "giving them more", "leaving you with"). The closer on "making" is a comparative that ends the clause or leads into "to", "for" or "than". Nothing before the comma is inspected, so a gloss ("_ma_, which means hand") matches; the bare participles ("leaving the door open") never do. Off by default: the pattern sees the connective, not whether the tail restates the head. `info`.
+- `bare-equative` — sentence-initial "The N (here) is (not) the …" with an abstract head noun; the-x-is-the-x's head list, so concrete heads are out; the copula (is, is not, isn't) must be followed by "the" and a lowercase word, so predicate adjectives, indefinites, pointing complements ("the same/one/first/…") and proper nouns are out; a list marker may open it; `medium` confidence
+- `trailing-restatement` — comma plus "which means", "which is to say", or "meaning" opening on one of a closed set of determiners and pronouns; or one of four participle frames with a pronoun object and a closing word ("making it easier", "allowing us to", "giving them more", "leaving you with"). The closer on "making" is a comparative that ends the clause or leads into "to", "for" or "than". Nothing before the comma is inspected, so a gloss ("_ma_, which means hand") matches; the bare participles ("leaving the door open") never do. Off by default: the pattern sees the connective, not whether the tail restates the head. `low` confidence.
 - `and-what-it-should` — ", and what it should." — a second "what" clause closing on a bare modal or a negated auxiliary; comma, conjunction and full stop required; the affirmative copula and do-verb ("what he does.") are complete clauses and out; a question is out
 
 ### cadence
@@ -321,22 +336,22 @@ Closes by restating or announcing the point.
 Rhythm: repetition, parallelism, and the long-then-short kicker.
 
 - `no-x-no-y` — 2+ comma-separated "no …" items in a row; counts items
-- `no-x-no-y-frag` — the same cadence as sentence fragments ("No fluff. No filler."); counts items; `info`
+- `no-x-no-y-frag` — the same cadence as sentence fragments ("No fluff. No filler."); counts items; `medium` confidence
 - `did-not-x-did-not-y` — 2+ "did not …"/"didn't …" in a row; counts items
 - `one-x-one-y` — 3+ comma-separated "one X" items standing on their own; counts items; must open a sentence or follow a colon, so a chain after a verb is counting; items letter-led; the distributive "one for …" skipped; a pair never flags
 - `from-x-to-y-chain` — 2+ comma-separated "from X to Y" spans; counts spans; operands open with a letter, so ranges are out; skips the relay ("to B, from B") and the reduplication ("from X to X")
-- `same-determiner-chain` — 3+ comma-separated items opening on the same determiner or quantifier (every, each, your, more, …); backreference; counts items; "one" and "no" left to their own rules; the narrative possessives (my, his, her, their, its) left out; items lowercase-led, so proper nouns are not a chain; `info`
+- `same-determiner-chain` — 3+ comma-separated items opening on the same determiner or quantifier (every, each, your, more, …); backreference; counts items; "one" and "no" left to their own rules; the narrative possessives (my, his, her, their, its) left out; items lowercase-led, so proper nouns are not a chain; `medium` confidence
 - `real-x-real-y` — the same "real" used twice attributively in one sentence, in front of two different nouns: "real API calls … real credentials"; needs no noun list -- narrowed by requiring two attributive uses of the intensifier naming two different things; a hyphen on either side of "real" (real-time, non-real) takes it out of the running; a closed list drops the fixed senses (real time, real-world, real numbers/roots, real user (monitoring), real estate, real money) and the function words that continue a predicative "is real"
-- `epistrophe` — two clauses ending on the same two-word phrase, the second closing the sentence; two backreferences, so the phrase may be hard-wrapped; no article-led phrase, second word 4+ letters, second clause 5–60 chars with no internal punctuation and capped whitespace; off by default; `info`
-- `phrase-echo` — the same three words again within about 400 words; backreference in a lookahead, so the match is the first occurrence; each word 4+ characters and lowercase-led, one of them 6+ letters with nothing but letters, so function-word runs, contractions, proper nouns and Title Case headings are out; a repeat that opens on a quote mark, backtick, emphasis marker or hyphen is out; the gap crosses paragraph breaks but not a list item, a table row or 80+ non-word characters; off by default; `info`
+- `epistrophe` — two clauses ending on the same two-word phrase, the second closing the sentence; two backreferences, so the phrase may be hard-wrapped; no article-led phrase, second word 4+ letters, second clause 5–60 chars with no internal punctuation and capped whitespace; off by default; `low` confidence
+- `phrase-echo` — the same three words again within about 400 words; backreference in a lookahead, so the match is the first occurrence; each word 4+ characters and lowercase-led, one of them 6+ letters with nothing but letters, so function-word runs, contractions, proper nouns and Title Case headings are out; a repeat that opens on a quote mark, backtick, emphasis marker or hyphen is out; the gap crosses paragraph breaks but not a list item, a table row or 80+ non-word characters; off by default; `low` confidence
 - `is-is` — doubled copula: "what it is is …", "the thing is, is that …"; comma optional
 - `the-x-is-the-x` — "the X … is the X …": the same abstract head noun on both sides of the copula; backreference; closed list of heads that cannot name an object (key, cost, unit are out); the clause between is capped at 50 chars and may not hold a comma, semicolon or colon; the second head must be followed by a preposition, determiner, quantifier, pronoun, plural noun or punctuation, so compounds are out; "isn't" counts
-- `rule-of-three` — three single-word comma items ending a sentence (heuristic; `info` severity, off by default; runs under `--select` or `--strict` since it false-positives).
+- `rule-of-three` — three single-word comma items ending a sentence (heuristic; `low` confidence, off by default; runs under `--select` or `--strict` since it false-positives).
 - `everyone-nobody` — the comma-spliced antithesis on quantifier subjects: one clause opens on everyone/everybody, the other on nobody/no one/none or "one N", joined by a bare comma, the second closing the sentence ("Everyone wants the dashboard, nobody maintains it."). A conjunction, a period, or the same subject twice is not a hinge; "one of/by/per", a measure, a proper noun, "none of which" and "none louder than" are not second subjects; clauses are capped at eighty characters.
-- `short-run` — three consecutive sentences of thirty characters or fewer, each letter-led and closing on a full stop, no quotation marks or digits, no lone-letter labels (either case, though a possessive is not one) or abbreviations, starting at a real sentence boundary (never on a wrap continuation), crossing a hard wrap but not a paragraph break; `info`. A list marker may open a run but never sit inside one, so consecutive bullets are a list — the marker set covers glyphs, the literal "o" plain-text documents use as a bullet, and numbered and lettered items. Two whole-run exclusions keep document furniture out, each a property of the run rather than of any sentence in it: three single-word sentences in a row is a citation line ("Natl. Inst. Stand. Technol."), and three lowercase-led sentences in a row is transcribed speech ("we all get gas. we go to divert to Albany."). One single-word sentence is the archetypal kicker and stays, and a run that reaches a capital anywhere is prose, so identifier-initial writing ("npm was slow. git blame helped. We moved on.") is untouched. One is a question; a draft that repeats it is the tell.
-- `mic-drop-closer` — a sentence of 60+ characters, then a paragraph-final closer of two to eight words opening on a **quantifier** (Nothing, Most, None, Everything, Everyone, Nobody, Then, Neither, Both): "Nothing here needs a new login."; `info`. The bare demonstratives (That, This, It) were in the list and are out: procedural writing ends a step with one as a matter of course ("This completes the roughing operations."). A blank line or the end of the text must follow the closer; both sentences may be hard-wrapped; whitespace runs in the long sentence are capped so blanked Markdown cannot make it, and the long-sentence prefix is an atomic group so an unpunctuated stretch cannot send it into catastrophic backtracking. The note points at the closer. One means nothing; a draft where it repeats is the tell.
-- `bare-auxiliary-closer` — the same long-sentence-then-short-closer shape as `mic-drop-closer`, but the tell sits in the verb rather than the subject: the closer's verb phrase is elided down to a bare auxiliary with no object, "The agent did."; `info`. No subject list is needed — a one-to-three word subject runs straight into a bare `did/does/do/was/were/is/are/had/has/can/could/would/will/should/might/must` (contracted forms included) and a period, and the closer must be the last thing in the paragraph, same as `mic-drop-closer`, so a closing quotation mark after the period excludes quoted dialogue the same way `short-run` excludes it. A negative lookahead drops a closer that still holds "what", "that", "which", "who", "why" or "how", since those introduce a subordinate clause supplying its own complement rather than an elided one ("Nobody knew who did." asks who did it). Reuses `mic-drop-closer`'s long-sentence prefix rather than a second copy of it. One means nothing; a draft where it repeats is the tell.
-- `np-fragment-and` — a whole sentence made of two noun phrases and an "and", opening on A/An/One at a sentence start or after a list marker ("A named owner and a quarterly review."). One to three words a side, no auxiliary or modal anywhere (contractions included); a lexical verb is invisible, so "A car and a truck collided." flags, which is why it ships at `info`.
+- `short-run` — three consecutive sentences of thirty characters or fewer, each letter-led and closing on a full stop, no quotation marks or digits, no lone-letter labels (either case, though a possessive is not one) or abbreviations, starting at a real sentence boundary (never on a wrap continuation), crossing a hard wrap but not a paragraph break; `medium` confidence. A list marker may open a run but never sit inside one, so consecutive bullets are a list — the marker set covers glyphs, the literal "o" plain-text documents use as a bullet, and numbered and lettered items. Two whole-run exclusions keep document furniture out, each a property of the run rather than of any sentence in it: three single-word sentences in a row is a citation line ("Natl. Inst. Stand. Technol."), and three lowercase-led sentences in a row is transcribed speech ("we all get gas. we go to divert to Albany."). One single-word sentence is the archetypal kicker and stays, and a run that reaches a capital anywhere is prose, so identifier-initial writing ("npm was slow. git blame helped. We moved on.") is untouched. One is a question; a draft that repeats it is the tell.
+- `mic-drop-closer` — a sentence of 60+ characters, then a paragraph-final closer of two to eight words opening on a **quantifier** (Nothing, Most, None, Everything, Everyone, Nobody, Then, Neither, Both): "Nothing here needs a new login."; `medium` confidence. The bare demonstratives (That, This, It) were in the list and are out: procedural writing ends a step with one as a matter of course ("This completes the roughing operations."). A blank line or the end of the text must follow the closer; both sentences may be hard-wrapped; whitespace runs in the long sentence are capped so blanked Markdown cannot make it, and the long-sentence prefix is an atomic group so an unpunctuated stretch cannot send it into catastrophic backtracking. The note points at the closer. One means nothing; a draft where it repeats is the tell.
+- `bare-auxiliary-closer` — the same long-sentence-then-short-closer shape as `mic-drop-closer`, but the tell sits in the verb rather than the subject: the closer's verb phrase is elided down to a bare auxiliary with no object, "The agent did."; `medium` confidence. No subject list is needed — a one-to-three word subject runs straight into a bare `did/does/do/was/were/is/are/had/has/can/could/would/will/should/might/must` (contracted forms included) and a period, and the closer must be the last thing in the paragraph, same as `mic-drop-closer`, so a closing quotation mark after the period excludes quoted dialogue the same way `short-run` excludes it. A negative lookahead drops a closer that still holds "what", "that", "which", "who", "why" or "how", since those introduce a subordinate clause supplying its own complement rather than an elided one ("Nobody knew who did." asks who did it). Reuses `mic-drop-closer`'s long-sentence prefix rather than a second copy of it. One means nothing; a draft where it repeats is the tell.
+- `np-fragment-and` — a whole sentence made of two noun phrases and an "and", opening on A/An/One at a sentence start or after a list marker ("A named owner and a quarterly review."). One to three words a side, no auxiliary or modal anywhere (contractions included); a lexical verb is invisible, so "A car and a truck collided." flags, which is why it ships at `medium` confidence.
 
 ### puffery
 
@@ -349,18 +364,18 @@ Inflates the subject.
 - `underscores-highlights` — "underscore(s)" + determiner and "underscored/underscoring" anywhere (the emphasis verb); "highlights/emphasizes its (importance/significance)" stays narrow.
 - `impact-noun-vague` — an intensity adjective plus "impact" (significant, real, meaningful, lasting, massive, huge, profound, big and the rest), or "make/have an impact". "positive" and "negative" stay out: they name a direction, which is more than the intensity words do. "statistically significant impact" is skipped — that one is a finding.
 - `trailing-significance-participle` — comma plus a participle from a closed verb list (highlighting, showcasing, reinforcing, shaping, enhancing, cementing, solidifying, embodying, fostering, facilitating, signalling), the clause a model hangs off a sentence to say what a fact means. Guards drop gerund lists and "signalling to". `driving`, `representing`, `reflecting`, `marking`, `contributing`, `illustrating`, `demonstrating`, `emphasising`, `echoing` and `affirming` stay out: humans write them in the same position, usually with a person as the subject, and the pattern cannot see the subject. `underscoring` is left to `underscores-highlights`.
-- `abstract-lives-in` — an abstract noun that "lives/sits in/between/inside/…"; closed subject list; capitalised subjects skipped; "with" (responsibility), "at" (quantity), "lies in" and "resides in" left out; `info`
+- `abstract-lives-in` — an abstract noun that "lives/sits in/between/inside/…"; closed subject list; capitalised subjects skipped; "with" (responsibility), "at" (quantity), "lies in" and "resides in" left out; `medium` confidence
 
 ### false-correction
 
 Corrects a reading nobody offered.
 
 - `not-just-x-but-y` — copula + "not just/only/merely/simply/solely X … but (also) Y", plus "not because X, but because Y". Requires the escalation word.
-- `not-x-but-y` — the bare corrective "is not X but Y" with no escalation word; `info`, because the corrective/concession distinction is syntactic and the pattern can only approximate it.
-- `not-by-x-but-by-y` — the corrective anchored on a repeated preposition rather than a copula: "not by A, but by B", "not from A but from B" (by, for, from, with, about, in, on, at, to, of, through, because of, out of); `info`. The B side must repeat the A preposition, A is capped at six words, and B may not open with a pronoun. Every corpus hit is the real shape written by a person, which is why it sits at info rather than being narrowed further.
-- `isnt-x-its-y` — the corrective with no conjunction: a negated copula, then a second clause that supplies the replacement ("It isn't the tool. It's the habit."), joined by a period, semicolon, comma, or dash; `info`. Neither complement may open with a pronoun, possessive, preposition ("about" excepted), degree word, or predicate adjective, which keeps out ordinary two-part contrast; some hits are still the same shape written by a person.
-- `question-isnt` — "the question isn't/is not (whether|if|how|what|why|who) X, it's/but Y"; `info`. The resolving clause is required, so a plain rhetorical question never matches; "the real question is" is excluded.
-- `less-about-more-about` — "it's/this is/that's less about X (and) more about Y", also "… than about Y"; `info`. Both halves of the frame are required, and the subject slot is limited to the pronouns.
+- `not-x-but-y` — the bare corrective "is not X but Y" with no escalation word; `medium` confidence, because the corrective/concession distinction is syntactic and the pattern can only approximate it.
+- `not-by-x-but-by-y` — the corrective anchored on a repeated preposition rather than a copula: "not by A, but by B", "not from A but from B" (by, for, from, with, about, in, on, at, to, of, through, because of, out of); `medium` confidence. The B side must repeat the A preposition, A is capped at six words, and B may not open with a pronoun. Every corpus hit is the real shape written by a person, which is why it sits at `medium` confidence rather than being narrowed further.
+- `isnt-x-its-y` — the corrective with no conjunction: a negated copula, then a second clause that supplies the replacement ("It isn't the tool. It's the habit."), joined by a period, semicolon, comma, or dash; `medium` confidence. Neither complement may open with a pronoun, possessive, preposition ("about" excepted), degree word, or predicate adjective, which keeps out ordinary two-part contrast; some hits are still the same shape written by a person.
+- `question-isnt` — "the question isn't/is not (whether|if|how|what|why|who) X, it's/but Y"; `medium` confidence. The resolving clause is required, so a plain rhetorical question never matches; "the real question is" is excluded.
+- `less-about-more-about` — "it's/this is/that's less about X (and) more about Y", also "… than about Y"; `medium` confidence. Both halves of the frame are required, and the subject slot is limited to the pronouns.
 - `actually-not-x` — "actually" and a trailing "…, not X" in one clause; the comma before "not" must be the first comma of the clause and must follow a word, so a fronted setup ("Despite the name, …") and a parenthetical both drop it; never crosses a line break; bare "actually" and "not actually" both left out
 - `dont-verb-it` — "Don't call it X. Call it Y." (negated verb+it, same verb+it)
 
@@ -370,7 +385,7 @@ Performs balance or candour and gives nothing up.
 
 - `two-things-true` — "two/both things can be/are true"; count fixed at two
 - `none-of-this-is-to-say` — "none of this/that/the above is to say"; every other "not to say" phrasing excluded
-- `is-real-and-not` — "the X is real, and/not…", "is the real … and it"; skip "real estate/time"; `info`
+- `is-real-and-not` — "the X is real, and/not…", "is the real … and it"; skip "real estate/time"; `medium` confidence
 - `not-nothing` — copula + "not nothing" litotes, any subject; skip personal/there subjects
 - `vague-attribution` — "some (critics/experts/observers) (argue/say/believe)", "it is widely (regarded/considered/seen)", "many would argue".
 - `if-im-being-honest` — "if I'm/we're (being) honest", "honestly, the answer/truth"; plain "to be honest" and "I'll be honest" excluded
@@ -383,9 +398,9 @@ Instructs or flatters the reader.
 - `you-already-know` — "you already know" (+ the answer / standalone)
 - `sit-with-that` — "sit with that/this/it", "sit with the discomfort"
 - `hold-onto-that` — sentence-initial "hold onto/on to that/this"; imperative only
-- `notice-what` — bare sentence-initial "Notice what…"; yields the "there" frame to the rule above; "how" excluded; `info`
+- `notice-what` — bare sentence-initial "Notice what…"; yields the "there" frame to the rule above; "how" excluded; `medium` confidence
 - `notice-what-there` — "notice what X did there", "read that again"; sentence-initial
-- `quip-question` — the verbless opening question ("No invite?", "New to the tool?", "Still stuck?"): sentence-initial, one of a short list of opening words, one to four more words, no auxiliary or contraction, closing on the question mark; "Need" and "Want" are left out as elided verbs; `info`, because people ask the same shape in conversation.
+- `quip-question` — the verbless opening question ("No invite?", "New to the tool?", "Still stuck?"): sentence-initial, one of a short list of opening words, one to four more words, no auxiliary or contraction, closing on the question mark; "Need" and "Want" are left out as elided verbs; `medium` confidence, because people ask the same shape in conversation.
 
 ### borrowed-metaphor
 
@@ -395,14 +410,14 @@ An engineering term applied to an argument.
 - `failure-mode-here` — "the failure mode here is"; deictic required; bare "the failure mode is" excluded
 - `intersection-of` — "the intersection of X and Y" as positioning; skip street corners, geometry, set arithmetic, airfield surfaces (runway, taxiway, apron), matrix rows and columns, and operands shaped like a US route designator ("US-27A") or a quadrant plus house number ("NE 140th Court")
 - `impact-verb` — "impact" used as a verb ("the outage impacted 4,000 accounts"); needs an auxiliary or subject pronoun for the base form; "to impact" requires a following object, so the preposition ("prior to impact") stays out; skip the medical and soil sense of "impacted", the struck object of a real collision ("impacted terrain"), the fixed compounds, and hyphenated forms
-- `impact-noun-bare` — "the impact of X", "measure the impact" — `info`; needs a measuring verb in front or "of" behind; skip the collision sense and the fixed compounds
+- `impact-noun-bare` — "the impact of X", "measure the impact" — `medium` confidence; needs a measuring verb in front or "of" behind; skip the collision sense and the fixed compounds
 
 ### punctuation
 
 The mark itself.
 
-- `em-dash` — any em dash; `info`.
-- `em-dash-overuse` — 3+ em dashes in one paragraph; `warning`.
+- `em-dash` — any em dash; `medium` confidence.
+- `em-dash-overuse` — 3+ em dashes in one paragraph; `high` confidence.
 
 ## Markdown handling
 
@@ -421,17 +436,17 @@ This is a first-class requirement, not an afterthought.
   # Recommended for agents:
   cat FILE | sloplint check --markdown -o json -
   # exit 0 = clean, 1 = notes found, >1 = error
-  # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion,count}
+  # each note: {path,line,column,severity,confidence,rule,category,message,excerpt,context,rationale,suggestion,count}
   # (count is present only for the rules that tally items)
   ```
 
 - Every option has a full-sentence help string (no telegraphic fragments).
-- `sloplint rules` prints the catalog: id, category, severity, one-line
-  description — and with `--json`, the machine version an agent can enumerate,
-  including each rule's `rationale` and `default_on` flag.
-- Naming a category in `check --select` runs only that category's default-on
+- `sloplint rules` prints the catalog: id, category, severity, confidence,
+  one-line description — and with `--json`, the machine version an agent can
+  enumerate, including each rule's `severity`, `confidence` and `rationale`.
+- Naming a category in `check --select` runs only that category's non-low
   rules; naming a rule's own id runs it regardless, and `--strict` turns on
-  the whole catalog including every off-by-default rule.
+  the whole catalog including every low-confidence rule.
 - `sloplint explain no-x-no-y` prints the rule's message, rationale, a bad
   example and an ok (non-matching) example. Agents call this to decide whether a
   flag is worth acting on.

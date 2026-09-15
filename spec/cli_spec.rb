@@ -151,7 +151,7 @@ RSpec.describe Sloplint::CLI do
       data = JSON.parse(out)
       expect(data).to be_an(Array)
       note = data.first
-      expect(note.keys).to include("path", "line", "column", "severity", "rule", "category", "message", "excerpt", "context", "rationale", "suggestion")
+      expect(note.keys).to include("path", "line", "column", "severity", "confidence", "rule", "category", "message", "excerpt", "context", "rationale", "suggestion")
       expect(note["rule"]).to eq("no-x-no-y")
       expect(note["count"]).to eq(3)
       expect(note["line"]).to eq(1)
@@ -169,6 +169,17 @@ RSpec.describe Sloplint::CLI do
       note = JSON.parse(out).first
       rule = Sloplint::RULES.find { |r| r.id == "thats-the-whole" }
       expect(note["rationale"]).to eq(rule.rationale)
+    end
+
+    # severity and confidence are two separate axes now: what the construct
+    # costs the prose, and how likely the match is a false positive. An agent
+    # needs both on the note to weigh a flag.
+    it "carries the rule's confidence alongside its severity" do
+      _, out = run(["-o", "json", "check", "-"], stdin_text: "That's the whole point.")
+      note = JSON.parse(out).first
+      rule = Sloplint::RULES.find { |r| r.id == "thats-the-whole" }
+      expect(note["severity"]).to eq(rule.severity)
+      expect(note["confidence"]).to eq(rule.confidence)
     end
 
     describe "multiple files" do
@@ -337,6 +348,27 @@ RSpec.describe Sloplint::CLI do
       data = JSON.parse(out)
       rule = Sloplint::RULES.find { |r| r.id == "rich-tapestry" }
       expect(data.find { |r| r["id"] == "rich-tapestry" }["rationale"]).to eq(rule.rationale)
+    end
+
+    # The catalog used to carry a boolean saying whether a rule ran by default.
+    # Confidence replaces it: "low" is what keeps a rule out of the default run.
+    it "reports confidence in the json catalog, and nothing else about the default run" do
+      _, out = run(["rules", "--json"])
+      entry = JSON.parse(out).find { |r| r["id"] == "rule-of-three" }
+      expect(entry["confidence"]).to eq("low")
+      expect(entry.keys).to contain_exactly("id", "category", "severity", "confidence",
+                                            "message", "rationale", "suggestion")
+    end
+
+    it "shows a confidence column in the text listing" do
+      _, out = run(["rules"])
+      expect(out).to match(/^rule-of-three\s+cadence\s+info\s+low\s+/)
+      expect(out).to match(/^rich-tapestry\s+puffery\s+error\s+high\s+/)
+    end
+
+    it "names the confidence when it explains a rule" do
+      _, out = run(["explain", "rule-of-three"])
+      expect(out).to include("(cadence, info, low confidence, off by default)")
     end
 
     it "explains a rule" do

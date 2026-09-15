@@ -139,14 +139,14 @@ module Sloplint
 
       if as_json
         payload = RULES.map do |r|
-          { id: r.id, category: r.category, severity: r.severity,
-            message: r.message, rationale: r.rationale, suggestion: r.suggestion, default_on: r.default_on }
+          { id: r.id, category: r.category, severity: r.severity, confidence: r.confidence,
+            message: r.message, rationale: r.rationale, suggestion: r.suggestion }
         end
         out.puts(JSON.pretty_generate(payload))
       else
         RULES.each do |r|
-          off = r.default_on ? "" : " [off by default]"
-          out.puts("#{r.id.ljust(24)} #{r.category.ljust(18)} #{r.severity.ljust(8)} #{r.message}#{off}")
+          off = r.confidence == "low" ? " [off by default]" : ""
+          out.puts("#{r.id.ljust(24)} #{r.category.ljust(18)} #{r.severity.ljust(8)} #{r.confidence.ljust(7)} #{r.message}#{off}")
         end
       end
       0
@@ -166,7 +166,7 @@ module Sloplint
         return 2
       end
       out.puts(<<~TXT)
-        #{rule.id}  (#{rule.category}, #{rule.severity}#{rule.default_on ? "" : ", off by default"})
+        #{rule.id}  (#{rule.category}, #{rule.severity}, #{rule.confidence} confidence#{rule.confidence == "low" ? ", off by default" : ""})
 
         #{rule.message}
 
@@ -197,18 +197,19 @@ module Sloplint
       refs - known
     end
 
-    # --select/--ignore accept rule ids or category names. Default set excludes
-    # default_on:false rules unless they are explicitly selected. A category
-    # ref selects only that category's default-on rules unless --strict is
-    # set; naming a rule id by its id still selects it regardless of
-    # default_on.
+    # --select/--ignore accept rule ids or category names. The default set
+    # excludes low-confidence rules unless they are explicitly selected. A
+    # category ref selects only that category's non-low rules unless --strict
+    # is set; naming a rule by its own id still selects it whatever its
+    # confidence.
     def select_rules(select, ignore, strict = false)
+      runs_by_default = ->(r) { r.confidence != "low" }
       rules = if select
-        RULES.select { |r| select.include?(r.id) || (select.include?(r.category) && (r.default_on || strict)) }
+        RULES.select { |r| select.include?(r.id) || (select.include?(r.category) && (runs_by_default.call(r) || strict)) }
       elsif strict
         RULES
       else
-        RULES.select(&:default_on)
+        RULES.select(&runs_by_default)
       end
       if ignore
         rules = rules.reject { |r| ignore.include?(r.id) || ignore.include?(r.category) }
@@ -224,7 +225,7 @@ module Sloplint
           # Recommended for agents:
           cat FILE | sloplint check --markdown -o json -
           # exit 0 = clean, 1 = notes found, >1 = error (empty input is an error)
-          # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion,count}
+          # each note: {path,line,column,severity,confidence,rule,category,message,excerpt,context,rationale,suggestion,count}
           # (count is present only for the rules that tally items)
 
           usage: sloplint [-o full|json] [command] [args]

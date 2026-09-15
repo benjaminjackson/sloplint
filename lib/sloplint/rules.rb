@@ -6,12 +6,14 @@ module Sloplint
   # count_group: a Regexp scanned over the matched text to tally items; when set,
   #   the Note carries `count` and the message may interpolate %{count}.
   # skip: Regexps that, if they match the matched text, drop the note (exclusions).
-  # default_on: false keeps a noisy rule out of the default run (still selectable).
+  # severity: what the construct costs the prose -- "error", "warning", "info".
+  # confidence: how likely a match is a false positive -- "high", "medium", "low".
+  #   A "low" rule stays out of the default run; --strict or its own id turns it on.
   Rule = Data.define(
-    :id, :category, :severity, :pattern, :message, :suggestion,
-    :examples_bad, :examples_ok, :count_group, :skip, :rationale, :default_on
+    :id, :category, :severity, :confidence, :pattern, :message, :suggestion,
+    :examples_bad, :examples_ok, :count_group, :skip, :rationale
   ) do
-    def initialize(count_group: nil, skip: [], rationale: nil, default_on: true, **rest)
+    def initialize(count_group: nil, skip: [], rationale: nil, **rest)
       super
     end
   end
@@ -87,6 +89,7 @@ module Sloplint
       id: "no-x-no-y",
       category: "cadence",
       severity: "warning",
+      confidence: "high",
       # Comma chains only: "no fluff, no filler, no jargon". The comma is the
       # evidence -- it makes the parallelism deliberate. Fragment chains split
       # by sentence punctuation are a separate, quieter rule (no-x-no-y-frag),
@@ -104,7 +107,8 @@ module Sloplint
     Rule.new(
       id: "no-x-no-y-frag",
       category: "cadence",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The same cadence built from sentence fragments: "No fluff. No filler."
       # Ships at info, not warning, because the shape is genuinely ambiguous --
       # two short "no" sentences in a row is also just writing ("No one moved.
@@ -148,6 +152,7 @@ module Sloplint
       id: "thats-the-whole",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       # The nouns are WHOLE_CLOSERS. "value" and "fix" are the closers agents
       # write in technical prose ("That's the whole fix"), where the
       # contraction keeps them out of is-the-whole-x, which sees only "is".
@@ -198,7 +203,8 @@ module Sloplint
     Rule.new(
       id: "is-the-whole-x",
       category: "closer",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The generic form of thats-the-whole: a subject, then "is the whole /
       # real / actual / entire N" with N from a closed abstract list. "That
       # periodicity is the whole tell.", "Consistency is the real test." The
@@ -265,7 +271,8 @@ module Sloplint
     Rule.new(
       id: "bare-equative",
       category: "closer",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # A sentence that opens on an abstract head noun and equates it with
       # something: "The tell here is the periodicity.", "The problem is not
       # the tool.", "The lesson is the handoff." The head noun list is closed
@@ -323,7 +330,7 @@ module Sloplint
       id: "epistrophe",
       category: "cadence",
       severity: "info",
-      default_on: false,
+      confidence: "low",
       # Two clauses that end on the same two-word phrase, the second closing
       # the sentence: "built for one desk, and almost no job is done at one
       # desk." Two backreferences catch the repeat, one per word, so the
@@ -375,7 +382,7 @@ module Sloplint
       id: "phrase-echo",
       category: "cadence",
       severity: "info",
-      default_on: false,
+      confidence: "low",
       # The same three words again a few paragraphs on. Three consecutive
       # words, each four characters or more and lowercase-led, one of them
       # six letters with nothing but letters, and the same three again
@@ -459,6 +466,7 @@ module Sloplint
       id: "did-not-x-did-not-y",
       category: "cadence",
       severity: "warning",
+      confidence: "high",
       pattern: /\b(?:did\s+not|didn't)\s+[\w'-]+(?:,?\s+(?:and\s+)?(?:did\s+not|didn't)\s+[\w'-]+)+/i,
       message: '"did not X, did not Y" chain (%{count} items) reads as AI cadence.',
       suggestion: "Cut the chain or make it one plain sentence.",
@@ -471,6 +479,7 @@ module Sloplint
       id: "from-x-to-y-chain",
       category: "cadence",
       severity: "warning",
+      confidence: "high",
       # Two or more "from X to Y" spans in a row, comma-separated: "from
       # private notes to shared files, from personal memory to team context".
       # Each span is "from", one to three words, "to", one to three words; the
@@ -547,6 +556,7 @@ module Sloplint
       id: "one-x-one-y",
       category: "cadence",
       severity: "warning",
+      confidence: "high",
       # Three or more "one X" items in a comma chain that stands on its own:
       # "One owner, one repository, one weekly prune." or, after a colon,
       # "the setup is narrow: one reviewer, one queue, one deadline". The
@@ -618,6 +628,7 @@ module Sloplint
       id: "and-what-it-should",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       # The elliptical tail: "List what the assistant knows about the client,
       # and what it should." The second "what" clause borrows its verb from the
       # first and ends on a bare modal or a negated auxiliary, so the sentence
@@ -664,7 +675,8 @@ module Sloplint
     Rule.new(
       id: "abstract-lives-in",
       category: "puffery",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # An abstraction given an address: "the craft that lives between the two
       # desks", "its context lives in a folder nobody else can open", "the
       # value sits in the follow-up". The subject list is closed and abstract,
@@ -724,7 +736,8 @@ module Sloplint
     Rule.new(
       id: "the-x-is-the-x",
       category: "cadence",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # The repeated-head equative: "the reason it holds up is the reason the
       # other half happens", "the problem with A is the problem with B". The
       # same abstract head noun sits on both sides of the copula, caught by a
@@ -788,6 +801,7 @@ module Sloplint
       id: "same-determiner-chain",
       category: "cadence",
       severity: "info",
+      confidence: "medium",
       # The quiet cousin of one-x-one-y and no-x-no-y: three or more items in
       # a comma chain that all open on the same determiner or quantifier,
       # caught with a backreference: "every faculty, every thought, every
@@ -850,6 +864,7 @@ module Sloplint
       id: "dont-verb-it",
       category: "false-correction",
       severity: "warning",
+      confidence: "high",
       pattern: /\b(?:don't|do\s+not)\s+(\w+)\s+it\b[^.!?]*[.!?]\s*\1\s+it\b/i,
       message: '"Don\'t X it. X it Y." reframing is a stock LLM move.',
       suggestion: "Drop the fake reframe and state the claim once.",
@@ -861,6 +876,7 @@ module Sloplint
       id: "sit-with-that",
       category: "reader-address",
       severity: "warning",
+      confidence: "high",
       # Two branches. The deictic object is the tic anywhere in a sentence, so
       # "sit with that/this/it" needs no anchor. Anything else needs the
       # sentence-initial imperative, which is where the tic lives and where the
@@ -893,6 +909,7 @@ module Sloplint
       id: "hold-onto-that",
       category: "reader-address",
       severity: "warning",
+      confidence: "high",
       # Sentence-initial imperative only. Past tense and subordinate clauses
       # ("she held on to that letter", "if you hold onto that phrase") are a
       # different construction, not the tell. Everything AFTER that/this is
@@ -919,7 +936,8 @@ module Sloplint
     Rule.new(
       id: "cleanly",
       category: "self-rating",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The bare adverb was the whole rule, and the engineering idioms were
       # flagged on purpose. Technical prose says that was the wrong call: a
       # patch that applies cleanly, a build that compiles cleanly and a gear
@@ -972,6 +990,7 @@ module Sloplint
       id: "clean-count",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # Needs a partition noun. The bare count reaches the laundry: Ulysses
       # has "four clean strokes", Jane Eyre "two clean tuckers".
       pattern: /\b(?:two|three|four|five|six|seven|2|3|4|5|6|7)\s+
@@ -998,7 +1017,8 @@ module Sloplint
     Rule.new(
       id: "cleanest-x",
       category: "self-rating",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # Noun list only. "The cleanest way to install the driver" and "the
       # cleanest cut of meat" are ordinary English, so "way" is admitted only
       # in front of a speech verb, and the concrete-capable nouns (cut, line,
@@ -1027,7 +1047,8 @@ module Sloplint
     Rule.new(
       id: "clean-x",
       category: "self-rating",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The quiet half of cleanest-x, at info because the positive degree is
       # where ordinary usage lives. "A clean separation of concerns" is
       # standard engineering English, so "separation" stays out of the list;
@@ -1058,6 +1079,7 @@ module Sloplint
       id: "you-already-know",
       category: "reader-address",
       severity: "warning",
+      confidence: "high",
       pattern: /\byou\s+already\s+know\b/i,
       message: '"You already know…" is a stock LLM rhetorical setup.',
       suggestion: "Just make the point; don't tell the reader they know it.",
@@ -1069,6 +1091,7 @@ module Sloplint
       id: "is-the-entire",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       pattern: /\bis\s+the\s+entire\s+(?:point|game|thing|business\s+model|deal|story)\b/i,
       message: '"X is the entire point/game/…" is an LLM emphasis tic.',
       suggestion: "State the point plainly without the superlative frame.",
@@ -1080,6 +1103,7 @@ module Sloplint
       id: "the-entire-is",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       pattern: /\bthe\s+entire\s+(?:point|game|thing|business\s+model|deal|story)\s+is\b/i,
       message: '"The entire point/game/… is" is an LLM emphasis tic.',
       suggestion: "State the point plainly without the superlative frame.",
@@ -1090,7 +1114,8 @@ module Sloplint
     Rule.new(
       id: "is-real-and-not",
       category: "false-concession",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       pattern: /\bis\s+real,?\s+(?:and|but|not)\b/i,
       message: '"The X is real, and…" is a stock LLM concession move.',
       suggestion: "Drop the 'is real, and' scaffolding; assert the point directly.",
@@ -1113,6 +1138,7 @@ module Sloplint
       id: "real-x-real-y",
       category: "cadence",
       severity: "info",
+      confidence: "medium",
       # Ships at info, not warning: the only two hits the probe found in
       # 1.28M words were both false positives, and one corpus of one
       # register is thin evidence next to honestly, which sits at warning
@@ -1211,6 +1237,7 @@ module Sloplint
       id: "the-punchline-is",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # Same reveal, three nouns. "honest answer" and "honest version" join
       # "punchline" because they do the identical job: rate the sentence as
       # the candid one before the reader gets it. "short version" was tried
@@ -1236,7 +1263,8 @@ module Sloplint
     Rule.new(
       id: "worth-naming",
       category: "self-rating",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # Widened to optionally include a trailing "names" so the "naming
       # names" idiom is part of the matched text -- skip: checks the matched
       # text itself, and the tighter /\bworth\s+naming\b/ never captured
@@ -1275,6 +1303,7 @@ module Sloplint
       id: "worth-saying-plainly",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # Two branches, both sentence-initial.
       #
       # First: evaluative adjective + speech verb + manner adverb, all three
@@ -1328,6 +1357,7 @@ module Sloplint
       id: "not-nothing",
       category: "false-concession",
       severity: "warning",
+      confidence: "high",
       # Two branches: spelled-out copula with an optional captured subject, and
       # the contracted "X's not nothing". The optional subject + skip: is the
       # load-bearing idiom -- skip: only sees matched text, so the personal
@@ -1383,6 +1413,7 @@ module Sloplint
       id: "exact-exactly",
       category: "self-rating",
       severity: "info",
+      confidence: "medium",
       # Rewritten after 2.2M words of technical prose left ~111 of 125 hits
       # false. The shape was the problem, not the entries: the pattern matched
       # "exact" everywhere and subtracted an allow-list, and an open pattern
@@ -1490,6 +1521,7 @@ module Sloplint
       id: "load-bearing",
       category: "borrowed-metaphor",
       severity: "warning",
+      confidence: "high",
       # Two guards, both structural, over the same noun list so they can't
       # drift apart. Forward: a physical building part right after it is the
       # literal sense, checked with a negative lookahead. Backward: the
@@ -1540,6 +1572,7 @@ module Sloplint
       id: "intersection-of",
       category: "borrowed-metaphor",
       severity: "warning",
+      confidence: "high",
       # "at" is not load-bearing -- "explores the intersection of art and
       # technology" is the same move -- so the anchor is "the intersection of"
       # and the two guards carry the whole burden of separating the literal
@@ -1627,6 +1660,7 @@ module Sloplint
       id: "impact-verb",
       category: "borrowed-metaphor",
       severity: "warning",
+      confidence: "high",
       # "impact" and "impacts" are also nouns, so they only count as verbs
       # behind an auxiliary or a subject pronoun. One optional pronoun may sit
       # between the auxiliary and the verb ("does this impact the date");
@@ -1730,7 +1764,8 @@ module Sloplint
     Rule.new(
       id: "impact-noun-vague",
       category: "puffery",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # Only the puffed shapes: an intensity adjective, or make/have plus an
       # article. "the impact of X" is left to impact-noun-bare, which sits at
       # info because it is the standard word in research prose. "positive" and
@@ -1782,7 +1817,8 @@ module Sloplint
     Rule.new(
       id: "impact-noun-bare",
       category: "borrowed-metaphor",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # Two shapes, each needing its own anchor: a measuring verb in front, or
       # "of" behind. That is what keeps the collision sense clear without a
       # list of collision verbs -- "the impact crushed the front bumper" has
@@ -1827,6 +1863,7 @@ module Sloplint
       id: "thats-how-x",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:that|this)(?:'s| is)\s+how\b/i,
       message: '"That\'s how…" opening a sentence is a stock LLM aphorism closer.',
       suggestion: "Cut the closer, or replace it with the concrete result you mean.",
@@ -1844,6 +1881,7 @@ module Sloplint
       id: "announced-takeaway",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:here'?s\s+)?the\s+(?:loop|pattern|trick|lesson|takeaway|playbook|framing|insight|kicker)\b[^.!?\n]{0,60}:/i,
       message: "Colon-led takeaway label announces the lesson before making it.",
       suggestion: "Give the observation first; let the reader decide it's the takeaway.",
@@ -1861,6 +1899,7 @@ module Sloplint
       id: "is-is",
       category: "cadence",
       severity: "warning",
+      confidence: "high",
       # No anchor needed -- the doubled copula alone scored 0 across ~1.9M words.
       # The comma is allowed because "What it is, is a mystery" grates the same
       # way. Sentence and clause punctuation still block the weld ("what it is.
@@ -1897,6 +1936,7 @@ module Sloplint
       id: "earns-its-place",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # The possessive is the narrowing. "earned a place on the team" and
       # "earn a place in the final" are ordinary; "earns its place" is the
       # metaphor, a thing paying for the room it takes up.
@@ -1922,6 +1962,7 @@ module Sloplint
       id: "does-a-lot-of-work",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # Two arms, both narrowed away from the ordinary sense.
       #
       # "a lot of work" needs a locative ("here", "in that sentence") because
@@ -1955,6 +1996,7 @@ module Sloplint
       id: "failure-mode-here",
       category: "borrowed-metaphor",
       severity: "warning",
+      confidence: "high",
       # "here" is the whole narrowing, and it is doing a lot -- the bare "the
       # failure mode is" is ordinary engineering writing about real systems,
       # where the phrase means what it says. The deictic is what marks the
@@ -1982,6 +2024,7 @@ module Sloplint
       id: "thats-the-tension",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       # Sentence-initial, only two nouns, and the noun must end the clause.
       #
       # "tradeoff" and "catch" were tried and cut: both are ordinary English
@@ -2016,6 +2059,7 @@ module Sloplint
       id: "right-up-until",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       # The intensifier is the tell, not the reversal. "It works until it
       # doesn't" is an old human idiom and stays clean; stacking "right up"
       # in front of it is the model's version, and the two together are two
@@ -2041,7 +2085,8 @@ module Sloplint
     Rule.new(
       id: "two-things-true",
       category: "false-concession",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # Closed phrase, no anchor needed. The optional "both" and the optional
       # "at once" tail are the two ways the sentence is padded; the count word
       # is fixed at two, because "three things can be true" is someone
@@ -2068,6 +2113,7 @@ module Sloplint
       id: "notice-what-there",
       category: "reader-address",
       severity: "warning",
+      confidence: "high",
       # The self-referential half of the attention cue: the sentence points
       # at the writing rather than at anything in the world. Two frames, both
       # sentence-initial -- "notice what X did there" and the bare "read that
@@ -2097,6 +2143,7 @@ module Sloplint
       id: "notice-what",
       category: "reader-address",
       severity: "info",
+      confidence: "medium",
       # The ambiguous half of the pair, and it ships at info because the
       # sentence-initial imperative is also how people point at something
       # real: "Notice what happens around Q3", "Notice what is not on the
@@ -2128,7 +2175,8 @@ module Sloplint
     Rule.new(
       id: "none-of-this-is-to-say",
       category: "false-concession",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # Only the "none of" form. Every neighbouring phrasing is ordinary
       # English by an order of magnitude -- "which is not to say", "this is
       # not to say", "that's not to say" -- and admitting any of them would
@@ -2155,7 +2203,8 @@ module Sloplint
     Rule.new(
       id: "if-im-being-honest",
       category: "false-concession",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The "being honest" frame only. Plain "to be honest" and "I'll be
       # honest" are how people talk and are excluded. info, not warning:
       # writers really do say this out loud.
@@ -2181,6 +2230,7 @@ module Sloplint
       id: "honestly",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # The manner adverb, the way "cleanly" is the manner adverb: hung on a
       # subject that cannot be honest. Two guards, no verb list.
       #
@@ -2232,6 +2282,7 @@ module Sloplint
       id: "honest-x",
       category: "self-rating",
       severity: "warning",
+      confidence: "high",
       # The noun list is short on purpose, and the words left out are the
       # point. "An honest answer", "an honest assessment" and "an honest
       # account" are ordinary English about people -- six hits between them in
@@ -2274,7 +2325,8 @@ module Sloplint
     Rule.new(
       id: "most-honest-x",
       category: "self-rating",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # The superlative frame carries the tell on its own, so this noun list is
       # wider than honest-x's -- "the most honest assessment" is self-ranking
       # in a way "an honest assessment" is not. The list still has to keep out
@@ -2311,12 +2363,12 @@ module Sloplint
       id: "genuinely",
       category: "self-rating",
       severity: "info",
+      confidence: "low",
       # Off by default. There is no narrowing here: the word is ordinary
       # English at every frequency we measured, and the difference between
       # the tell and the real use is whether a contrast exists in the
       # surrounding argument, which no regex can see. Selectable when a
       # writer wants every occurrence listed back to them.
-      default_on: false,
       pattern: /\bgenuinely\b/i,
       message: '"Genuinely" asserts sincerity instead of earning it (heuristic; high false-positive).',
       suggestion: "Cut the adverb. If the sentence needs it, the claim is doing the work.",
@@ -2340,6 +2392,7 @@ module Sloplint
       id: "actually-not-x",
       category: "false-correction",
       severity: "warning",
+      confidence: "high",
       # Two markers that each correct the reader, doubled up in one clause:
       # the adverb and the trailing "…, not X". Bare "actually" is not the
       # tell and is not matched, because "the build actually failed on the
@@ -2405,7 +2458,8 @@ module Sloplint
     Rule.new(
       id: "and-thats-fine",
       category: "false-concession",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # Three narrowings, and the rule needs all of them. "and" is required:
       # bare "that's fine" is a reply people write constantly. The match must
       # open a sentence and close it, so the concessive clause -- "and that's
@@ -2431,6 +2485,7 @@ module Sloplint
       id: "and-nothing-else",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       # This rule is deliberately wide, and the cost is known. There is no verb
       # list and no imperative requirement, so the only narrowing is structural
       # -- which means the pattern cannot tell a leaked instruction from the
@@ -2490,6 +2545,7 @@ module Sloplint
       id: "nothing-else-frag",
       category: "closer",
       severity: "warning",
+      confidence: "high",
       # The same exclusion as its own sentence: "Return the JSON. Nothing
       # else." Built on the no-x-no-y-frag template -- the fragment must start
       # at a sentence boundary and the separator is at most two spaces or one
@@ -2535,7 +2591,8 @@ module Sloplint
     Rule.new(
       id: "puffery-words",
       category: "puffery",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # "nestled" alone is the literal verb as often as the puffery sense --
       # a head nestling against a shoulder, a kitten nestling into a blanket
       # -- so it requires a following in/among/between, the same shape the
@@ -2571,7 +2628,8 @@ module Sloplint
     Rule.new(
       id: "stands-serves-as",
       category: "puffery",
-      severity: "info",
+      severity: "error",
+      confidence: "medium",
       pattern: /\b(?:stands|serves)\s+as\b|\bis\s+a\s+(?:testament|reminder)\s+to\b/i,
       message: '"stands/serves as", "is a testament/reminder to" is puffed AI framing.',
       suggestion: "Say what it does, not what it 'stands as'.",
@@ -2582,7 +2640,8 @@ module Sloplint
     Rule.new(
       id: "vital-role",
       category: "puffery",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       pattern: /\bplays?\s+a\s+(?:vital|crucial|pivotal|significant|key|central)\s+role\b/i,
       message: '"plays a vital/crucial/… role" is a stock AI puffery phrase.',
       suggestion: "State the specific role or effect instead.",
@@ -2593,7 +2652,8 @@ module Sloplint
     Rule.new(
       id: "underscores-highlights",
       category: "puffery",
-      severity: "info",
+      severity: "error",
+      confidence: "medium",
       # "underscored/underscoring" are unambiguously the verb and flag bare.
       # "underscore/underscores" is also the character noun (a leading
       # underscore, snake_case docs), so those forms require a following
@@ -2642,7 +2702,8 @@ module Sloplint
     Rule.new(
       id: "rich-tapestry",
       category: "puffery",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       pattern: /\brich\s+tapestry\b|\btapestry\s+of\b/i,
       message: '"rich tapestry"/"tapestry of" is a signature AI cliché.',
       suggestion: "Cut the metaphor; name the actual things.",
@@ -2655,6 +2716,7 @@ module Sloplint
       id: "not-just-x-but-y",
       category: "false-correction",
       severity: "warning",
+      confidence: "high",
       # Two branches, both anchored on an explicit escalation word. (1) The
       # copula escalation: "is not just/only/merely/simply/solely A … but B".
       # (2) "not because A, but because B". The escalation word is what makes
@@ -2699,7 +2761,8 @@ module Sloplint
     Rule.new(
       id: "not-x-but-y",
       category: "false-correction",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The bare corrective: "is not A but B", no escalation word, comma or no
       # comma. Ships at info because the line between a corrective ("not an
       # accident but a strategy") and an ordinary concession ("not warm but the
@@ -2770,7 +2833,8 @@ module Sloplint
     Rule.new(
       id: "isnt-x-its-y",
       category: "false-correction",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The corrective with the conjunction dropped: one clause rejects a
       # description, the next supplies the replacement through a second copula
       # ("It isn't the tool. It's the habit."). Every copula tense is covered,
@@ -2864,7 +2928,8 @@ module Sloplint
     Rule.new(
       id: "not-by-x-but-by-y",
       category: "false-correction",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The corrective built on a repeated preposition: "not by A, but by B",
       # "not from A but from B". The copula rules above cannot see it because
       # nothing precedes "not" but the verb or a dash, so the anchor here is
@@ -2914,7 +2979,7 @@ module Sloplint
       id: "rule-of-three",
       category: "cadence",
       severity: "info",
-      default_on: false,
+      confidence: "low",
       pattern: /\b[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
       message: "Three single words in a comma series closing a sentence (heuristic; high false-positive).",
       suggestion: "Fine in moderation; watch for the AI habit of ending on triplets.",
@@ -2942,6 +3007,7 @@ module Sloplint
       id: "everyone-nobody",
       category: "cadence",
       severity: "warning",
+      confidence: "high",
       # The comma-spliced antithesis on quantifier subjects: "Everyone wants
       # the dashboard, nobody maintains it." One clause opens on
       # everyone/everybody, the other on nobody/no one/none or "one N"
@@ -3014,7 +3080,8 @@ module Sloplint
     Rule.new(
       id: "np-fragment-and",
       category: "cadence",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # A whole sentence that is two noun phrases and an "and": "A named owner
       # and a quarterly review." It is the fix half of a model's
       # problem-then-fix pair, with the verb left for the reader to supply.
@@ -3070,6 +3137,7 @@ module Sloplint
       id: "quip-question",
       category: "reader-address",
       severity: "info",
+      confidence: "medium",
       # The verbless question that opens a pitch: "No invite?", "New to the
       # tool?", "Still stuck?", "Ready to start?". It must start a sentence,
       # open on one of a short list of words, run one to four more words, and
@@ -3117,6 +3185,7 @@ module Sloplint
       id: "mic-drop-closer",
       category: "cadence",
       severity: "info",
+      confidence: "medium",
       # The kicker: a sentence of at least sixty characters, then a closer of
       # two to eight words that ends the paragraph and opens on a quantifier
       # ("Nothing here needs a new login.", "Most teams end up
@@ -3198,7 +3267,8 @@ module Sloplint
     Rule.new(
       id: "bare-auxiliary-closer",
       category: "cadence",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The same long-sentence-then-short-closer shape as mic-drop-closer,
       # but the tell lives in the verb, not the subject. mic-drop-closer's
       # closer opens on a quantifier and keeps a full verb with its object
@@ -3283,6 +3353,7 @@ module Sloplint
       id: "short-run",
       category: "cadence",
       severity: "info",
+      confidence: "medium",
       # Three consecutive sentences of thirty characters or fewer, each
       # opening on a letter and closing on a full stop, with no quotation
       # mark or digit in any of them: "Nobody used it. A named owner. Then a
@@ -3421,6 +3492,7 @@ module Sloplint
       id: "em-dash",
       category: "punctuation",
       severity: "info",
+      confidence: "medium",
       pattern: /—/,
       message: "Em dash — an AI punctuation tell.",
       suggestion: "Recast with a comma, parentheses, or a separate sentence.",
@@ -3440,7 +3512,8 @@ module Sloplint
     Rule.new(
       id: "em-dash-overuse",
       category: "punctuation",
-      severity: "warning",
+      severity: "info",
+      confidence: "high",
       pattern: /—(?:[^\n]|\n(?!\s*\n))*—(?:[^\n]|\n(?!\s*\n))*—/,
       message: "Three or more em dashes in one paragraph — an AI punctuation tell.",
       suggestion: "Recast with commas, parentheses, or separate sentences.",
@@ -3463,7 +3536,8 @@ module Sloplint
     Rule.new(
       id: "question-isnt",
       category: "false-correction",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The resolving clause is required, so a plain rhetorical question never
       # matches. "The real question is" is ordinary English and is excluded by
       # the adjacency of "question" to the negated copula.
@@ -3490,7 +3564,8 @@ module Sloplint
     Rule.new(
       id: "less-about-more-about",
       category: "false-correction",
-      severity: "info",
+      severity: "warning",
+      confidence: "medium",
       # The full frame is required at both ends. Bare "less about" and bare
       # "more about" are ordinary English on their own, and the subject slot
       # is limited to the pronouns so that a sentence with a real subject --
@@ -3517,7 +3592,8 @@ module Sloplint
     Rule.new(
       id: "trailing-significance-participle",
       category: "puffery",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       # The verb list is closed and short on purpose. Wikipedia's "signs of AI
       # writing" names eight watch words for this construction; half of them
       # did not survive probing. In 1.85M words of pre-2022 Hacker News and
@@ -3595,8 +3671,8 @@ module Sloplint
     Rule.new(
       id: "trailing-restatement",
       category: "closer",
-      severity: "info",
-      default_on: false,
+      severity: "warning",
+      confidence: "low",
       # The restating tail: "…, which means working through the process
       # rather than around it". A regex sees the connective and not whether
       # the tail says the head again, and the sentence that prompted the rule
@@ -3687,7 +3763,8 @@ module Sloplint
     Rule.new(
       id: "vague-attribution",
       category: "false-concession",
-      severity: "warning",
+      severity: "error",
+      confidence: "high",
       pattern: /\bsome\s+(?:critics|experts|observers|scholars|analysts)\s+(?:argue|say|believe|contend|maintain)\b|\bit\s+is\s+widely\s+(?:regarded|considered|seen|believed|acknowledged)\b|\bmany\s+would\s+argue\b/i,
       message: "Vague attribution ('some critics argue', 'it is widely…') — an AI hedging tell.",
       suggestion: "Name the source, or drop the appeal to unnamed authority.",

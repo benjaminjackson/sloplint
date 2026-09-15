@@ -5,7 +5,7 @@ require_relative "rules"
 module Sloplint
   # One match = one Note. See docs/SPEC.md "Note".
   Note = Data.define(
-    :path, :line, :column, :severity, :rule, :category,
+    :path, :line, :column, :severity, :confidence, :rule, :category,
     :message, :excerpt, :context, :count, :rationale, :suggestion
   )
 
@@ -32,7 +32,8 @@ module Sloplint
           message = count ? rule.message % { count: count } : rule.message
           notes << Note.new(
             path: path, line: line, column: column,
-            severity: rule.severity, rule: rule.id, category: rule.category,
+            severity: rule.severity, confidence: rule.confidence,
+            rule: rule.id, category: rule.category,
             message: message, excerpt: matched.gsub(/\s+/, " ").strip,
             context: context_for(source, m),
             count: count, rationale: rule.rationale, suggestion: rule.suggestion

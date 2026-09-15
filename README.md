@@ -66,12 +66,12 @@ The human-readable form drops `-o json`:
 
 ```
 $ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the point I keep making about it.\n' | sloplint check -
--:1:17: warning rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
+-:1:17: error rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
     excerpt: The report is a [rich tapestry] of vibrant detail. That is exactly the…
     why: 'tapestry of' is one of the most reliable single-phrase model tells.
     fix: Cut the metaphor; name the actual things.
 
--:1:34: warning puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
+-:1:34: error puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
     excerpt: The report is a rich tapestry of [vibrant] detail. That is exactly the point I…
     why: Travel-brochure adjectives and phrases that models reach for and careful writers avoid.
     fix: Replace with a concrete, specific detail or cut it.
@@ -107,7 +107,7 @@ version      print the sloplint version
 
 ```
 $ sloplint explain no-x-no-y
-no-x-no-y  (cadence, warning)
+no-x-no-y  (cadence, warning, high confidence)
 
 "No X, no Y" chain (%{count} items) reads as AI cadence.
 
@@ -128,6 +128,7 @@ One match is one note. JSON output is an array of these, or an object keyed by p
   "line": 12,
   "column": 5,
   "severity": "warning",
+  "confidence": "high",
   "rule": "no-x-no-y",
   "category": "cadence",
   "message": "\"No X, no Y\" chain (3 items) reads as AI cadence.",
@@ -139,7 +140,7 @@ One match is one note. JSON output is an array of these, or an object keyed by p
 }
 ```
 
-`line` and `column` are 1-indexed and point at the start of the match. `excerpt` is the bare match; `context` is the same match bracketed inside about 40 characters of surrounding prose, which is what you want when the match is a single word or a lone em dash. A match already 40 characters long carries its own context, so `context` returns it alone rather than padding it further. `count` appears only when the rule tallies items (a "no X, no Y" chain, a "did not, did not" chain). `rationale` is why the pattern is a tell — the same text `sloplint explain` prints — so an agent deciding whether an `info` flag is worth acting on doesn't have to run `explain` separately to find out. `suggestion` is a short fix hint.
+`severity` is what the construct costs the prose; `confidence` is how likely the match is a false positive. The two are separate, so a cheap tell we are sure about and an expensive one we are guessing at no longer collapse into the same word. `line` and `column` are 1-indexed and point at the start of the match. `excerpt` is the bare match; `context` is the same match bracketed inside about 40 characters of surrounding prose, which is what you want when the match is a single word or a lone em dash. A match already 40 characters long carries its own context, so `context` returns it alone rather than padding it further. `count` appears only when the rule tallies items (a "no X, no Y" chain, a "did not, did not" chain). `rationale` is why the pattern is a tell — the same text `sloplint explain` prints — so an agent deciding whether a flag is worth acting on doesn't have to run `explain` separately to find out. `suggestion` is a short fix hint.
 
 ## Exit codes
 
@@ -158,22 +159,22 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 80 rules across nine categories, each named for the rhetorical move the construct makes. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
 - **self-rating** (15) the writer grades their own prose or claim: `clean-x`, `clean-count`, `cleanest-x`, `cleanly`, `honest-x`, `most-honest-x`, `honestly` (the honesty family, built the same way as the four `clean` rules), `worth-naming`, `worth-saying-plainly`, `earns-its-place`, `does-a-lot-of-work`, `exact-exactly`, `genuinely` (off by default), `the-punchline-is`, `announced-takeaway`.
-- **closer** (12) closes by restating or announcing the point: `thats-the-whole`, `is-the-whole-x` (the same closer on any subject: "Consistency is the real test.", at `info`), `is-the-entire`, `the-entire-is`, `thats-how-x`, `thats-the-tension`, `right-up-until`, `and-nothing-else` (the trailing "…, and nothing else"), `nothing-else-frag`, `bare-equative` ("The lesson is the handoff.", at `info`), `trailing-restatement` (the "…, which means …" tail that says the sentence again, off by default), `and-what-it-should` (the elliptical tail: "…, and what it should.").
-- **cadence** (17) rhythm: repetition, parallelism, and the long-then-short kicker: `no-x-no-y`, `no-x-no-y-frag`, `did-not-x-did-not-y`, `one-x-one-y` ("one reviewer, one queue, one deadline"), `from-x-to-y-chain` ("from guessing to measuring, from hoping to knowing"), `same-determiner-chain` (any other repeated determiner, at `info`), `real-x-real-y`, `epistrophe` (off by default), `phrase-echo` (off by default), `is-is` (doubled copula), `the-x-is-the-x` ("the problem with A is the problem with B"), `rule-of-three` (off by default), `everyone-nobody` (the comma-spliced antithesis: "Everyone wants the dashboard, nobody maintains it."), `short-run` (three sentences of thirty characters or fewer in a row, at `info`), `mic-drop-closer` (the short quantifier-led sentence that ends a paragraph after a long one, at `info`), `bare-auxiliary-closer` (the same shape, but the closer's verb is elided down to a bare auxiliary: "The agent did.", at `info`), `np-fragment-and` (the verbless "A named owner and a quarterly review.", at `info`).
-- **puffery** (8) inflates the subject: `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`, `impact-noun-vague` ("a significant impact", "make an impact"), `trailing-significance-participle` (the "…, showcasing its importance" clause), `abstract-lives-in` ("the value sits in the follow-up", at `info`).
+- **closer** (12) closes by restating or announcing the point: `thats-the-whole`, `is-the-whole-x` (the same closer on any subject: "Consistency is the real test.", at `medium` confidence), `is-the-entire`, `the-entire-is`, `thats-how-x`, `thats-the-tension`, `right-up-until`, `and-nothing-else` (the trailing "…, and nothing else"), `nothing-else-frag`, `bare-equative` ("The lesson is the handoff.", at `medium` confidence), `trailing-restatement` (the "…, which means …" tail that says the sentence again, off by default), `and-what-it-should` (the elliptical tail: "…, and what it should.").
+- **cadence** (17) rhythm: repetition, parallelism, and the long-then-short kicker: `no-x-no-y`, `no-x-no-y-frag`, `did-not-x-did-not-y`, `one-x-one-y` ("one reviewer, one queue, one deadline"), `from-x-to-y-chain` ("from guessing to measuring, from hoping to knowing"), `same-determiner-chain` (any other repeated determiner, at `medium` confidence), `real-x-real-y`, `epistrophe` (off by default), `phrase-echo` (off by default), `is-is` (doubled copula), `the-x-is-the-x` ("the problem with A is the problem with B"), `rule-of-three` (off by default), `everyone-nobody` (the comma-spliced antithesis: "Everyone wants the dashboard, nobody maintains it."), `short-run` (three sentences of thirty characters or fewer in a row, at `medium` confidence), `mic-drop-closer` (the short quantifier-led sentence that ends a paragraph after a long one, at `medium` confidence), `bare-auxiliary-closer` (the same shape, but the closer's verb is elided down to a bare auxiliary: "The agent did.", at `medium` confidence), `np-fragment-and` (the verbless "A named owner and a quarterly review.", at `medium` confidence).
+- **puffery** (8) inflates the subject: `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`, `impact-noun-vague` ("a significant impact", "make an impact"), `trailing-significance-participle` (the "…, showcasing its importance" clause), `abstract-lives-in` ("the value sits in the follow-up", at `medium` confidence).
 - **false-correction** (8) corrects a reading nobody offered: `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `not-by-x-but-by-y` ("not by luck, but by design"), `isnt-x-its-y` (the same corrective split across two clauses: "It isn't the tool. It's the habit."), `question-isnt` (the corrective frame in interrogative dress), `less-about-more-about`, `actually-not-x`, `dont-verb-it`.
 - **false-concession** (7) performs balance or candour and gives nothing up: `two-things-true`, `none-of-this-is-to-say`, `is-real-and-not`, `not-nothing`, `vague-attribution` ("some critics argue", "it is widely regarded"), `if-im-being-honest` (the candor preamble, from slopwash.com's "false intimacy"), `and-thats-fine`.
-- **reader-address** (6) instructs or flatters the reader: `you-already-know`, `sit-with-that`, `hold-onto-that`, `notice-what`, `notice-what-there`, `quip-question` (the verbless "No invite?", at `info`).
-- **borrowed-metaphor** (5) an engineering term applied to an argument: `load-bearing`, `failure-mode-here`, `intersection-of`, `impact-verb` ("the outage impacted four thousand accounts"), `impact-noun-bare` ("the impact of X", at `info` because research prose uses it straight).
+- **reader-address** (6) instructs or flatters the reader: `you-already-know`, `sit-with-that`, `hold-onto-that`, `notice-what`, `notice-what-there`, `quip-question` (the verbless "No invite?", at `medium` confidence).
+- **borrowed-metaphor** (5) an engineering term applied to an argument: `load-bearing`, `failure-mode-here`, `intersection-of`, `impact-verb` ("the outage impacted four thousand accounts"), `impact-noun-bare` ("the impact of X", at `medium` confidence because research prose uses it straight).
 - **punctuation** (2) the mark itself: `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph).
 
-Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.
+Every rule carries two ratings, and they answer different questions. **Severity** is what the construct costs the prose: `error` when the sentence is worse for it in any register (`rich-tapestry`, `puffery-words`, `vague-attribution`), `warning` when it dates the draft as model output but the sentence still says something, `info` when it is mostly harmless and worth knowing (`em-dash`). **Confidence** is how likely the match is a false positive: `high` when almost every hit is the real tell, `medium` when ordinary prose produces the same shape often enough that an agent should read the rationale first, `low` when the pattern cannot tell the tell from the ordinary use at all.
 
-Some tells come in a confident form and an ambiguous one, and those ship as a pair rather than as one rule stretched over both. `no-x-no-y` wants the comma chain a writer clearly authored; `no-x-no-y-frag` takes the same cadence built from sentence fragments, which ordinary prose also produces, and ships at `info`. Same with `not-just-x-but-y` and `not-x-but-y`, and with `notice-what-there` and `notice-what`. The quiet half is still worth flagging — an agent that reads the rationale can judge — but it should not carry the same weight as the half we're sure about.
+The two used to be one word, so a cheap tell we were sure about and an expensive one we were guessing at both came out as `warning`. They no longer do. `error` is in use: the puffery family, the tautology closers, and the self-ranking superlatives all cost the sentence something wherever they appear, however sure or unsure we are of the match.
 
-`and-nothing-else` and `nothing-else-frag` are a pair of the same shape, but both ship at `warning`. That is a deliberate exception: the fragment half carries a capital letter and a whole-sentence requirement that the comma half has no equivalent of, so it is the *narrower* of the two rather than the quieter one.
+Some tells come in a confident form and an ambiguous one, and those ship as a pair rather than as one rule stretched over both. `no-x-no-y` wants the comma chain a writer clearly authored; `no-x-no-y-frag` takes the same cadence built from sentence fragments, which ordinary prose also produces, so it ships at `medium` confidence. Same with `not-just-x-but-y` and `not-x-but-y`, and with `notice-what-there` and `notice-what`. The quiet half is still worth flagging — an agent that reads the rationale can judge — but it should not carry the same weight as the half we're sure about. `and-nothing-else` and `nothing-else-frag` are a pair of the same shape and both sit at `high`, because the fragment half carries a capital letter and a whole-sentence requirement that the comma half has no equivalent of, so it is the narrower of the two rather than the quieter one.
 
-Five rules ship **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three single words in a comma series closing a sentence, which humans do all the time; the closing two items must be single words, so a triad of phrases does not match, because a regex cannot tell one from an ordinary list. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined. Naming a category in `--select` only turns on that category's default-on rules; naming the rule's own id, or passing `--strict`, is what turns on an off-by-default rule. `sloplint rules --json` lists every rule's `rationale` alongside its `default_on` flag, so an agent can tell which rules are off by default without reading this file.
+The five `low` rules are the ones that run **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three single words in a comma series closing a sentence, which humans do all the time; the closing two items must be single words, so a triad of phrases does not match, because a regex cannot tell one from an ordinary list. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined. Naming a category in `--select` only turns on that category's non-low rules; naming the rule's own id, or passing `--strict`, is what turns a low-confidence rule on. `sloplint rules --json` lists every rule's `severity`, `confidence` and `rationale`, so an agent can tell which rules are off by default without reading this file.
 
 ### Markdown handling
 
@@ -187,13 +188,13 @@ Rules are data, not code. Each is a `Data.define` object in `lib/sloplint/rules.
 Rule.new(
   id:           "rule-id",
   category:     "cadence",                     # one of the nine in the catalog above
-  severity:     "warning",                     # or info
+  severity:     "warning",                     # what it costs the prose: error, warning, info
+  confidence:   "high",                        # false-positive risk: high, medium, low
   pattern:      /.../i,
   message:      "What the reader sees. %{count} interpolates the tally.",
   suggestion:   "One short fix hint.",
   count_group:  /.../i,                        # optional: a regex tallied over the match
   skip:         [/.../i],                      # optional: drop the note if these match
-  default_on:   false,                         # optional: runs only when named in --select
   examples_bad: ["A sentence the rule must flag."],
   examples_ok:  ["A sentence it must leave alone."],
   rationale:    "Why this is a tell, and what it costs when it's wrong."

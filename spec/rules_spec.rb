@@ -6,14 +6,25 @@ RSpec.describe "Sloplint::RULES" do
     expect(ids).to eq(ids.uniq)
   end
 
-  it "uses only known categories and severities" do
+  it "uses only known categories, severities and confidences" do
     categories = %w[self-rating closer cadence puffery false-correction
                     false-concession reader-address borrowed-metaphor punctuation]
     severities = %w[error warning info]
+    confidences = %w[high medium low]
     Sloplint::RULES.each do |rule|
       expect(categories).to include(rule.category), "#{rule.id} category"
       expect(severities).to include(rule.severity), "#{rule.id} severity"
+      expect(confidences).to include(rule.confidence), "#{rule.id} confidence"
     end
+  end
+
+  # Severity is what the construct costs the prose; confidence is how likely a
+  # match is a false positive. Only the low-confidence rules stay out of the
+  # default run, so pin exactly which five they are.
+  it "keeps the low-confidence set to the five rules that earn it" do
+    low = Sloplint::RULES.select { |r| r.confidence == "low" }.map(&:id)
+    expect(low).to contain_exactly("epistrophe", "phrase-echo", "genuinely",
+                                   "rule-of-three", "trailing-restatement")
   end
 
   # Every category names a rhetorical move, and the split is what the whole
