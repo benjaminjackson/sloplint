@@ -3,6 +3,56 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed (breaking)
+
+- The four old categories are gone: `rhetorical-tic`, `structure`, `puffery`
+  and `hedging`. Nine new categories replace them, each named for the move
+  the construct makes: `self-rating` (the writer grades their own prose or
+  claim), `closer` (closes by restating or announcing the point), `cadence`
+  (rhythm: repetition, parallelism, the long-then-short kicker), `puffery`
+  (inflates the subject), `false-correction` (corrects a reading nobody
+  offered), `false-concession` (performs balance or candor and gives nothing
+  up), `reader-address` (instructs or flatters the reader),
+  `borrowed-metaphor` (an engineering term applied to an argument), and
+  `punctuation` (the mark itself). Every note, `--select`, and `--ignore` now
+  use these nine names; the four old names are gone, not aliased, so a
+  script still passing one gets a usage error instead of a silent no-op.
+- The rule `ellipsis-closer` is renamed `bare-auxiliary-closer`. Nothing
+  about its pattern, message, or fixtures changed, only the id.
+- `severity` now rates only what the construct costs the prose (`error`,
+  `warning`, `info`). A new field, `confidence`, rates how likely a match is
+  a false positive (`high`, `medium`, `low`), and a `low` rule replaces what
+  used to be `default_on: false` — it stays out of a normal run and needs
+  `--strict` or its own id named directly to turn on.
+- `sloplint rules --json` drops the `default_on` field and adds `confidence`
+  and `rationale` for every rule. Each note in `check` output also gains a
+  `confidence` field alongside `severity`.
+- `--select <category>` no longer turns on that category's low-confidence
+  rules. Naming a category now selects only its default-on rules; to run a
+  low-confidence rule, pass `--strict` or name the rule's own id.
+
+### Fixed
+
+- The test suite failed with no locale set, because `spec/plugin_spec.rb`
+  read files without forcing UTF-8. Fixed to read as UTF-8 regardless of the
+  environment's locale.
+- The README and SPEC quoted an outdated rationale for `no-x-no-y` and an
+  outdated sample of `sloplint check` output. Both are corrected and now
+  pinned by tests, so a future drift between the docs and the code fails the
+  build instead of sitting unnoticed.
+- SPEC's description of the `Rule` model and of the package's file layout
+  had fallen out of step with the code. Both are corrected to match.
+- `--help` was missing `count` from its list of note keys, even though a
+  note already includes it for rules that tally items. Added.
+
+### Added
+
+- A test asserting that no rule id ever matches a category name, since
+  `--select` and `--ignore` resolve a name against both and a collision
+  would make one shadow the other.
+
 ## [0.7.0] - 2026-09-15
 
 ### Added
