@@ -15,6 +15,10 @@ RSpec.describe "Sloplint::RULES" do
     end
   end
 
+  it "has no rule id that collides with a category name, since --select and --ignore resolve a ref against both (unknown_rule_refs/select_rules in lib/sloplint/cli.rb)" do
+    expect(Sloplint::RULES.map(&:id) & Sloplint::RULES.map(&:category)).to be_empty
+  end
+
   Sloplint::RULES.each do |rule|
     describe rule.id do
       it "ships at least one bad and one ok fixture" do
