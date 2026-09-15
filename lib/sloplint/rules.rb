@@ -3199,7 +3199,7 @@ module Sloplint
                  "warning, and the fix is usually to delete the closer outright."
     ),
     Rule.new(
-      id: "ellipsis-closer",
+      id: "bare-auxiliary-closer",
       category: "structure",
       severity: "info",
       # The same long-sentence-then-short-closer shape as mic-drop-closer,
