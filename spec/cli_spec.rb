@@ -243,6 +243,19 @@ RSpec.describe Sloplint::CLI do
     end
   end
 
+  describe "--strict" do
+    it "runs the off-by-default rules" do
+      _, out = run(["-o", "json", "check", "--strict", "-"], stdin_text: "It was fast, cheap, and simple.")
+      expect(JSON.parse(out).map { |n| n["rule"] }).to include("rule-of-three")
+    end
+
+    it "still honours --ignore" do
+      _, out = run(["-o", "json", "check", "--strict", "--ignore", "rule-of-three", "-"],
+                   stdin_text: "It was fast, cheap, and simple.")
+      expect(JSON.parse(out).map { |n| n["rule"] }).not_to include("rule-of-three")
+    end
+  end
+
   describe "--markdown" do
     it "skips fenced and inline code" do
       text = "Here is code:\n\n```\nThat's the whole point.\n```\n\nUse `you already know` as a var."
