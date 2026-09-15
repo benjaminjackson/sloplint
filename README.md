@@ -101,6 +101,7 @@ version      print the sloplint version
 - `--markdown` skips fenced code, inline code, and URLs before scanning. Off by default so it never silently eats prose.
 - `--select IDS` runs only these rules. Accepts comma-separated rule ids or category names.
 - `--ignore IDS` skips these rules. Same id-or-category form.
+- `--strict` runs every rule, including the five that are off by default. `--ignore` still applies on top.
 
 `explain` is the command an agent calls to decide whether a flag is worth acting on:
 
@@ -167,7 +168,7 @@ Some tells come in a confident form and an ambiguous one, and those ship as a pa
 
 `and-nothing-else` and `nothing-else-frag` are a pair of the same shape, but both ship at `warning`. That is a deliberate exception: the fragment half carries a capital letter and a whole-sentence requirement that the comma half has no equivalent of, so it is the *narrower* of the two rather than the quieter one.
 
-Five rules ship **off by default**, and they run only when you name them: `sloplint check --select rule-of-three -`. `rule-of-three` flags three parallel comma items closing a sentence, which humans do all the time. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined.
+Five rules ship **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three parallel comma items closing a sentence, which humans do all the time. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined.
 
 ### Markdown handling
 

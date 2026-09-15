@@ -46,6 +46,7 @@ module Sloplint
     # ── check ───────────────────────────────────────────────────────────────
     def cmd_check(argv, opts, out:, err:, stdin:)
       markdown = false
+      strict = false
       select = nil
       ignore = nil
       p = OptionParser.new do |o|
@@ -55,6 +56,7 @@ module Sloplint
         o.on("--markdown", "Skip fenced/inline code spans and URLs before scanning.") { markdown = true }
         o.on("--select IDS", "Only run these rules (comma-separated rule ids or category names).") { |v| select = v.split(",").map(&:strip) }
         o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or category names).") { |v| ignore = v.split(",").map(&:strip) }
+        o.on("--strict", "Run every rule, including the ones that are off by default.") { strict = true }
       end
       p.order!(argv)
 
@@ -65,7 +67,7 @@ module Sloplint
         return 2
       end
 
-      rules = select_rules(select, ignore)
+      rules = select_rules(select, ignore, strict)
       paths = argv.empty? ? ["-"] : argv
       by_path = paths.reject { |x| x == "-" }.size > 1
 
@@ -190,9 +192,11 @@ module Sloplint
 
     # --select/--ignore accept rule ids or category names. Default set excludes
     # default_on:false rules unless they are explicitly selected.
-    def select_rules(select, ignore)
+    def select_rules(select, ignore, strict = false)
       rules = if select
         RULES.select { |r| select.include?(r.id) || select.include?(r.category) }
+      elsif strict
+        RULES
       else
         RULES.select(&:default_on)
       end
