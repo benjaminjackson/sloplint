@@ -41,8 +41,9 @@ so the source never needs to enter the repository.
 - **`examples_ok` may quote real prose, public domain only**, with the source
   named in a comment. The Moby-Dick and Federalist No. 44 fixtures are the model.
   A common idiom or a title is not a quotation and needs no such treatment.
-- **`rationale:` states frequencies, not quotations.** "24 hits in 1.02M words"
-  is the form.
+- **`rationale:` says why the construct reads as AI-written, not how it was
+  tested.** Corpus sizes and hit counts belong in the commit message, not the
+  shipped text.
 - **A reference corpus of human prose must be public domain.** Copyrighted text
   can't be redistributed, so a corpus built from it can't live in the repo, and
   neither can the false-positive check that depends on it.
@@ -107,7 +108,7 @@ sloplint/
   lib/sloplint/cli.rb      # optparse, subcommands, exit codes
   lib/sloplint/rules.rb    # RULES: array of Rule (Data) objects — the catalog
   lib/sloplint/engine.rb   # Engine.scan(text, rules:, config:) -> [Note]
-  lib/sloplint/output.rb   # format_human / format_json / format_compact
+  lib/sloplint/output.rb   # format_human / format_json
 docs/
   SPEC.md                  # this file
 spec/
@@ -186,7 +187,7 @@ path when multiple files are scanned).
   "excerpt": "No fluff, no filler, no jargon",
   "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
   "count": 3,
-  "rationale": "Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length -- 24 hits in 1.02M words across Austen, Melville, Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.",
+  "rationale": "Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.",
   "suggestion": "Cut the chain or make it one plain sentence."
 }
 ```
@@ -215,10 +216,10 @@ built with `Data.define` (immutable value objects, Ruby 3.2+):
 ```ruby
 Rule = Data.define(
   :id, :category, :severity, :pattern, :message, :suggestion,
-  :examples_bad, :examples_ok, :count_group, :skip
+  :examples_bad, :examples_ok, :count_group, :skip, :rationale, :default_on
 ) do
   # sensible defaults for the optional fields
-  def initialize(count_group: nil, skip: [], **rest) = super
+  def initialize(count_group: nil, skip: [], rationale: nil, default_on: true, **rest) = super
 end
 
 RULES = [
@@ -261,7 +262,7 @@ already pure data: write one loader, point it at a JSON dir, done.
 
 Categories (for `--select`/`--ignore` by group):
 
-- `rhetorical-tic` — the cadence patterns (the user's list below)
+- `rhetorical-tic` — the cadence patterns
 - `puffery` — Wikipedia "words to watch" (boasts, vibrant, nestled, tapestry…)
 - `structure` — rule-of-three, "not just X but Y", "the question isn't X, it's Y", "less about X more about Y", the trailing significance participle, the trailing restatement, em dash, em-dash overuse
 - `hedging` — vague attribution ("some critics argue", "it is widely regarded")
@@ -272,7 +273,7 @@ false-positive risk, which none has demonstrated.
 
 ## Rule catalog (v1)
 
-### rhetorical-tic (from the request)
+### rhetorical-tic
 
 | id | catches | notes |
 |----|---------|-------|
@@ -385,12 +386,17 @@ This is a first-class requirement, not an afterthought.
   # Recommended for agents:
   cat FILE | sloplint check --markdown -o json -
   # exit 0 = clean, 1 = notes found, >1 = error
-  # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion}
+  # each note: {path,line,column,severity,rule,category,message,excerpt,context,rationale,suggestion,count}
+  # (count is present only for the rules that tally items)
   ```
 
 - Every option has a full-sentence help string (no telegraphic fragments).
 - `sloplint rules` prints the catalog: id, category, severity, one-line
-  description — and with `--json`, the machine version an agent can enumerate.
+  description — and with `--json`, the machine version an agent can enumerate,
+  including each rule's `rationale` and `default_on` flag.
+- Naming a category in `check --select` runs only that category's default-on
+  rules; naming a rule's own id runs it regardless, and `--strict` turns on
+  the whole catalog including every off-by-default rule.
 - `sloplint explain no-x-no-y` prints the rule's message, rationale, a bad
   example and an ok (non-matching) example. Agents call this to decide whether a
   flag is worth acting on.

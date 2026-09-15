@@ -76,8 +76,8 @@ $ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the 
     why: Travel-brochure adjectives and phrases that models reach for and careful writers avoid.
     fix: Replace with a concrete, specific detail or cut it.
 
--:2:9: info exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
-    excerpt: …tapestry of vibrant detail. That is [exactly] the point I keep making about it.
+-:2:1: info exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
+    excerpt: …is a rich tapestry of vibrant detail. [That is exactly] the point I keep making about it.
     why: Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to check; it earns its place only next to a number, a name, or a stated identity.
     fix: Cut it, or replace with the number, name, or match it's supposed to be precise about.
 ```
@@ -111,7 +111,7 @@ no-x-no-y  (rhetorical-tic, warning)
 
 "No X, no Y" chain (%{count} items) reads as AI cadence.
 
-Why: Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length -- 24 hits in 1.02M words across Austen, Melville, Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.
+Why: Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.
 Fix: Cut the chain or make it one plain sentence.
 
 Flags:    No fluff, no filler, no jargon.
@@ -134,7 +134,7 @@ One match is one note. JSON output is an array of these, or an object keyed by p
   "excerpt": "No fluff, no filler, no jargon",
   "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
   "count": 3,
-  "rationale": "Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length -- 24 hits in 1.02M words across Austen, Melville, Madison, Thoreau, and Emerson combined. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.",
+  "rationale": "Asyndetic negation chains are a signature model cadence, near-absent from human prose at any length. A careful writer occasionally stacks two (and, rarely, more), but a model reaches for the pattern constantly.",
   "suggestion": "Cut the chain or make it one plain sentence."
 }
 ```
@@ -168,7 +168,7 @@ Some tells come in a confident form and an ambiguous one, and those ship as a pa
 
 `and-nothing-else` and `nothing-else-frag` are a pair of the same shape, but both ship at `warning`. That is a deliberate exception: the fragment half carries a capital letter and a whole-sentence requirement that the comma half has no equivalent of, so it is the *narrower* of the two rather than the quieter one.
 
-Five rules ship **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three single words in a comma series closing a sentence, which humans do all the time; the closing two items must be single words, so a triad of phrases does not match, because a regex cannot tell one from an ordinary list. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined.
+Five rules ship **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three single words in a comma series closing a sentence, which humans do all the time; the closing two items must be single words, so a triad of phrases does not match, because a regex cannot tell one from an ordinary list. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined. Naming a category in `--select` only turns on that category's default-on rules; naming the rule's own id, or passing `--strict`, is what turns on an off-by-default rule. `sloplint rules --json` lists every rule's `rationale` alongside its `default_on` flag, so an agent can tell which rules are off by default without reading this file.
 
 ### Markdown handling
 

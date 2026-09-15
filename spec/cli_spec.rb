@@ -395,6 +395,32 @@ RSpec.describe Sloplint::CLI do
     end
   end
 
+  # README.md quotes a sample note and a sample check run. Nothing regenerates
+  # either one, so a change to a rule's rationale or to the human-readable
+  # output format goes stale in the README the moment it ships. Pin both.
+  describe "the README examples" do
+    readme = File.read(File.expand_path("../README.md", __dir__), encoding: "UTF-8")
+
+    it "quotes the current no-x-no-y rationale in its sample JSON note" do
+      json_block = readme[/```json\n(\{.*?\})\n```/m, 1]
+      note = JSON.parse(json_block)
+      rule = Sloplint::RULES.find { |r| r.id == "no-x-no-y" }
+      expect(note["rationale"]).to eq(rule.rationale)
+    end
+
+    it "shows the real output for its sample check run" do
+      match = readme.match(/```\n\$ printf '(.*)' \| sloplint check -\n(.*?)```/m)
+      raise "sample check block not found in README" unless match
+
+      input = match[1].gsub('\n', "\n")
+      expected_output = match[2]
+
+      code, out = run(["check", "-"], stdin_text: input)
+      expect(code).to eq(1)
+      expect(out).to eq(expected_output)
+    end
+  end
+
   describe "slop fixture integration" do
     it "flags a known set of rules" do
       fixture = File.join(__dir__, "fixtures", "slop.md")
