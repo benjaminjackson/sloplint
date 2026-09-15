@@ -241,6 +241,18 @@ RSpec.describe Sloplint::CLI do
       _, selected_out = run(["-o", "json", "check", "--select", "rule-of-three", "-"], stdin_text: text)
       expect(JSON.parse(selected_out).map { |n| n["rule"] }).to include("rule-of-three")
     end
+
+    it "selecting a category runs only that category's default-on rules, not rule-of-three" do
+      text = "It was fast, cheap, and simple."
+      _, out = run(["-o", "json", "check", "--select", "structure", "-"], stdin_text: text)
+      expect(JSON.parse(out).map { |n| n["rule"] }).not_to include("rule-of-three")
+    end
+
+    it "selecting rule-of-three by id runs it even though its category is not fully selected" do
+      text = "It was fast, cheap, and simple."
+      _, out = run(["-o", "json", "check", "--select", "rule-of-three", "-"], stdin_text: text)
+      expect(JSON.parse(out).map { |n| n["rule"] }).to include("rule-of-three")
+    end
   end
 
   describe "--strict" do
@@ -253,6 +265,12 @@ RSpec.describe Sloplint::CLI do
       _, out = run(["-o", "json", "check", "--strict", "--ignore", "rule-of-three", "-"],
                    stdin_text: "It was fast, cheap, and simple.")
       expect(JSON.parse(out).map { |n| n["rule"] }).not_to include("rule-of-three")
+    end
+
+    it "with --select and a category, includes the category's off-by-default rules too" do
+      _, out = run(["-o", "json", "check", "--strict", "--select", "structure", "-"],
+                   stdin_text: "It was fast, cheap, and simple.")
+      expect(JSON.parse(out).map { |n| n["rule"] }).to include("rule-of-three")
     end
   end
 
@@ -314,6 +332,13 @@ RSpec.describe Sloplint::CLI do
       expect(data.map { |r| r["id"] }).to include("rich-tapestry")
     end
 
+    it "carries each rule's rationale in the json catalog" do
+      _, out = run(["rules", "--json"])
+      data = JSON.parse(out)
+      rule = Sloplint::RULES.find { |r| r.id == "rich-tapestry" }
+      expect(data.find { |r| r["id"] == "rich-tapestry" }["rationale"]).to eq(rule.rationale)
+    end
+
     it "explains a rule" do
       code, out = run(["explain", "no-x-no-y"])
       expect(code).to eq(0)
@@ -347,6 +372,11 @@ RSpec.describe Sloplint::CLI do
       code, out = run(["--help"])
       expect(code).to eq(0)
       expect(out).to include("Recommended for agents")
+    end
+
+    it "--help lists count among the note keys" do
+      _, out = run(["--help"])
+      expect(out).to include("count")
     end
 
     # optparse auto-registers a built-in "--version" switch (Officious) on any
