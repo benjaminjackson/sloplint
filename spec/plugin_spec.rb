@@ -9,7 +9,7 @@ RSpec.describe "the Claude Code plugin" do
   ROOT = File.expand_path("..", __dir__)
 
   def read_json(relative)
-    JSON.parse(File.read(File.join(ROOT, relative)))
+    JSON.parse(File.read(File.join(ROOT, relative), encoding: "UTF-8"))
   end
 
   it "declares the same version as the gem" do
@@ -26,7 +26,7 @@ RSpec.describe "the Claude Code plugin" do
   it "keeps the check skill where /sloplint:check resolves" do
     path = File.join(ROOT, "skills/check/SKILL.md")
     expect(File).to exist(path)
-    expect(File.read(path)).to match(/^name: check$/)
+    expect(File.read(path, encoding: "UTF-8")).to match(/^name: check$/)
   end
 
   it "has no top-level bin/ directory" do
@@ -41,7 +41,7 @@ RSpec.describe "the Claude Code plugin" do
     # A reworded skill that drops this invites Claude to read the draft and
     # answer from its own judgment, in the format the skill asked for. The
     # reader then believes a linter cleared the writing. Nothing else notices.
-    body = File.read(File.join(ROOT, "skills/check/SKILL.md"))
+    body = File.read(File.join(ROOT, "skills/check/SKILL.md"), encoding: "UTF-8")
     expect(body).to include("report only what it returns")
     expect(body).to include("never present your own judgment as sloplint's findings")
   end
