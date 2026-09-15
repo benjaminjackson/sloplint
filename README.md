@@ -60,7 +60,7 @@ The recipe sloplint is built around, and the one an agent should use:
 cat draft.md | sloplint check --markdown -o json -
 ```
 
-`--markdown` blanks out code and URLs first, `-o json` emits the machine-readable form, and `-` reads stdin. Exit 0 means clean, 1 means notes found, anything higher is an error. `check` is the default command, so `sloplint draft.md`, `sloplint -`, and a bare `sloplint` with piped stdin all scan.
+`--markdown` blanks out code, HTML comments, and URLs first, `-o json` emits the machine-readable form, and `-` reads stdin. Exit 0 means clean, 1 means notes found, anything higher is an error. `check` is the default command, so `sloplint draft.md`, `sloplint -`, and a bare `sloplint` with piped stdin all scan.
 
 The human-readable form drops `-o json`:
 
@@ -98,7 +98,7 @@ version      print the sloplint version
 
 `check` takes files as arguments, or `-` (or nothing) to read stdin, and these options:
 
-- `--markdown` skips fenced code, inline code, and URLs before scanning. Off by default so it never silently eats prose.
+- `--markdown` skips fenced code, inline code, HTML comments, and URLs before scanning. Off by default so it never silently eats prose.
 - `--select IDS` runs only these rules. Accepts comma-separated rule ids or category names.
 - `--ignore IDS` skips these rules. Same id-or-category form.
 - `--strict` runs every rule, including the five that are off by default. `--ignore` still applies on top.
@@ -168,11 +168,11 @@ Some tells come in a confident form and an ambiguous one, and those ship as a pa
 
 `and-nothing-else` and `nothing-else-frag` are a pair of the same shape, but both ship at `warning`. That is a deliberate exception: the fragment half carries a capital letter and a whole-sentence requirement that the comma half has no equivalent of, so it is the *narrower* of the two rather than the quieter one.
 
-Five rules ship **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three parallel comma items closing a sentence, which humans do all the time. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined.
+Five rules ship **off by default**. They run when you name them — `sloplint check --select rule-of-three -` — or when you pass `--strict`, which turns the whole catalog on. `rule-of-three` flags three single words in a comma series closing a sentence, which humans do all the time; the closing two items must be single words, so a triad of phrases does not match, because a regex cannot tell one from an ordinary list. `genuinely` flags every occurrence of the word; as an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two. `epistrophe` flags two clauses ending on the same phrase, a named figure that careful writers use on purpose and that, on Hacker News, is mostly plain phrase reuse. `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"); the connective is visible and the restatement is not, so a real consequence flags the same way. `phrase-echo` flags a three-word phrase that comes back within a few hundred words; a term of art comes back because it must, and the pattern cannot tell one from a phrase the writer coined.
 
 ### Markdown handling
 
-`--markdown` replaces fenced code, inline code, and URLs with same-length whitespace before scanning, so line and column stay correct. Without it, sloplint treats the whole file as prose and will flag text inside your code fences. Pass `--markdown` whenever the input is Markdown.
+`--markdown` replaces fenced code, inline code, HTML comments, and URLs with same-length whitespace before scanning, so line and column stay correct. Without it, sloplint treats the whole file as prose and will flag text inside your code fences. Pass `--markdown` whenever the input is Markdown.
 
 ## Adding a rule
 

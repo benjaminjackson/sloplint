@@ -14,7 +14,7 @@ module Sloplint
 
     module_function
 
-    # text: the source. rules: which Rule objects to run. markdown: blank code/URLs first.
+    # text: the source. rules: which Rule objects to run. markdown: blank code, HTML comments and URLs first.
     # path: label carried into each Note (e.g. filename or "-" for stdin).
     def scan(text, rules: RULES, markdown: false, path: "-")
       source = text
@@ -95,14 +95,13 @@ module Sloplint
       starts
     end
 
-    # Replace fenced code, inline code, and URLs with same-length whitespace so
-    # line/column stay correct. Newlines are preserved.
+    # Replace fenced code, HTML comments, inline code, and URLs with same-length
+    # whitespace so line/column stay correct. Newlines are preserved. One pass
+    # with one alternation, so whichever construct opens first is the one that
+    # gets consumed: a `<!--` quoted inside backticks is inline code, and a
+    # backtick inside a comment is part of the comment.
     def blank_markdown(text)
-      blank = lambda { |s| s.gsub(/[^\n]/, " ") }
-      text
-        .gsub(/```.*?```/m) { |s| blank.call(s) }   # fenced code
-        .gsub(/`[^`\n]*`/) { |s| blank.call(s) }    # inline code
-        .gsub(%r{https?://\S+}) { |s| blank.call(s) } # bare URLs
+      text.gsub(/```.*?```|<!--.*?-->|`[^`\n]*`|https?:\/\/\S+/m) { |s| s.gsub(/[^\n]/, " ") }
     end
   end
 end

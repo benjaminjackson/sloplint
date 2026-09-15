@@ -53,7 +53,7 @@ module Sloplint
         o.banner = "usage: sloplint check [options] [paths...]  (\"-\" or no paths = stdin)"
         o.on("-o", "--output-format FORMAT", %w[full json],
              "Output format: 'full' or 'json' (may also be given before the command).") { |v| opts[:format] = v }
-        o.on("--markdown", "Skip fenced/inline code spans and URLs before scanning.") { markdown = true }
+        o.on("--markdown", "Skip fenced/inline code spans, HTML comments, and URLs before scanning.") { markdown = true }
         o.on("--select IDS", "Only run these rules (comma-separated rule ids or category names).") { |v| select = v.split(",").map(&:strip) }
         o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or category names).") { |v| ignore = v.split(",").map(&:strip) }
         o.on("--strict", "Run every rule, including the ones that are off by default.") { strict = true }
