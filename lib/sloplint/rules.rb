@@ -2919,11 +2919,17 @@ module Sloplint
       severity: "info",
       default_on: false,
       pattern: /\b[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
-      message: "Three parallel comma items closing a sentence (heuristic; high false-positive).",
+      message: "Three single words in a comma series closing a sentence (heuristic; high false-positive).",
       suggestion: "Fine in moderation; watch for the AI habit of ending on triplets.",
       examples_bad: ["It was fast, cheap, and simple."],
-      examples_ok: ["We met on Tuesday afternoon."],
-      rationale: "Rule-of-three endings are a model habit, but humans use them too — off by default."
+      examples_ok: [
+        "We met on Tuesday afternoon.",
+        # Phrasal items do not match; the closing two slots take one word each.
+        "It was very fast, very cheap, and very simple."
+      ],
+      rationale: "Rule-of-three endings are a model habit, but humans use them too — off by default. " \
+                 "The closing two items must be single words; a triad of phrases is three ordinary " \
+                 "list items to a regex, so those are left unflagged rather than guessed at."
     ),
     # clause-triad-then was cut. The pattern (comma-clause, comma-clause,
     # "then" clause) had no way to require the clauses actually be parallel

@@ -257,6 +257,13 @@ RSpec.describe Sloplint::CLI do
   end
 
   describe "--markdown" do
+    it "skips HTML comments" do
+      text = "Fine sentence.\n\n<!--\nIt isn't a budget, it's a ceiling.\n-->\n\nAnother fine sentence."
+      code, out = run(["check", "--markdown", "-"], stdin_text: text)
+      expect(code).to eq(0)
+      expect(out).not_to include("isnt-x-its-y")
+    end
+
     it "skips fenced and inline code" do
       text = "Here is code:\n\n```\nThat's the whole point.\n```\n\nUse `you already know` as a var."
       code, out = run(["check", "--markdown", "-"], stdin_text: text)

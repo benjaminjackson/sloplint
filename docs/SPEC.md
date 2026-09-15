@@ -138,7 +138,7 @@ global options:
 
 check options:
   paths ...            files to scan; "-" or no paths reads stdin
-  --markdown           skip fenced/inline code spans
+  --markdown           skip fenced/inline code spans, HTML comments, and URLs
   --select IDS         only run these rules (comma-separated ids or categories)
   --ignore IDS         skip these rules
   --strict             run every rule, including the off-by-default ones
@@ -166,7 +166,7 @@ Three codes carry the contract. A crash just exits nonzero on its own.
 
 Empty or whitespace-only input is exit 2, like a mistyped rule id: a scan of
 nothing must not report as a clean scan. The text is tested before
-`--markdown` blanks code and URLs, so a file that holds only a fenced code
+`--markdown` blanks code, HTML comments, and URLs, so a file that holds only a fenced code
 block still exits 0. Only when every source is empty.
 
 ## Note (the diagnostic object)
@@ -360,7 +360,7 @@ Single flat rule per word-cluster, matched as whole words:
 - `less-about-more-about` — "it's/this is/that's less about X (and) more about Y", also "… than about Y"; `info`. Both halves of the frame are required, and the subject slot is limited to the pronouns.
 - `trailing-significance-participle` — comma plus a participle from a closed verb list (highlighting, showcasing, reinforcing, shaping, enhancing, cementing, solidifying, embodying, fostering, facilitating, signalling), the clause a model hangs off a sentence to say what a fact means. Guards drop gerund lists and "signalling to". `driving`, `representing`, `reflecting`, `marking`, `contributing`, `illustrating`, `demonstrating`, `emphasising`, `echoing` and `affirming` stay out: humans write them in the same position, usually with a person as the subject, and the pattern cannot see the subject. `underscoring` is left to `underscores-highlights`.
 - `trailing-restatement` — comma plus "which means", "which is to say", or "meaning" opening on one of a closed set of determiners and pronouns; or one of four participle frames with a pronoun object and a closing word ("making it easier", "allowing us to", "giving them more", "leaving you with"). The closer on "making" is a comparative that ends the clause or leads into "to", "for" or "than". Nothing before the comma is inspected, so a gloss ("_ma_, which means hand") matches; the bare participles ("leaving the door open") never do. Off by default: the pattern sees the connective, not whether the tail restates the head. `info`.
-- `rule-of-three` — three parallel comma items ending a sentence (heuristic; `info` severity, off by default; runs under `--select` or `--strict` since it false-positives).
+- `rule-of-three` — three single-word comma items ending a sentence (heuristic; `info` severity, off by default; runs under `--select` or `--strict` since it false-positives).
 - `em-dash` — any em dash; `info`.
 - `em-dash-overuse` — 3+ em dashes in one paragraph; `warning`.
 
@@ -370,8 +370,8 @@ Single flat rule per word-cluster, matched as whole words:
 
 ## Markdown handling
 
-`--markdown` blanks out fenced code (```` ``` ````), inline code (`` ` ``), and
-URLs before scanning, replacing them with same-length whitespace so line/column
+`--markdown` blanks out fenced code (```` ``` ````), inline code (`` ` ``), HTML
+comments (`<!-- -->`), and URLs before scanning, replacing them with same-length whitespace so line/column
 stay correct. Off by default (plain-text mode) so it never silently eats prose.
 
 ## Agent-first help text
