@@ -83,10 +83,9 @@ module Sloplint
     "|time|world|numbers?|roots?|money|estate|user"
 
   RULES = [
-    # ── rhetorical-tic ────────────────────────────────────────────────────
     Rule.new(
       id: "no-x-no-y",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "warning",
       # Comma chains only: "no fluff, no filler, no jargon". The comma is the
       # evidence -- it makes the parallelism deliberate. Fragment chains split
@@ -104,7 +103,7 @@ module Sloplint
     ),
     Rule.new(
       id: "no-x-no-y-frag",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "info",
       # The same cadence built from sentence fragments: "No fluff. No filler."
       # Ships at info, not warning, because the shape is genuinely ambiguous --
@@ -147,7 +146,7 @@ module Sloplint
     ),
     Rule.new(
       id: "thats-the-whole",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       # The nouns are WHOLE_CLOSERS. "value" and "fix" are the closers agents
       # write in technical prose ("That's the whole fix"), where the
@@ -198,7 +197,7 @@ module Sloplint
     ),
     Rule.new(
       id: "is-the-whole-x",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "info",
       # The generic form of thats-the-whole: a subject, then "is the whole /
       # real / actual / entire N" with N from a closed abstract list. "That
@@ -265,7 +264,7 @@ module Sloplint
     ),
     Rule.new(
       id: "bare-equative",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "info",
       # A sentence that opens on an abstract head noun and equates it with
       # something: "The tell here is the periodicity.", "The problem is not
@@ -322,7 +321,7 @@ module Sloplint
     ),
     Rule.new(
       id: "epistrophe",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "info",
       default_on: false,
       # Two clauses that end on the same two-word phrase, the second closing
@@ -374,7 +373,7 @@ module Sloplint
     ),
     Rule.new(
       id: "phrase-echo",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "info",
       default_on: false,
       # The same three words again a few paragraphs on. Three consecutive
@@ -458,7 +457,7 @@ module Sloplint
     ),
     Rule.new(
       id: "did-not-x-did-not-y",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "warning",
       pattern: /\b(?:did\s+not|didn't)\s+[\w'-]+(?:,?\s+(?:and\s+)?(?:did\s+not|didn't)\s+[\w'-]+)+/i,
       message: '"did not X, did not Y" chain (%{count} items) reads as AI cadence.',
@@ -470,7 +469,7 @@ module Sloplint
     ),
     Rule.new(
       id: "from-x-to-y-chain",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "warning",
       # Two or more "from X to Y" spans in a row, comma-separated: "from
       # private notes to shared files, from personal memory to team context".
@@ -546,7 +545,7 @@ module Sloplint
     ),
     Rule.new(
       id: "one-x-one-y",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "warning",
       # Three or more "one X" items in a comma chain that stands on its own:
       # "One owner, one repository, one weekly prune." or, after a colon,
@@ -617,7 +616,7 @@ module Sloplint
     ),
     Rule.new(
       id: "and-what-it-should",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       # The elliptical tail: "List what the assistant knows about the client,
       # and what it should." The second "what" clause borrows its verb from the
@@ -664,7 +663,7 @@ module Sloplint
     ),
     Rule.new(
       id: "abstract-lives-in",
-      category: "rhetorical-tic",
+      category: "puffery",
       severity: "info",
       # An abstraction given an address: "the craft that lives between the two
       # desks", "its context lives in a folder nobody else can open", "the
@@ -724,7 +723,7 @@ module Sloplint
     ),
     Rule.new(
       id: "the-x-is-the-x",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "warning",
       # The repeated-head equative: "the reason it holds up is the reason the
       # other half happens", "the problem with A is the problem with B". The
@@ -787,7 +786,7 @@ module Sloplint
     ),
     Rule.new(
       id: "same-determiner-chain",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "info",
       # The quiet cousin of one-x-one-y and no-x-no-y: three or more items in
       # a comma chain that all open on the same determiner or quantifier,
@@ -849,7 +848,7 @@ module Sloplint
     ),
     Rule.new(
       id: "dont-verb-it",
-      category: "rhetorical-tic",
+      category: "false-correction",
       severity: "warning",
       pattern: /\b(?:don't|do\s+not)\s+(\w+)\s+it\b[^.!?]*[.!?]\s*\1\s+it\b/i,
       message: '"Don\'t X it. X it Y." reframing is a stock LLM move.',
@@ -860,7 +859,7 @@ module Sloplint
     ),
     Rule.new(
       id: "sit-with-that",
-      category: "rhetorical-tic",
+      category: "reader-address",
       severity: "warning",
       # Two branches. The deictic object is the tic anywhere in a sentence, so
       # "sit with that/this/it" needs no anchor. Anything else needs the
@@ -892,7 +891,7 @@ module Sloplint
     ),
     Rule.new(
       id: "hold-onto-that",
-      category: "rhetorical-tic",
+      category: "reader-address",
       severity: "warning",
       # Sentence-initial imperative only. Past tense and subordinate clauses
       # ("she held on to that letter", "if you hold onto that phrase") are a
@@ -919,7 +918,7 @@ module Sloplint
     ),
     Rule.new(
       id: "cleanly",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "info",
       # The bare adverb was the whole rule, and the engineering idioms were
       # flagged on purpose. Technical prose says that was the wrong call: a
@@ -971,7 +970,7 @@ module Sloplint
     ),
     Rule.new(
       id: "clean-count",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # Needs a partition noun. The bare count reaches the laundry: Ulysses
       # has "four clean strokes", Jane Eyre "two clean tuckers".
@@ -998,7 +997,7 @@ module Sloplint
     ),
     Rule.new(
       id: "cleanest-x",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # Noun list only. "The cleanest way to install the driver" and "the
       # cleanest cut of meat" are ordinary English, so "way" is admitted only
@@ -1027,7 +1026,7 @@ module Sloplint
     ),
     Rule.new(
       id: "clean-x",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "info",
       # The quiet half of cleanest-x, at info because the positive degree is
       # where ordinary usage lives. "A clean separation of concerns" is
@@ -1057,7 +1056,7 @@ module Sloplint
     ),
     Rule.new(
       id: "you-already-know",
-      category: "rhetorical-tic",
+      category: "reader-address",
       severity: "warning",
       pattern: /\byou\s+already\s+know\b/i,
       message: '"You already know…" is a stock LLM rhetorical setup.',
@@ -1068,7 +1067,7 @@ module Sloplint
     ),
     Rule.new(
       id: "is-the-entire",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       pattern: /\bis\s+the\s+entire\s+(?:point|game|thing|business\s+model|deal|story)\b/i,
       message: '"X is the entire point/game/…" is an LLM emphasis tic.',
@@ -1079,7 +1078,7 @@ module Sloplint
     ),
     Rule.new(
       id: "the-entire-is",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       pattern: /\bthe\s+entire\s+(?:point|game|thing|business\s+model|deal|story)\s+is\b/i,
       message: '"The entire point/game/… is" is an LLM emphasis tic.',
@@ -1090,7 +1089,7 @@ module Sloplint
     ),
     Rule.new(
       id: "is-real-and-not",
-      category: "rhetorical-tic",
+      category: "false-concession",
       severity: "info",
       pattern: /\bis\s+real,?\s+(?:and|but|not)\b/i,
       message: '"The X is real, and…" is a stock LLM concession move.',
@@ -1112,7 +1111,7 @@ module Sloplint
     ),
     Rule.new(
       id: "real-x-real-y",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "info",
       # Ships at info, not warning: the only two hits the probe found in
       # 1.28M words were both false positives, and one corpus of one
@@ -1210,7 +1209,7 @@ module Sloplint
     ),
     Rule.new(
       id: "the-punchline-is",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # Same reveal, three nouns. "honest answer" and "honest version" join
       # "punchline" because they do the identical job: rate the sentence as
@@ -1236,7 +1235,7 @@ module Sloplint
     ),
     Rule.new(
       id: "worth-naming",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "info",
       # Widened to optionally include a trailing "names" so the "naming
       # names" idiom is part of the matched text -- skip: checks the matched
@@ -1274,7 +1273,7 @@ module Sloplint
     ),
     Rule.new(
       id: "worth-saying-plainly",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # Two branches, both sentence-initial.
       #
@@ -1327,7 +1326,7 @@ module Sloplint
     ),
     Rule.new(
       id: "not-nothing",
-      category: "rhetorical-tic",
+      category: "false-concession",
       severity: "warning",
       # Two branches: spelled-out copula with an optional captured subject, and
       # the contracted "X's not nothing". The optional subject + skip: is the
@@ -1382,7 +1381,7 @@ module Sloplint
 
     Rule.new(
       id: "exact-exactly",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "info",
       # Rewritten after 2.2M words of technical prose left ~111 of 125 hits
       # false. The shape was the problem, not the entries: the pattern matched
@@ -1489,7 +1488,7 @@ module Sloplint
     ),
     Rule.new(
       id: "load-bearing",
-      category: "rhetorical-tic",
+      category: "borrowed-metaphor",
       severity: "warning",
       # Two guards, both structural, over the same noun list so they can't
       # drift apart. Forward: a physical building part right after it is the
@@ -1539,7 +1538,7 @@ module Sloplint
     ),
     Rule.new(
       id: "intersection-of",
-      category: "rhetorical-tic",
+      category: "borrowed-metaphor",
       severity: "warning",
       # "at" is not load-bearing -- "explores the intersection of art and
       # technology" is the same move -- so the anchor is "the intersection of"
@@ -1626,7 +1625,7 @@ module Sloplint
     ),
     Rule.new(
       id: "impact-verb",
-      category: "rhetorical-tic",
+      category: "borrowed-metaphor",
       severity: "warning",
       # "impact" and "impacts" are also nouns, so they only count as verbs
       # behind an auxiliary or a subject pronoun. One optional pronoun may sit
@@ -1782,7 +1781,7 @@ module Sloplint
     ),
     Rule.new(
       id: "impact-noun-bare",
-      category: "rhetorical-tic",
+      category: "borrowed-metaphor",
       severity: "info",
       # Two shapes, each needing its own anchor: a measuring verb in front, or
       # "of" behind. That is what keeps the collision sense clear without a
@@ -1826,7 +1825,7 @@ module Sloplint
     ),
     Rule.new(
       id: "thats-how-x",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:that|this)(?:'s| is)\s+how\b/i,
       message: '"That\'s how…" opening a sentence is a stock LLM aphorism closer.',
@@ -1843,7 +1842,7 @@ module Sloplint
     ),
     Rule.new(
       id: "announced-takeaway",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       pattern: /(?:\A|[.!?]\s+|\n\s*\n)\s*(?:here'?s\s+)?the\s+(?:loop|pattern|trick|lesson|takeaway|playbook|framing|insight|kicker)\b[^.!?\n]{0,60}:/i,
       message: "Colon-led takeaway label announces the lesson before making it.",
@@ -1860,7 +1859,7 @@ module Sloplint
     ),
     Rule.new(
       id: "is-is",
-      category: "rhetorical-tic",
+      category: "cadence",
       severity: "warning",
       # No anchor needed -- the doubled copula alone scored 0 across ~1.9M words.
       # The comma is allowed because "What it is, is a mystery" grates the same
@@ -1896,7 +1895,7 @@ module Sloplint
 
     Rule.new(
       id: "earns-its-place",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # The possessive is the narrowing. "earned a place on the team" and
       # "earn a place in the final" are ordinary; "earns its place" is the
@@ -1921,7 +1920,7 @@ module Sloplint
     ),
     Rule.new(
       id: "does-a-lot-of-work",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # Two arms, both narrowed away from the ordinary sense.
       #
@@ -1954,7 +1953,7 @@ module Sloplint
     ),
     Rule.new(
       id: "failure-mode-here",
-      category: "rhetorical-tic",
+      category: "borrowed-metaphor",
       severity: "warning",
       # "here" is the whole narrowing, and it is doing a lot -- the bare "the
       # failure mode is" is ordinary engineering writing about real systems,
@@ -1981,7 +1980,7 @@ module Sloplint
     ),
     Rule.new(
       id: "thats-the-tension",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       # Sentence-initial, only two nouns, and the noun must end the clause.
       #
@@ -2015,7 +2014,7 @@ module Sloplint
     ),
     Rule.new(
       id: "right-up-until",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       # The intensifier is the tell, not the reversal. "It works until it
       # doesn't" is an old human idiom and stays clean; stacking "right up"
@@ -2041,7 +2040,7 @@ module Sloplint
     ),
     Rule.new(
       id: "two-things-true",
-      category: "rhetorical-tic",
+      category: "false-concession",
       severity: "warning",
       # Closed phrase, no anchor needed. The optional "both" and the optional
       # "at once" tail are the two ways the sentence is padded; the count word
@@ -2067,7 +2066,7 @@ module Sloplint
     ),
     Rule.new(
       id: "notice-what-there",
-      category: "rhetorical-tic",
+      category: "reader-address",
       severity: "warning",
       # The self-referential half of the attention cue: the sentence points
       # at the writing rather than at anything in the world. Two frames, both
@@ -2096,7 +2095,7 @@ module Sloplint
     ),
     Rule.new(
       id: "notice-what",
-      category: "rhetorical-tic",
+      category: "reader-address",
       severity: "info",
       # The ambiguous half of the pair, and it ships at info because the
       # sentence-initial imperative is also how people point at something
@@ -2128,7 +2127,7 @@ module Sloplint
     ),
     Rule.new(
       id: "none-of-this-is-to-say",
-      category: "rhetorical-tic",
+      category: "false-concession",
       severity: "warning",
       # Only the "none of" form. Every neighbouring phrasing is ordinary
       # English by an order of magnitude -- "which is not to say", "this is
@@ -2155,7 +2154,7 @@ module Sloplint
     ),
     Rule.new(
       id: "if-im-being-honest",
-      category: "rhetorical-tic",
+      category: "false-concession",
       severity: "info",
       # The "being honest" frame only. Plain "to be honest" and "I'll be
       # honest" are how people talk and are excluded. info, not warning:
@@ -2180,7 +2179,7 @@ module Sloplint
     ),
     Rule.new(
       id: "honestly",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # The manner adverb, the way "cleanly" is the manner adverb: hung on a
       # subject that cannot be honest. Two guards, no verb list.
@@ -2231,7 +2230,7 @@ module Sloplint
     ),
     Rule.new(
       id: "honest-x",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # The noun list is short on purpose, and the words left out are the
       # point. "An honest answer", "an honest assessment" and "an honest
@@ -2274,7 +2273,7 @@ module Sloplint
     ),
     Rule.new(
       id: "most-honest-x",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "warning",
       # The superlative frame carries the tell on its own, so this noun list is
       # wider than honest-x's -- "the most honest assessment" is self-ranking
@@ -2310,7 +2309,7 @@ module Sloplint
     ),
     Rule.new(
       id: "genuinely",
-      category: "rhetorical-tic",
+      category: "self-rating",
       severity: "info",
       # Off by default. There is no narrowing here: the word is ordinary
       # English at every frequency we measured, and the difference between
@@ -2339,7 +2338,7 @@ module Sloplint
     ),
     Rule.new(
       id: "actually-not-x",
-      category: "rhetorical-tic",
+      category: "false-correction",
       severity: "warning",
       # Two markers that each correct the reader, doubled up in one clause:
       # the adverb and the trailing "…, not X". Bare "actually" is not the
@@ -2405,7 +2404,7 @@ module Sloplint
     ),
     Rule.new(
       id: "and-thats-fine",
-      category: "rhetorical-tic",
+      category: "false-concession",
       severity: "info",
       # Three narrowings, and the rule needs all of them. "and" is required:
       # bare "that's fine" is a reply people write constantly. The match must
@@ -2430,7 +2429,7 @@ module Sloplint
     ),
     Rule.new(
       id: "and-nothing-else",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       # This rule is deliberately wide, and the cost is known. There is no verb
       # list and no imperative requirement, so the only narrowing is structural
@@ -2489,7 +2488,7 @@ module Sloplint
     ),
     Rule.new(
       id: "nothing-else-frag",
-      category: "rhetorical-tic",
+      category: "closer",
       severity: "warning",
       # The same exclusion as its own sentence: "Return the JSON. Nothing
       # else." Built on the no-x-no-y-frag template -- the fragment must start
@@ -2533,7 +2532,6 @@ module Sloplint
                  "puts the phrase: one hit in 1.92M words of public-domain prose and one in " \
                  "461k words of pre-2022 Hacker News."
     ),
-    # ── puffery ───────────────────────────────────────────────────────────
     Rule.new(
       id: "puffery-words",
       category: "puffery",
@@ -2653,10 +2651,9 @@ module Sloplint
       rationale: "'tapestry of' is one of the most reliable single-phrase model tells."
     ),
 
-    # ── structure ─────────────────────────────────────────────────────────
     Rule.new(
       id: "not-just-x-but-y",
-      category: "structure",
+      category: "false-correction",
       severity: "warning",
       # Two branches, both anchored on an explicit escalation word. (1) The
       # copula escalation: "is not just/only/merely/simply/solely A … but B".
@@ -2701,7 +2698,7 @@ module Sloplint
     ),
     Rule.new(
       id: "not-x-but-y",
-      category: "structure",
+      category: "false-correction",
       severity: "info",
       # The bare corrective: "is not A but B", no escalation word, comma or no
       # comma. Ships at info because the line between a corrective ("not an
@@ -2772,7 +2769,7 @@ module Sloplint
     ),
     Rule.new(
       id: "isnt-x-its-y",
-      category: "structure",
+      category: "false-correction",
       severity: "info",
       # The corrective with the conjunction dropped: one clause rejects a
       # description, the next supplies the replacement through a second copula
@@ -2866,7 +2863,7 @@ module Sloplint
     ),
     Rule.new(
       id: "not-by-x-but-by-y",
-      category: "structure",
+      category: "false-correction",
       severity: "info",
       # The corrective built on a repeated preposition: "not by A, but by B",
       # "not from A but from B". The copula rules above cannot see it because
@@ -2915,7 +2912,7 @@ module Sloplint
     ),
     Rule.new(
       id: "rule-of-three",
-      category: "structure",
+      category: "cadence",
       severity: "info",
       default_on: false,
       pattern: /\b[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
@@ -2943,7 +2940,7 @@ module Sloplint
     # CLAUDE.md: some tells can't be regexes; this was one.
     Rule.new(
       id: "everyone-nobody",
-      category: "structure",
+      category: "cadence",
       severity: "warning",
       # The comma-spliced antithesis on quantifier subjects: "Everyone wants
       # the dashboard, nobody maintains it." One clause opens on
@@ -3016,7 +3013,7 @@ module Sloplint
     ),
     Rule.new(
       id: "np-fragment-and",
-      category: "structure",
+      category: "cadence",
       severity: "info",
       # A whole sentence that is two noun phrases and an "and": "A named owner
       # and a quarterly review." It is the fix half of a model's
@@ -3071,7 +3068,7 @@ module Sloplint
     ),
     Rule.new(
       id: "quip-question",
-      category: "structure",
+      category: "reader-address",
       severity: "info",
       # The verbless question that opens a pitch: "No invite?", "New to the
       # tool?", "Still stuck?", "Ready to start?". It must start a sentence,
@@ -3118,7 +3115,7 @@ module Sloplint
     ),
     Rule.new(
       id: "mic-drop-closer",
-      category: "structure",
+      category: "cadence",
       severity: "info",
       # The kicker: a sentence of at least sixty characters, then a closer of
       # two to eight words that ends the paragraph and opens on a quantifier
@@ -3200,7 +3197,7 @@ module Sloplint
     ),
     Rule.new(
       id: "bare-auxiliary-closer",
-      category: "structure",
+      category: "cadence",
       severity: "info",
       # The same long-sentence-then-short-closer shape as mic-drop-closer,
       # but the tell lives in the verb, not the subject. mic-drop-closer's
@@ -3284,7 +3281,7 @@ module Sloplint
     ),
     Rule.new(
       id: "short-run",
-      category: "structure",
+      category: "cadence",
       severity: "info",
       # Three consecutive sentences of thirty characters or fewer, each
       # opening on a letter and closing on a full stop, with no quotation
@@ -3422,7 +3419,7 @@ module Sloplint
     ),
     Rule.new(
       id: "em-dash",
-      category: "structure",
+      category: "punctuation",
       severity: "info",
       pattern: /—/,
       message: "Em dash — an AI punctuation tell.",
@@ -3442,7 +3439,7 @@ module Sloplint
     ),
     Rule.new(
       id: "em-dash-overuse",
-      category: "structure",
+      category: "punctuation",
       severity: "warning",
       pattern: /—(?:[^\n]|\n(?!\s*\n))*—(?:[^\n]|\n(?!\s*\n))*—/,
       message: "Three or more em dashes in one paragraph — an AI punctuation tell.",
@@ -3465,7 +3462,7 @@ module Sloplint
 
     Rule.new(
       id: "question-isnt",
-      category: "structure",
+      category: "false-correction",
       severity: "info",
       # The resolving clause is required, so a plain rhetorical question never
       # matches. "The real question is" is ordinary English and is excluded by
@@ -3492,7 +3489,7 @@ module Sloplint
     ),
     Rule.new(
       id: "less-about-more-about",
-      category: "structure",
+      category: "false-correction",
       severity: "info",
       # The full frame is required at both ends. Bare "less about" and bare
       # "more about" are ordinary English on their own, and the subject slot
@@ -3519,7 +3516,7 @@ module Sloplint
     ),
     Rule.new(
       id: "trailing-significance-participle",
-      category: "structure",
+      category: "puffery",
       severity: "warning",
       # The verb list is closed and short on purpose. Wikipedia's "signs of AI
       # writing" names eight watch words for this construction; half of them
@@ -3597,7 +3594,7 @@ module Sloplint
     ),
     Rule.new(
       id: "trailing-restatement",
-      category: "structure",
+      category: "closer",
       severity: "info",
       default_on: false,
       # The restating tail: "…, which means working through the process
@@ -3687,10 +3684,9 @@ module Sloplint
                  "use the same connective to state a consequence, and the pattern cannot " \
                  "tell the two apart, so the rule is off by default."
     ),
-    # ── hedging ───────────────────────────────────────────────────────────
     Rule.new(
       id: "vague-attribution",
-      category: "hedging",
+      category: "false-concession",
       severity: "warning",
       pattern: /\bsome\s+(?:critics|experts|observers|scholars|analysts)\s+(?:argue|say|believe|contend|maintain)\b|\bit\s+is\s+widely\s+(?:regarded|considered|seen|believed|acknowledged)\b|\bmany\s+would\s+argue\b/i,
       message: "Vague attribution ('some critics argue', 'it is widely…') — an AI hedging tell.",

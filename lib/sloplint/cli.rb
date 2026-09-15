@@ -146,7 +146,7 @@ module Sloplint
       else
         RULES.each do |r|
           off = r.default_on ? "" : " [off by default]"
-          out.puts("#{r.id.ljust(24)} #{r.category.ljust(14)} #{r.severity.ljust(8)} #{r.message}#{off}")
+          out.puts("#{r.id.ljust(24)} #{r.category.ljust(18)} #{r.severity.ljust(8)} #{r.message}#{off}")
         end
       end
       0

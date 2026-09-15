@@ -219,7 +219,7 @@ RSpec.describe Sloplint::CLI do
     end
 
     it "selects by category" do
-      _, out = run(["-o", "json", "check", "--select", "hedging", "-"],
+      _, out = run(["-o", "json", "check", "--select", "false-concession", "-"],
                    stdin_text: "Some critics argue this. That's the whole point.")
       rules = JSON.parse(out).map { |n| n["rule"] }.uniq
       expect(rules).to eq(["vague-attribution"])
@@ -244,7 +244,7 @@ RSpec.describe Sloplint::CLI do
 
     it "selecting a category runs only that category's default-on rules, not rule-of-three" do
       text = "It was fast, cheap, and simple."
-      _, out = run(["-o", "json", "check", "--select", "structure", "-"], stdin_text: text)
+      _, out = run(["-o", "json", "check", "--select", "cadence", "-"], stdin_text: text)
       expect(JSON.parse(out).map { |n| n["rule"] }).not_to include("rule-of-three")
     end
 
@@ -268,7 +268,7 @@ RSpec.describe Sloplint::CLI do
     end
 
     it "with --select and a category, includes the category's off-by-default rules too" do
-      _, out = run(["-o", "json", "check", "--strict", "--select", "structure", "-"],
+      _, out = run(["-o", "json", "check", "--strict", "--select", "cadence", "-"],
                    stdin_text: "It was fast, cheap, and simple.")
       expect(JSON.parse(out).map { |n| n["rule"] }).to include("rule-of-three")
     end

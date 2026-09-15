@@ -7,12 +7,30 @@ RSpec.describe "Sloplint::RULES" do
   end
 
   it "uses only known categories and severities" do
-    categories = %w[rhetorical-tic puffery structure hedging]
+    categories = %w[self-rating closer cadence puffery false-correction
+                    false-concession reader-address borrowed-metaphor punctuation]
     severities = %w[error warning info]
     Sloplint::RULES.each do |rule|
       expect(categories).to include(rule.category), "#{rule.id} category"
       expect(severities).to include(rule.severity), "#{rule.id} severity"
     end
+  end
+
+  # Every category names a rhetorical move, and the split is what the whole
+  # catalog is organised around. Pin the size of each one so a rule that
+  # drifts into the wrong category shows up here rather than in the docs.
+  it "puts each rule in the category its move belongs to" do
+    expect(Sloplint::RULES.group_by(&:category).transform_values(&:size)).to eq(
+      "self-rating" => 15,
+      "cadence" => 17,
+      "closer" => 12,
+      "puffery" => 8,
+      "false-correction" => 8,
+      "false-concession" => 7,
+      "reader-address" => 6,
+      "borrowed-metaphor" => 5,
+      "punctuation" => 2
+    )
   end
 
   it "has no rule id that collides with a category name, since --select and --ignore resolve a ref against both (unknown_rule_refs/select_rules in lib/sloplint/cli.rb)" do

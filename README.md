@@ -107,7 +107,7 @@ version      print the sloplint version
 
 ```
 $ sloplint explain no-x-no-y
-no-x-no-y  (rhetorical-tic, warning)
+no-x-no-y  (cadence, warning)
 
 "No X, no Y" chain (%{count} items) reads as AI cadence.
 
@@ -129,7 +129,7 @@ One match is one note. JSON output is an array of these, or an object keyed by p
   "column": 5,
   "severity": "warning",
   "rule": "no-x-no-y",
-  "category": "rhetorical-tic",
+  "category": "cadence",
   "message": "\"No X, no Y\" chain (3 items) reads as AI cadence.",
   "excerpt": "No fluff, no filler, no jargon",
   "context": "The report was blunt. [No fluff, no filler, no jargon]. Nothing held back at all.",
@@ -155,12 +155,17 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## The rule catalog
 
-80 rules across four categories. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
+80 rules across nine categories, each named for the rhetorical move the construct makes. `sloplint rules` prints them; `sloplint rules --json` gives an agent the enumerable form.
 
-- **rhetorical-tic** (56) the cadence patterns: `no-x-no-y`, `no-x-no-y-frag`, `from-x-to-y-chain` ("from guessing to measuring, from hoping to knowing"), `one-x-one-y` ("one reviewer, one queue, one deadline"), `same-determiner-chain` (any other repeated determiner, at `info`), `and-what-it-should` (the elliptical tail: "…, and what it should."), `abstract-lives-in` ("the value sits in the follow-up", at `info`), `the-x-is-the-x` ("the problem with A is the problem with B"), `bare-equative` ("The lesson is the handoff.", at `info`), `thats-the-whole`, `is-the-whole-x` (the same closer on any subject: "Consistency is the real test.", at `info`), `thats-how-x`, `announced-takeaway`, `exact-exactly`, `load-bearing`, `intersection-of`, `you-already-know`, `sit-with-that`, `hold-onto-that`, `cleanly`, `clean-count`, `cleanest-x`, `clean-x`, `not-nothing`, `is-is` (doubled copula), `if-im-being-honest` (the candor preamble, from slopwash.com's "false intimacy"), `and-nothing-else` (the trailing "…, and nothing else"), `honestly`, `honest-x`, `most-honest-x` (the honesty family, built the same way as the four `clean` rules above), `impact-verb` ("the outage impacted four thousand accounts"), `impact-noun-bare` ("the impact of X", at `info` because research prose uses it straight), and more.
-- **puffery** (6) five from Wikipedia's "signs of AI writing" — `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights` — plus `impact-noun-vague` ("a significant impact", "make an impact").
-- **structure** (17) `everyone-nobody` (the comma-spliced antithesis: "Everyone wants the dashboard, nobody maintains it."), `np-fragment-and` (the verbless "A named owner and a quarterly review.", at `info`), `quip-question` (the verbless "No invite?", at `info`), `mic-drop-closer` (the short quantifier-led sentence that ends a paragraph after a long one, at `info`; a draft full of them is a warning), `bare-auxiliary-closer` (the same shape, but the closer's verb is elided down to a bare auxiliary: "The agent did.", at `info`), `short-run` (three sentences of thirty characters or fewer in a row, at `info`, same caveat), `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `isnt-x-its-y` (the same corrective split across two clauses: "It isn't the tool. It's the habit."), `not-by-x-but-by-y` (the corrective on a repeated preposition: "not by luck, but by design"), `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph), `question-isnt` (the corrective frame in interrogative dress), `less-about-more-about`, `trailing-significance-participle` (the "…, showcasing its importance" clause), `trailing-restatement` (the "…, which means …" tail that says the sentence again, off by default), and `rule-of-three`.
-- **hedging** (1) `vague-attribution`: "some critics argue," "it is widely regarded."
+- **self-rating** (15) the writer grades their own prose or claim: `clean-x`, `clean-count`, `cleanest-x`, `cleanly`, `honest-x`, `most-honest-x`, `honestly` (the honesty family, built the same way as the four `clean` rules), `worth-naming`, `worth-saying-plainly`, `earns-its-place`, `does-a-lot-of-work`, `exact-exactly`, `genuinely` (off by default), `the-punchline-is`, `announced-takeaway`.
+- **closer** (12) closes by restating or announcing the point: `thats-the-whole`, `is-the-whole-x` (the same closer on any subject: "Consistency is the real test.", at `info`), `is-the-entire`, `the-entire-is`, `thats-how-x`, `thats-the-tension`, `right-up-until`, `and-nothing-else` (the trailing "…, and nothing else"), `nothing-else-frag`, `bare-equative` ("The lesson is the handoff.", at `info`), `trailing-restatement` (the "…, which means …" tail that says the sentence again, off by default), `and-what-it-should` (the elliptical tail: "…, and what it should.").
+- **cadence** (17) rhythm: repetition, parallelism, and the long-then-short kicker: `no-x-no-y`, `no-x-no-y-frag`, `did-not-x-did-not-y`, `one-x-one-y` ("one reviewer, one queue, one deadline"), `from-x-to-y-chain` ("from guessing to measuring, from hoping to knowing"), `same-determiner-chain` (any other repeated determiner, at `info`), `real-x-real-y`, `epistrophe` (off by default), `phrase-echo` (off by default), `is-is` (doubled copula), `the-x-is-the-x` ("the problem with A is the problem with B"), `rule-of-three` (off by default), `everyone-nobody` (the comma-spliced antithesis: "Everyone wants the dashboard, nobody maintains it."), `short-run` (three sentences of thirty characters or fewer in a row, at `info`), `mic-drop-closer` (the short quantifier-led sentence that ends a paragraph after a long one, at `info`), `bare-auxiliary-closer` (the same shape, but the closer's verb is elided down to a bare auxiliary: "The agent did.", at `info`), `np-fragment-and` (the verbless "A named owner and a quarterly review.", at `info`).
+- **puffery** (8) inflates the subject: `puffery-words` (vibrant, nestled, groundbreaking, in the heart of), `rich-tapestry`, `vital-role`, `stands-serves-as`, `underscores-highlights`, `impact-noun-vague` ("a significant impact", "make an impact"), `trailing-significance-participle` (the "…, showcasing its importance" clause), `abstract-lives-in` ("the value sits in the follow-up", at `info`).
+- **false-correction** (8) corrects a reading nobody offered: `not-just-x-but-y`, `not-x-but-y` (the bare corrective), `not-by-x-but-by-y` ("not by luck, but by design"), `isnt-x-its-y` (the same corrective split across two clauses: "It isn't the tool. It's the habit."), `question-isnt` (the corrective frame in interrogative dress), `less-about-more-about`, `actually-not-x`, `dont-verb-it`.
+- **false-concession** (7) performs balance or candour and gives nothing up: `two-things-true`, `none-of-this-is-to-say`, `is-real-and-not`, `not-nothing`, `vague-attribution` ("some critics argue", "it is widely regarded"), `if-im-being-honest` (the candor preamble, from slopwash.com's "false intimacy"), `and-thats-fine`.
+- **reader-address** (6) instructs or flatters the reader: `you-already-know`, `sit-with-that`, `hold-onto-that`, `notice-what`, `notice-what-there`, `quip-question` (the verbless "No invite?", at `info`).
+- **borrowed-metaphor** (5) an engineering term applied to an argument: `load-bearing`, `failure-mode-here`, `intersection-of`, `impact-verb` ("the outage impacted four thousand accounts"), `impact-noun-bare` ("the impact of X", at `info` because research prose uses it straight).
+- **punctuation** (2) the mark itself: `em-dash` (any em dash), `em-dash-overuse` (three or more in one paragraph).
 
 Severity is `warning` for strong tells, `info` for weak or contextual ones. No rule currently ships at `error`; the tier is reserved for a pattern with essentially zero false-positive risk, and none has earned that yet.
 
@@ -181,7 +186,7 @@ Rules are data, not code. Each is a `Data.define` object in `lib/sloplint/rules.
 ```ruby
 Rule.new(
   id:           "rule-id",
-  category:     "rhetorical-tic",              # or puffery, structure, hedging
+  category:     "cadence",                     # one of the nine in the catalog above
   severity:     "warning",                     # or info
   pattern:      /.../i,
   message:      "What the reader sees. %{count} interpolates the tally.",
