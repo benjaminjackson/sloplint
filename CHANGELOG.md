@@ -3,10 +3,15 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.7.0] - 2026-09-15
 
 ### Added
 
+- `--strict` runs the full catalog, including the five rules that ship off
+  by default. Before this, the only way to turn one on was to name it in
+  `--select`, which also turned off every other rule unless you listed
+  those too. `--ignore` still subtracts on top of `--strict`, and
+  `--select` is unchanged.
 - `ellipsis-closer` (structure, info) flags the long-sentence-then-short-closer
   kicker `mic-drop-closer` catches, but built on the opposite verb shape: the
   closer's verb phrase is elided down to a bare auxiliary with no object,
@@ -48,6 +53,21 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   more", ", leaving you with"). The connective is all a pattern can see, and the
   same connective states a real consequence in careful prose, so the rule
   runs only when selected.
+
+### Fixed
+
+- `check`'s options now work without the command word: `sloplint --markdown -`
+  and `sloplint --strict -` scan, as the README has said `sloplint -` does.
+  Before, the global parser rejected any option it did not own with
+  `invalid option`, so `check` had to be spelled out whenever an option
+  came first. An option no command knows still exits 2.
+- `--markdown` now blanks `<!-- -->` comment blocks along with fenced code,
+  inline code and URLs. Planning notes kept in comments never render, so
+  every rule that fired inside one was a permanent false positive.
+- `rule-of-three`'s message, rationale, README and SPEC entries said it
+  flagged three parallel comma items. The pattern requires single words in
+  the closing two slots, so a triad of phrases never matched; the text now
+  says that.
 
 ## [0.6.0] - 2026-09-08
 
