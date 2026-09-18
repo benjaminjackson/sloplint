@@ -47,6 +47,9 @@ so the source never needs to enter the repository.
 - **A reference corpus of human prose must be public domain.** Copyrighted text
   can't be redistributed, so a corpus built from it can't live in the repo, and
   neither can the false-positive check that depends on it.
+- **The probe corpus is fetched, not committed.** `script/probe-raid fetch` pulls
+  RAID (Dugan et al. 2024, MIT) into `.corpus/`, which is ignored. The script
+  and the numbers it prints may be quoted in a commit message; the texts may not.
 
 This repository is MIT-licensed, so anything committed is redistributable by
 anyone. Writing the fixtures ourselves also means nobody's prose gets held up as

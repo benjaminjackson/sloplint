@@ -68,6 +68,18 @@ Three things that keep turning up, worth checking by name:
   group over an alternation wants an atomic group `(?>...)` or an upper bound.
   Scan a megabyte before shipping.
 
+The standing corpus is RAID (Dugan et al. 2024, MIT): human BBC news, arXiv
+abstracts, Wikipedia, recipes, reviews, books, poetry and reddit, each title
+paired with gpt4, llama-chat and mistral-chat generations. `script/probe-raid
+fetch` downloads it into `.corpus/` (ignored, never committed) and
+`script/probe-raid RULE` prints notes per thousand words for human against model
+text per domain, then every human hit for reading. A rule that fires on human
+news or abstracts at anything like its model rate is not done. `script/probe-raid
+--time` scans the whole catalog over 8.7 MB and reports seconds per megabyte;
+about 2 s/MB is normal, and a jump means a pattern backtracks. RAID has no
+design docs or incident reports, so it is the floor, not the whole probe: a
+narrowing that clears RAID still needs a read against the engineering register.
+
 None of the reading is committed — see "Provenance" in `docs/SPEC.md`. What the
 commit message carries is the numbers and the register: how much was read, what
 kind of writing it was, how many hits, and how many survived reading them.

@@ -1,0 +1,92 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Probe rules against RAID (Dugan et al. 2024, MIT), the standing corpus for false-positive reading.
+# Human text: BBC news, arXiv abstracts, Wikipedia, recipes, reviews, books, poetry, reddit.
+# Model text: gpt4, llama-chat, mistral-chat generations for the same titles, no adversarial edits.
+#
+#   script/probe-raid fetch                  download train_none.csv (802MB) and build .corpus/raid/*.jsonl
+#   script/probe-raid RULE [RULE...]         notes per 1k words, human vs model, per domain, then human hits to read
+#   script/probe-raid --domain news RULE     one domain
+#   script/probe-raid --hits 100 RULE        more human hits (default 40)
+#   script/probe-raid --time                 scan the whole corpus with every rule and report seconds per MB
+#
+# Nothing under .corpus/ is committed. See "Provenance" in docs/SPEC.md.
+require "optparse"
+require "csv"
+require "json"
+require_relative "../lib/sloplint"
+
+DIR = File.expand_path("../.corpus/raid", __dir__)
+CSV_PATH = File.join(DIR, "train_none.csv")
+URL = "https://dataset.raid-bench.xyz/train_none.csv"
+MODELS = %w[gpt4 llama-chat mistral-chat].freeze
+
+def fetch
+  Dir.mkdir(DIR) unless Dir.exist?(DIR)
+  system("curl", "-L", "-o", CSV_PATH, URL) || abort("download failed") unless File.exist?(CSV_PATH)
+  out = Hash.new { |h, k| h[k] = File.open(File.join(DIR, "#{k}.jsonl"), "w") }
+  n = 0
+  CSV.foreach(CSV_PATH, headers: true) do |r|
+    next unless r["model"] == "human" || (MODELS.include?(r["model"]) && r["decoding"] == "sampling" && r["repetition_penalty"] == "no")
+    out[r["domain"]].puts JSON.generate(model: r["model"], id: r["id"], source_id: r["source_id"], title: r["title"], text: r["generation"])
+    n += 1
+  end
+  out.each_value(&:close)
+  puts "wrote #{n} texts across #{out.size} domains to #{DIR}"
+end
+
+def load(domain)
+  files = domain ? [File.join(DIR, "#{domain}.jsonl")] : Dir[File.join(DIR, "*.jsonl")].sort
+  abort "no corpus; run script/probe-raid fetch" if files.empty? || !File.exist?(files.first)
+  files.flat_map { |f| File.foreach(f).map { |l| JSON.parse(l).merge("domain" => File.basename(f, ".jsonl")) } }
+end
+
+opts = { hits: 40 }
+OptionParser.new do |o|
+  o.on("--domain D") { |d| opts[:domain] = d }
+  o.on("--hits N", Integer) { |n| opts[:hits] = n }
+  o.on("--time") { opts[:time] = true }
+end.parse!
+
+if ARGV.first == "fetch"
+  fetch
+  exit
+end
+
+rows = load(opts[:domain])
+
+if opts[:time]
+  bytes = rows.sum { |r| r["text"].to_s.bytesize }
+  t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  rows.each { |r| Sloplint::Engine.scan(r["text"].to_s) }
+  secs = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
+  puts format("%.1f MB in %.1f s = %.2f s/MB", bytes / 1e6, secs, secs / (bytes / 1e6))
+  exit
+end
+
+rules = Sloplint::RULES.select { |r| ARGV.include?(r.id) }
+abort "usage: script/probe-raid [--domain D] [--hits N] RULE [RULE...]" if rules.empty?
+
+hits = Hash.new { |h, k| h[k] = [] }
+stats = Hash.new { |h, k| h[k] = { words: 0, notes: 0 } }
+rows.each do |r|
+  text = r["text"].to_s
+  side = r["model"] == "human" ? "human" : "model"
+  key = [r["domain"], side]
+  stats[key][:words] += text.split.size
+  Sloplint::Engine.scan(text, rules: rules).each do |n|
+    stats[key][:notes] += 1
+    hits[[n.rule, r["domain"]]] << "#{r["model"]}: #{n.context}" if side == "human"
+  end
+end
+
+puts format("%-10s %8s %8s   (notes per 1k words; model = %s)", "domain", "human", "model", MODELS.join(", "))
+stats.keys.map(&:first).uniq.sort.each do |d|
+  h, m = %w[human model].map { |s| v = stats[[d, s]]; v[:words].zero? ? 0 : 1000.0 * v[:notes] / v[:words] }
+  puts format("%-10s %8.2f %8.2f", d, h, m)
+end
+hits.sort.each do |(rule, domain), list|
+  puts "\n## #{rule} on human #{domain}: #{list.size} hits"
+  list.first(opts[:hits]).each { |l| puts "  #{l}" }
+end
