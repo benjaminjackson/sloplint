@@ -5,6 +5,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-15
+
 ### Changed (breaking)
 
 - The four old categories are gone: `rhetorical-tic`, `structure`, `puffery`
