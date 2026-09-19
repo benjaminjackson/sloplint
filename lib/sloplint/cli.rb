@@ -73,10 +73,11 @@ module Sloplint
       end
       p.order!(argv)
 
-      # The judge is a separate gem that depends on this one. It is loaded by
-      # relative path, not `require "sloplint/judge"`: nothing in the plugin
-      # tree puts lib/ on the load path, so the bare form would fail from the
-      # plugin cache with every file present. See docs/JUDGE.md "CLI surface".
+      # The judge is a separate gem that depends on this one. The bare require
+      # goes through the load path: exe/sloplint puts this checkout's lib/ at
+      # the front, so from the plugin tree the judge files beside this one win,
+      # and an installed sloplint-judge gem is found otherwise. Only a missing
+      # judge is the install hint; any other LoadError is a real one.
       if judge
         begin
           require "sloplint/judge"
@@ -115,8 +116,15 @@ module Sloplint
           err.puts("sloplint: --judge: #{e.message}")
           return 2
         end
-        judge_notes = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
-                                                          markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
+        begin
+          judge_notes = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
+                                                            markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
+        # Exit 3 withholds the regex notes too: a caller that asked for both
+        # and got one would read it as a clean judge run.
+        rescue Judge::BackendError => e
+          err.puts("sloplint: judge backend failure: #{e.message}")
+          return 3
+        end
         order = sources.each_with_index.to_h { |(label, _), i| [label, i] }
         all_notes = (all_notes + judge_notes).sort_by.with_index { |n, i| [order[n.path], n.line, n.column, i] }
       end
@@ -129,14 +137,6 @@ module Sloplint
     rescue ArgumentError, Encoding::CompatibilityError => e
       err.puts("sloplint: invalid input: #{e.message}")
       2
-    # Exit 3 withholds the regex notes too: a caller that asked for both and
-    # got one would read it as a clean judge run. Matched by name because the
-    # constant only exists once --judge has loaded the gem.
-    rescue StandardError => e
-      raise unless e.class.name == "Sloplint::Judge::BackendError"
-
-      err.puts("sloplint: judge backend failure: #{e.message}")
-      3
     end
 
     # Read every path (or stdin for "-") as UTF-8. Returns [[label, text], ...]

@@ -77,7 +77,7 @@ module Sloplint
           "The migration moved 40 tables in two weekends. Two of them needed manual fixes for timezone columns. The rollback plan was tested once on staging. Rollback took four minutes.",
           "The parser rejects any line over 4,096 bytes. Longer lines come from the log shipper concatenating retries. We capped retries at three and the rejections stopped on the 14th."
         ],
-        rationale: "A paragraph that closes on a summary of itself tells the reader nothing they did not have one sentence earlier. Human prose in the registers this tool is for closes on a fact or a consequence; model prose closes on a moral. The strongest single signal in the catalog."
+        rationale: "A paragraph that closes on a summary of itself tells the reader nothing they did not have one sentence earlier. Human prose in the registers this tool is for closes on a fact or a consequence; model prose closes on a moral."
       ),
       Rule.new(
         id: "throat-clearing", category: "paragraph", unit: :paragraph, severity: "info", confidence: "high",
@@ -148,7 +148,7 @@ module Sloplint
         suggestion: "Cut it, or replace it with the fact this reader does not have.",
         examples_bad: ["A database index is a data structure that speeds up lookups on a column.", "Unit tests are small programs that check that a piece of code behaves as expected."],
         examples_ok: ["The composite index on (tenant_id, created_at) cut the dashboard query from 900 ms to 40 ms.", "The flaky test was reading the clock; pinning it to a fixed time fixed 30 of the 31 failures."],
-        rationale: "A sentence that defines a term the reader owns is written for a reader who is not there. Model prose explains; human prose in these registers assumes. Never reversed in any register tested."
+        rationale: "A sentence that defines a term the reader owns is written for a reader who is not there. Model prose explains; human prose in these registers assumes."
       ),
       Rule.new(
         id: "names-nothing", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",

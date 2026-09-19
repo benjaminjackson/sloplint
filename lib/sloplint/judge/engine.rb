@@ -28,7 +28,11 @@ module Sloplint
           result.usage.each { |k, v| usage[k] += v }
           result.notes
         end
-        err.puts("#{name} #{backend.name}, #{usage.map { |k, v| "#{v} #{k}" }.join(", ")}") unless usage.empty?
+        # Always name the backend: the check skill reads this line. Usage
+        # follows when the backend reported any.
+        line = "#{name} #{backend.name}"
+        line += ", #{usage.map { |k, v| "#{v} #{k}" }.join(", ")}" unless usage.empty?
+        err.puts(line)
         notes
       end
 

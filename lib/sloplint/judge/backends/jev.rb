@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "net/http"
+require "openssl"
 require "uri"
 require "json"
 
@@ -40,7 +41,11 @@ module Sloplint
             probs = normalise(type, type == "noul" ? a.fetch("noul") : a.fetch("probabilities"))
             [qname, Answer.new(type: type, probabilities: probs, confidence: confidence_for(a, type, probs), usage: usage)]
           end
-        rescue SocketError, IOError, SystemCallError, Net::OpenTimeout, Net::ReadTimeout, JSON::ParserError, KeyError => e
+        # Transport errors, and a body that is not the shape Jev documents
+        # (TypeError, NoMethodError on a nil answer), are one thing to the
+        # caller: the backend did not answer. Exit 3, not a backtrace.
+        rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError, Net::ProtocolError, Net::OpenTimeout,
+               Net::ReadTimeout, JSON::ParserError, KeyError, TypeError, NoMethodError => e
           raise BackendError, "#{e.class}: #{e.message}"
         end
 
@@ -50,7 +55,10 @@ module Sloplint
         # probabilities keyed by option, and a noul as one float under "noul".
         def normalise(type, probs)
           case type
-          when "score" then probs.sort_by { |k, _| k.to_i }.map { |_, p| p.to_f }
+          when "score"
+            raise BackendError, "score probabilities are #{probs.class}, not a Hash keyed by level" unless probs.is_a?(Hash)
+
+            probs.sort_by { |k, _| k.to_i }.map { |_, p| p.to_f }
           when "choice" then probs.transform_values(&:to_f)
           else probs.to_f
           end

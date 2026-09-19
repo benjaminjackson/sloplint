@@ -57,7 +57,7 @@ Two ways in, one engine.
 sloplint check --judge [check options] [paths...]
 ```
 
-sloplint's own `check`, with the judge loaded when the flag is set. The load is `require_relative "judge"` from `lib/sloplint/`, not a bare `require "sloplint/judge"`: nothing in the plugin tree puts `lib/` on the load path, so the bare form fails from the plugin cache even with every file present. The rescue catches `LoadError` only when the missing path is the judge's own, prints "install the sloplint-judge gem", and exits 2. Otherwise the regex notes and the judge notes for each path are merged by line and emitted as one array.
+sloplint's own `check`, with the judge loaded when the flag is set. The load is `require "sloplint/judge"` through the load path. `exe/sloplint` puts its own `lib/` first, so from the plugin tree the judge files in that tree are found before any installed gem, and outside it the installed sloplint-judge gem is found. The rescue catches `LoadError` only when the missing path is the judge's own, prints "install the sloplint-judge gem", and exits 2. Otherwise the regex notes and the judge notes for each path are merged by line and emitted as one array.
 
 The other `check` options apply to both linters, and each one costs something in `cli.rb`:
 
@@ -200,7 +200,7 @@ Eight rules, two categories. A number appears only where it decides something a 
 Run on every paragraph of three or more sentences. One request per paragraph carries all three questions.
 
 - **particulars** (`warning`, `high`). How much of the paragraph is a fact, name, number, step or quote a reader could check: none of it, some of it, most of it. Flags at none. Ranks model prose lower in every register the tool is for, against 2023 models and current ones.
-- **wrap-up** (`warning`, `high`). How the paragraph ends: restating or moralising, transition, or new fact. Flags at restating. The strongest signal in the catalog, 0.05 in abstracts.
+- **wrap-up** (`warning`, `high`). How the paragraph ends: restating or moralising, transition, or new fact. Flags at restating.
 - **throat-clearing** (`info`, `high`). How the paragraph begins: a general announcement of the topic, a framing sentence, or a particular. Flags at announcement. Reaches 0.50 in some registers, the weakest of the three, hence `info`.
 
 ### sentence
@@ -208,7 +208,7 @@ Run on every paragraph of three or more sentences. One request per paragraph car
 Run on every sentence of the paragraphs a paragraph rule flagged, and on the sentences of the short paragraphs no paragraph rule looked at, so the expensive questions are asked where the cheap ones found something and no paragraph goes unexamined. Two details keep that shortcut honest. A paragraph is "flagged" only by a note that survives the confidence bands; a paragraph answer that fell to `low` and was dropped opens nothing. And when the run contains no paragraph rule at all, because `--select` named only sentence rules or `--ignore paragraph` removed them, the sentence rules run on every sentence, since there is nothing to triage by and a silent clean exit would be a lie. `--strict` runs them on every sentence regardless. One request per sentence carries every sentence question in the run, four by default, with the sentence's paragraph and its index in the state so the model sees the neighbours.
 
 - **stock-figure** (`warning`, `high`). The sentence uses a figure of speech that is stock, a figure that is the writer's own, or no figure. Flags at stock.
-- **no-news** (`warning`, `high`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known. Never reversed in any register tested.
+- **no-news** (`warning`, `high`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known.
 - **names-nothing** (`warning`, `high`). The sentence names nothing, names a kind of thing, or names a thing a reader could look up. Flags at names-nothing. This is the concreteness dimension from the spike, renamed to say what the flag means.
 - **ends-on-verdict** (`info`, `high`). The sentence ends on a verdict or moral, trails off on a qualifier, or ends on the fact that carries it. Flags at verdict.
 - **matched-shape** (`info`, `low`). A matched pair or triple shaped the content, a list the content needed, or no matched structure. Flags at shaped-the-content. Off by default: near 0.5 against 2023 models and strong against current Claude models, so a tell of one model family, and read against real READMEs most hits were captions and parallels the writer built on purpose. `--select matched-shape` or `--strict` runs it.

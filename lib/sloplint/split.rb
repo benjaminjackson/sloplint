@@ -19,8 +19,9 @@ module Sloplint
     # reference-style link definitions and a lone image or link line.
     FURNITURE = /\A[ \t]*(?:\#{1,6}[ \t]|[-*+][ \t]|\d+[.)][ \t]|\||>|[-*_]{3,}[ \t]*\z|\[[^\]]+\]:[ \t]|!\[)/
 
-    # Abbreviations whose trailing period does not end a sentence.
-    ABBREV = /\b(?:e\.g|i\.e|vs|etc|cf|Fig|No|Dr|Mr|Mrs|Ms|St|Inc|Ltd|Sec|Ch|Vol)\.\z/i
+    # Abbreviations whose trailing period does not end a sentence. Case
+    # matters: "No." is an abbreviation, "no." is the end of a sentence.
+    ABBREV = /\b(?:e\.g|i\.e|vs|etc|cf|Fig|No|Dr|Mr|Mrs|Ms|St|Inc|Ltd|Sec|Ch|Vol)\.\z/
 
     # A sentence ends at .!? (with an optional closing quote or bracket)
     # followed by whitespace and a capital, digit, or opening quote/bracket.

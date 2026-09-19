@@ -32,7 +32,8 @@ Gem::Specification.new do |spec|
   spec.executables = ["sloplint-judge"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "sloplint", "~> 0.8"
+  # 0.9 is the first sloplint with Split, Engine.context_window and the CLI helpers the judge calls.
+  spec.add_dependency "sloplint", "~> 0.9"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "rake", "~> 13.0"
 end

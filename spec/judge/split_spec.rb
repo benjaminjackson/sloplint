@@ -22,6 +22,7 @@ RSpec.describe Sloplint::Split do
   it "does not split on abbreviations" do
     sents = described_class.sentences("See Fig. 3 for the e.g. case. Then stop.")
     expect(sents.map(&:text)).to eq(["See Fig. 3 for the e.g. case.", "Then stop."])
+    expect(described_class.sentences("The answer was no. We moved on. Then it broke.").size).to eq(3)
   end
 
   it "drops furniture under --markdown and keeps it otherwise" do

@@ -252,7 +252,7 @@ RULES = [
 
 Adding a rule = appending one entry + one bad and one ok fixture. That's the
 whole extension story. The only thing that plugs in is sloplint-judge, and it
-plugs in by name: `check --judge` does a lazy `require_relative "judge"` and
+plugs in by name: `check --judge` does a lazy `require "sloplint/judge"` and
 exits 2 with an install hint when it is missing. See `docs/JUDGE.md`.
 
 ### Why Ruby literals, not JSON/YAML
