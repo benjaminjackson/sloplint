@@ -169,7 +169,7 @@ module Sloplint
         suggestion: "Name the system, the number, the person or the event.",
         examples_bad: ["This approach delivers meaningful improvements across a variety of scenarios.", "Several factors contributed to the overall outcome of the initiative."],
         examples_ok: ["The search endpoint returned 503 for 47 minutes on March 3.", "Section 4.2 of RFC 7230 says a proxy MUST NOT forward a hop-by-hop header."],
-        rationale: "A sentence whose nouns are all categories could be about anything, and reads as written by someone who was not there. Reverses in forum comments against current models, where a comment is allowed to name nothing; comments are outside the registers this tool is for."
+        rationale: "A sentence whose nouns are all categories could be about anything, and reads as written by someone who was not there."
       ),
       Rule.new(
         id: "ends-on-verdict", category: "sentence", unit: :sentence, severity: "info", confidence: "high",

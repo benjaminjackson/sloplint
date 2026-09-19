@@ -1,20 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Calibrate a judge backend against real prose. See docs/JUDGE.md "Calibration corpus" and "Adding a backend".
+# Calibrate a judge backend against RAID. See docs/JUDGE.md "Calibration corpus" and "Adding a backend".
 #
 #   script/calibrate run [--rules IDS] [--register R,R] [--sample N] [--generated MODEL]
 #       Per rule, register and model side: the probability that a model unit scores higher than a human one
 #       (AUC), the `check` agreement rate between two runs at each confidence band, and the `compare` flip
 #       rate under passage-order swap at each band. Ends with the pass/fail lines from docs/JUDGE.md.
 #   script/calibrate generate MODEL [--register R,R] [--sample N]
-#       Write a current-model side into .corpus/*/generated/MODEL/ from RAID's own prompts (news, abstracts)
-#       and from engineering prompts (rfc). Needs ANTHROPIC_API_KEY. Nothing generated is committed.
-#   script/calibrate fetch rfc|hn
-#       Human side for the engineering register (IETF RFCs) and forum comments (Hacker News, caveat only).
+#       Write a current-model side into .corpus/raid/generated/MODEL/ from RAID's own prompts, same titles
+#       as the human rows. Needs ANTHROPIC_API_KEY. Nothing generated is committed.
 #
-# Registers: news and abstracts come from RAID (script/probe-raid fetch first); rfc is the engineering
-# register; hn is reported and never gated on. Everything lives under the ignored .corpus/ directory.
+# Registers are RAID domains (script/probe-raid fetch first); the default is news and abstracts, the two
+# on the list in docs/JUDGE.md. Everything lives under the ignored .corpus/ directory.
 require "optparse"
 require "csv"
 require "json"
@@ -23,21 +21,14 @@ require "fileutils"
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "sloplint/judge"
 
-CORPUS = File.expand_path("../.corpus", __dir__)
-RAID = File.join(CORPUS, "raid")
-REGISTERS = { "news" => "raid", "abstracts" => "raid", "rfc" => "rfc", "hn" => "hn" }.freeze
-GATED = %w[news abstracts rfc].freeze
+RAID = File.expand_path("../.corpus/raid", __dir__)
 # The reader each register's questions are asked for, and the venue compare names.
-READER = { "news" => "a reader of a news article", "abstracts" => "a researcher reading the abstract of a paper",
-           "rfc" => "an engineer reading a standards document", "hn" => "a reader of a forum thread" }.freeze
-PLACE = { "news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper",
-          "rfc" => "in an engineering standards document", "hn" => "as a forum comment" }.freeze
-# RAID rows pair by title; the rfc and hn sides are generated from their own prompts and pair by position.
-PAIRED = %w[news abstracts].freeze
+READER = Hash.new { |_, d| "a reader of #{d}" }.merge("news" => "a reader of a news article", "abstracts" => "a researcher reading the abstract of a paper").freeze
+PLACE = Hash.new { |_, d| "in #{d}" }.merge("news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper").freeze
 BANDS = { "high" => 0.7, "medium" => 0.5, "low" => 0.0 }.freeze
 PARAS_PER_TEXT = 2
 
-opts = { sample: 30, registers: REGISTERS.keys, rules: Sloplint::Judge::RULES.map(&:id), backend: nil }
+opts = { sample: 30, registers: %w[news abstracts], rules: Sloplint::Judge::RULES.map(&:id), backend: nil }
 OptionParser.new do |o|
   o.on("--rules IDS") { |v| opts[:rules] = v.split(",") }
   o.on("--register LIST") { |v| opts[:registers] = v.split(",") }
@@ -48,20 +39,19 @@ end.parse!
 
 def rows(path) = File.exist?(path) ? File.foreach(path).map { |l| JSON.parse(l) } : []
 
-# Human rows for a register, and the model rows keyed by side name ("gpt4", "claude-sonnet-5", ...).
+# Human rows for a RAID domain, and the model rows for the same titles keyed by side name
+# ("gpt4", "claude-sonnet-5", ...).
 def load_register(reg, sample, generated)
-  dir = File.join(CORPUS, REGISTERS.fetch(reg))
-  base = reg == "news" || reg == "abstracts" ? rows(File.join(dir, "#{reg}.jsonl")) : rows(File.join(dir, "human.jsonl"))
-  abort "no corpus for #{reg}; see the usage comment at the top of script/calibrate" if base.empty?
+  base = rows(File.join(RAID, "#{reg}.jsonl"))
+  abort "no RAID rows for #{reg}; run script/probe-raid fetch" if base.empty?
   human = base.select { |r| r["model"] == "human" }.first(sample)
-  keys = human.map { |r| r["source_id"] || r["id"] }
+  keys = human.map { |r| r["source_id"] }
   sides = base.reject { |r| r["model"] == "human" }.group_by { |r| r["model"] }
   if generated
-    gen = rows(File.join(dir, "generated", generated, "#{reg}.jsonl"))
+    gen = rows(File.join(RAID, "generated", generated, "#{reg}.jsonl"))
     sides[generated] = gen unless gen.empty?
   end
-  sides = sides.transform_values { |rs| PAIRED.include?(reg) ? rs.select { |r| keys.include?(r["source_id"]) } : rs.first(sample) }
-  [human, sides.reject { |_, v| v.empty? }]
+  [human, sides.transform_values { |rs| rs.select { |r| keys.include?(r["source_id"]) } }.reject { |_, v| v.empty? }]
 end
 
 # Units of one text: the first PARAS_PER_TEXT paragraphs of three or more sentences, and their sentences.
@@ -113,10 +103,9 @@ def run(opts)
     scored.concat(score(human, "human", rules, backend, reg).map { |h| h.merge(register: reg) })
     sides.each do |side, texts|
       scored.concat(score(texts, side, rules, backend, reg).map { |h| h.merge(register: reg) })
-      # compare: a human paragraph against a model paragraph (same title where RAID pairs them,
-      # same position otherwise), in both orders.
-      pairs = texts.each_with_index.filter_map do |m, i|
-        h = PAIRED.include?(reg) ? human.find { |x| (x["source_id"] || x["id"]) == m["source_id"] } : human[i]
+      # compare: the human paragraph against the model paragraph for the same title, in both orders.
+      pairs = texts.filter_map do |m|
+        h = human.find { |x| x["source_id"] == m["source_id"] }
         hp, = units(h["text"]) if h
         mp, = units(m["text"])
         [hp.first.text, mp.first.text] if hp&.first && mp.first
@@ -132,7 +121,7 @@ def run(opts)
   puts "\nP(model unit scores higher than human unit)   (score = expected level, higher is better prose; <0.5 = the rule ranks model prose below human)"
   sides = scored.map { |s| s[:side] }.uniq - ["human"]
   opts[:registers].each do |reg|
-    puts "\n#{reg}#{GATED.include?(reg) ? "" : "  (reported, not gated)"}"
+    puts "\n#{reg}"
     puts format("  %-16s %s", "rule", sides.map { |s| format("%18s", s) }.join)
     rules.each do |r|
       cells = sides.map do |s|
@@ -164,7 +153,7 @@ def run(opts)
     %w[no-news names-nothing].each do |id|
       next unless rules.any? { |r| r.id == id }
 
-      (opts[:registers] & GATED).each do |reg|
+      opts[:registers].each do |reg|
         pos = scored.select { |x| x[:register] == reg && x[:side] == current && x[:rule] == id }.map { |x| x[:score] }
         neg = scored.select { |x| x[:register] == reg && x[:side] == "human" && x[:rule] == id }.map { |x| x[:score] }
         v = auc(pos, neg)
@@ -186,15 +175,6 @@ def run(opts)
 end
 
 # ── generate ──────────────────────────────────────────────────────────────────
-ENGINEERING_PROMPTS = [
-  "Write the design document for moving the billing service's invoice generation from a nightly cron job to a queue-driven worker. Name the queue, the failure that made the change necessary, and the rollout steps.",
-  "Write the postmortem for an outage in which the session store's primary node ran out of disk at 03:10 and logins failed for forty minutes. Include the timeline, the root cause and the follow-up actions.",
-  "Write the README for a command-line tool that rotates the TLS certificates on a fleet of edge proxies. Cover installation, the one config file, and what happens when a rotation fails halfway.",
-  "Write the design document for adding a rate limit to the public search API after a single client sent 40,000 requests a minute. Say where the limit lives, what it returns, and how it is tuned.",
-  "Write the postmortem for a deploy that shipped a migration which locked the orders table for eleven minutes during checkout. Include the timeline, the root cause and the follow-up actions.",
-  "Write the README for a library that parses the vendor's flat-file export of shipment records into structured rows. Cover the record types, the two known encoding problems, and how errors are reported."
-].freeze
-
 def anthropic(model, prompt)
   key = ENV["ANTHROPIC_API_KEY"].to_s
   abort "generate needs ANTHROPIC_API_KEY" if key.empty?
@@ -223,22 +203,13 @@ end
 
 def generate(model, opts)
   opts[:registers].each do |reg|
-    dir = File.join(CORPUS, REGISTERS.fetch(reg), "generated", model)
+    dir = File.join(RAID, "generated", model)
     FileUtils.mkdir_p(dir)
     out = File.join(dir, "#{reg}.jsonl")
     done = rows(out).to_h { |r| [r["source_id"], true] }
-    jobs =
-      if reg == "rfc"
-        ENGINEERING_PROMPTS.each_with_index.map { |p, i| ["eng-#{i}", "engineering prompt #{i}", p] }
-      elsif reg == "hn"
-        human, = load_register(reg, opts[:sample], nil)
-        human.map { |r| [r["source_id"], r["title"], "Write a Hacker News comment, two or three paragraphs, on a story titled \"#{r["title"]}\"."] }
-      else
-        human, = load_register(reg, opts[:sample], nil)
-        prompts = raid_prompts(human.map { |r| r["source_id"] })
-        human.filter_map { |r| (p = prompts[r["source_id"]]) && [r["source_id"], r["title"], p] }
-      end
-    jobs.reject! { |id, _, _| done[id] }
+    human, = load_register(reg, opts[:sample], nil)
+    prompts = raid_prompts(human.map { |r| r["source_id"] })
+    jobs = human.filter_map { |r| (p = prompts[r["source_id"]]) && !done[r["source_id"]] && [r["source_id"], r["title"], p] }
     warn "#{reg}: generating #{jobs.size} texts with #{model}"
     File.open(out, "a") do |f|
       Sloplint::Judge::Engine.in_parallel(jobs, 4) { |(id, title, prompt)| [id, title, anthropic(model, prompt)] }
@@ -247,45 +218,8 @@ def generate(model, opts)
   end
 end
 
-# ── fetch ─────────────────────────────────────────────────────────────────────
-def fetch(what)
-  dir = File.join(CORPUS, what)
-  FileUtils.mkdir_p(dir)
-  out = File.join(dir, "human.jsonl")
-  case what
-  when "rfc"
-    # Forty RFCs from the 8000s and 9000s: current-era standards prose, plain text, public.
-    numbers = (8000..9999).step(50).first(40)
-    File.open(out, "w") do |f|
-      numbers.each do |n|
-        body = Net::HTTP.get(URI("https://www.rfc-editor.org/rfc/rfc#{n}.txt"))
-        next if body.nil? || body.size < 5000
-
-        # Drop the page headers and footers that RFC text carries every 58 lines.
-        text = body.gsub(/^RFC \d+.*$\n|^\S.*\[Page \d+\]$\n|\f/, "")
-        f.puts JSON.generate(model: "human", id: "rfc#{n}", source_id: "rfc#{n}", title: body.lines.find { |l| l.strip.size > 20 }.to_s.strip, text: text)
-        warn "rfc#{n}"
-      end
-    end
-  when "hn"
-    res = Net::HTTP.get(URI("https://hn.algolia.com/api/v1/search_by_date?tags=comment&hitsPerPage=200"))
-    File.open(out, "w") do |f|
-      JSON.parse(res).fetch("hits").each do |h|
-        text = h["comment_text"].to_s.gsub(%r{<p>}, "\n\n").gsub(/<[^>]+>/, "").strip
-        next if text.size < 400
-
-        f.puts JSON.generate(model: "human", id: h["objectID"], source_id: h["objectID"], title: h["story_title"], text: text)
-      end
-    end
-  else
-    abort "fetch rfc|hn"
-  end
-  puts "wrote #{out}"
-end
-
 case ARGV.shift
 when "run" then run(opts)
 when "generate" then generate(ARGV.shift || abort("generate MODEL"), opts)
-when "fetch" then fetch(ARGV.shift)
 else abort File.read(__FILE__).lines.grep(/^#   /).join
 end

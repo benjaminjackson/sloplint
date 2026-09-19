@@ -26,9 +26,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `Sloplint::Split`, a paragraph and sentence splitter that keeps offsets into
   the source, and `Engine.context_window`, the note's context drawn for any
   span rather than only a regex match. Both are used by the judge.
-- `script/calibrate`, which measures a judge backend against RAID, a
-  current-model side generated from RAID's own prompts, and the engineering
-  register, and reports the pass lines from `docs/JUDGE.md`.
+- `script/calibrate`, which measures a judge backend against RAID and a
+  current-model side generated from RAID's own prompts, and reports the
+  pass lines from `docs/JUDGE.md`.
 
 ## [0.8.0] - 2026-09-15
 
