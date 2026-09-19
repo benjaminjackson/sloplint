@@ -193,7 +193,7 @@ module Sloplint
         rationale: "A tail that tells the reader what to think of the fact just stated is the writer grading their own sentence. Human prose in these registers ends on the fact."
       ),
       Rule.new(
-        id: "matched-shape", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        id: "matched-shape", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
         question: {
           "type" => "score",
           "instructions" => "Is the shape of `target` chosen by its content or by a template? Look for matched pairs and triples.",
@@ -211,7 +211,7 @@ module Sloplint
         suggestion: "Keep the items the content needs and drop the one that completes the pattern.",
         examples_bad: ["The new pipeline is faster, simpler, and cleaner.", "It's not about the tooling, it's about the culture."],
         examples_ok: ["The new pipeline runs in four minutes instead of eleven.", "The migration dropped the column in production but not in staging."],
-        rationale: "A pair or triple whose items are interchangeable was built to a rhythm, not to the content. This is a habit of one model family more than of the field, which is why the rule's confidence is medium: it separates strongly against current Claude models and barely against 2023 models."
+        rationale: "A pair or triple whose items are interchangeable was built to a rhythm, not to the content. Off by default: it separates strongly against current Claude models and barely against 2023 models, and in READMEs most of what it flags is a caption or a parallel the writer built on purpose. Run it by name or under --strict."
       )
     ].freeze
   end

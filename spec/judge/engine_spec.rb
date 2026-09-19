@@ -87,8 +87,9 @@ RSpec.describe Sloplint::Judge::Engine do
 
   it "caps a note's confidence at the rule's" do
     matched = rules.find { |r| r.id == "matched-shape" }
-    result = described_class.scan(text, rules: [matched], backend: flag_all)
-    expect(result.notes.map(&:confidence).uniq).to eq(["medium"])
+    expect(described_class.scan(text, rules: [matched], backend: flag_all).notes).to be_empty
+    result = described_class.scan(text, rules: [matched], backend: flag_all, strict: true)
+    expect(result.notes.map(&:confidence).uniq).to eq(["low"])
   end
 
   it "interpolates the register into every question" do
