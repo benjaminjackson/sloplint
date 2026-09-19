@@ -96,7 +96,7 @@ module Sloplint
                               place: "for #{opts[:register]}", backend:, drift:)
         out.puts(JSON.pretty_generate(verdict.to_h.except(:usage)))
         usage = { "backend" => backend.name }.merge(verdict.usage)
-        usage["estimated_cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
+        usage["cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
         err.puts("sloplint-judge: #{Engine.usage_line(usage)}")
         0
       end

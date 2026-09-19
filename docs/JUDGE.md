@@ -112,7 +112,7 @@ Exit 3 writes nothing to stdout, from either executable. Under `sloplint check -
 
 ## Note (the diagnostic object)
 
-Identical to sloplint's, field for field. One flagged unit = one Note. JSON output is an array of these, or an object keyed by path when several files are scanned, and whenever the judge ran it is wrapped: `{"notes": <that>, "judge": {"backend", "requests", ...token counts, "estimated_cost_usd"}}`. The judge costs money, so its output says what it spent; the same line goes to stderr for the human format. Jev returns token counts and no price, so the dollar figure is an estimate from TypeSafe's list price for input tokens; no output price is published.
+Identical to sloplint's, field for field. One flagged unit = one Note. JSON output is an array of these, or an object keyed by path when several files are scanned, and whenever the judge ran it is wrapped: `{"notes": <that>, "judge": {"backend", "requests", ...token counts, "cost_usd"}}`. The judge costs money, so its output says what it spent; the same line goes to stderr for the human format. Jev returns token counts and no price, so the adapter computes the dollars from TypeSafe's public price: $42 per billion input tokens, output tokens free.
 
 ```json
 {
@@ -244,8 +244,8 @@ module Sloplint::Judge
     # A short, stable string: "jev-latest".
     def name; end
 
-    # Optional. Estimated dollars for a summed usage Hash, from the backend's
-    # list price. Reported as "estimated_cost_usd" when defined.
+    # Optional. Dollars for a summed usage Hash, from the backend's list
+    # price. Reported as "cost_usd" when defined.
     def cost_usd(usage); end
   end
 
@@ -318,7 +318,7 @@ Measured against Jev. Other backends report their own numbers through `script/ca
 | compare, sentence pair with paragraph context | ~590 | ~500 ms |
 | compare, paragraph pair | ~800 | ~500 ms |
 
-A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 160,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. TypeSafe publishes no price, so `check` writes a token count to stderr and does not estimate money.
+A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 160,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.007, and `check` writes the figure into the `judge` block and onto stderr.
 
 ## Agent-first help text
 
