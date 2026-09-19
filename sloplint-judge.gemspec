@@ -13,13 +13,14 @@ Gem::Specification.new do |spec|
                      "(Jev by default) rather than regexes: does this paragraph end by restating itself, does " \
                      "this sentence name anything a reader could check. Emits sloplint's own notes. Adds " \
                      "`sloplint check --judge` and a `sloplint-judge` executable."
-  spec.homepage    = "https://github.com/benjaminjackson/sloplint"
+  spec.homepage    = "https://github.com/benjaminjackson/sloplint#sloplint-judge"
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.3"
 
   spec.metadata = {
     "source_code_uri" => "https://github.com/benjaminjackson/sloplint",
     "changelog_uri" => "https://github.com/benjaminjackson/sloplint/blob/main/CHANGELOG.md",
+    "documentation_uri" => "https://github.com/benjaminjackson/sloplint/blob/main/docs/JUDGE.md",
     "bug_tracker_uri" => "https://github.com/benjaminjackson/sloplint/issues",
     "rubygems_mfa_required" => "true"
   }

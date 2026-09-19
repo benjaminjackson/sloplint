@@ -4,6 +4,8 @@ A dependency-free CLI that scans prose for the tells of AI-generated **slop** an
 
 The primary reader is an agent (Claude Code and friends) that runs sloplint, reads the JSON, and rewrites what it flags. Humans are the secondary reader, and everything is built to keep the false-positive rate low enough that a flag is worth trusting.
 
+For the tells a regex cannot see, there is a second gem, [sloplint-judge](#sloplint-judge), whose rules are questions put to a model and whose notes come back in the same JSON. It is optional, it needs an API key, and it is the only part of sloplint that sends your text anywhere.
+
 ## What it catches, and what it doesn't
 
 A pattern earns a place in the catalog only if it shows up constantly in AI writing and rarely in careful human writing. Passive voice, weak adverbs, wordiness, clichés a person reaches for too: those belong in `proselint` or `write-good`, not here. sloplint is not a general prose linter and never tries to be. It hunts the specific fingerprints of a language model, so an agent can act on a flag instead of second-guessing it.
@@ -120,7 +122,7 @@ Does not: No parking on Sundays.
 
 ### `--judge`
 
-`sloplint check --judge` adds the rules of sloplint-judge, a second gem in this repository whose rules are questions put to a model rather than regexes: does this paragraph end by restating itself, does this sentence tell the reader anything new, does it name a thing a reader could look up. The notes come back in the same array, in document order, with the same fields. It needs the sloplint-judge gem and a `TYPESAFE_API_KEY`; without the gem it exits 2 and says how to install it, and if the model cannot be reached it exits 3 and writes no notes at all, the regex ones included, so a partial run cannot pass as a clean one. Everything about it is in [docs/JUDGE.md](docs/JUDGE.md).
+`sloplint check --judge` adds the rules of [sloplint-judge](#sloplint-judge) to the run, questions put to a model rather than regexes, and merges the notes into the same array in document order. It needs the sloplint-judge gem and an API key; the section below covers both.
 
 ## The note
 
@@ -158,6 +160,70 @@ Three codes carry the contract. A crash exits nonzero on its own.
 | 3    | `--judge` only: the model could not be reached, no notes written |
 
 An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, naming the id) rather than a silent no-op, so a typo can't masquerade as a clean scan. Input that is empty or only whitespace is exit 2 for the same reason: a pipe that delivered nothing must not read as a clean draft. Only when every source is empty — one empty file among several named ones is taken as deliberate.
+
+## sloplint-judge
+
+A second gem in this repository, for the tells a regex cannot see. Its rules are questions put to a System One model (Jev, from TypeSafe) about one paragraph or one sentence at a time: does this paragraph end by restating itself, does this sentence tell the stated reader anything they did not know, does it name anything a reader could check. The answers come back as sloplint notes, same fields, same JSON, same exit codes, so anything that already reads sloplint's output reads the judge's without change.
+
+One thing is different from the rest of sloplint: the judge sends your text to an API. sloplint on its own never leaves the machine. Every paragraph the judge examines goes to `api.typesafe.ai` over HTTPS, and nothing goes anywhere until you set a key, so the plain `sloplint check` stays offline whether or not the judge is installed.
+
+### Install
+
+```bash
+gem install sloplint sloplint-judge
+export TYPESAFE_API_KEY=...   # your TypeSafe API key
+```
+
+Requires Ruby 3.3+ and sloplint 0.9 or later. The judge is not a plugin of its own: the Claude Code plugin at the root of this repository already carries it, and the `/sloplint:check` skill tries the judge first and falls back to the regex rules when there is no key.
+
+### Run
+
+The one command to know, and the one an agent should use:
+
+```bash
+sloplint check --judge --markdown -o json draft.md
+```
+
+That runs both catalogs and returns one array of notes in document order. Without the sloplint-judge gem it exits 2 and says to install it. Without a key it exits 2 and says which variable to set. If the model cannot be reached, or answers in a shape the judge does not understand, it exits 3 and writes no notes at all, the regex ones included, so a partial run can never pass as a clean one. When the judge ran, the last line on stderr names the backend and the number of input tokens it spent.
+
+The gem also puts a `sloplint-judge` executable on your path for the judge on its own:
+
+```
+sloplint-judge [-o full|json] [--register TEXT] [--backend NAME] [command] [args]
+
+check         scan paths (or stdin) with the judge's rules only [default]
+compare A B   which of two passages a plain-prose editor keeps (--drift for rewrites)
+rules         list the judge's rule catalog (add --json)
+explain ID    print one rule's question, levels, rationale and fixtures
+version       print the sloplint-judge version
+```
+
+`check` takes `--markdown`, `--select`, `--ignore` and `--strict` with the same meanings as sloplint's. `--strict` also runs the sentence rules on every sentence, rather than only in the paragraphs a paragraph rule flagged or skipped as too short, and keeps the notes the model was not confident about. `--register TEXT` says who the reader is; the default is an engineer on the team reading a design document, and every question is asked on that reader's behalf, so a rule such as `no-news` flags a sentence that reader already knows rather than one anybody would.
+
+### The rules
+
+Eight rules in two categories. `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question the model is asked, the answer that flags, and the fixtures.
+
+- **paragraph** (3): `particulars`, a paragraph that names nothing a reader could check; `wrap-up`, a paragraph that ends by restating itself; `throat-clearing`, a paragraph that opens by announcing its topic.
+- **sentence** (5): `stock-figure`, a stock figure of speech; `no-news`, a sentence that explains what the stated reader already knows; `names-nothing`, a sentence with no specific noun in it; `ends-on-verdict`, a sentence that ends by grading the fact it just stated; `matched-shape`, a pair or triple built to a rhythm rather than to the content. `matched-shape` is off by default; name it in `--select` or pass `--strict`.
+
+Each note's `confidence` is the lower of the rule's own ceiling and how sure the model was of that answer. A note the model was unsure about is dropped unless you pass `--strict`, the same way sloplint drops its low-confidence rules.
+
+### Cost and configuration
+
+One request per paragraph carries all three paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds and reports its token count on stderr; TypeSafe publishes no price list, so sloplint does not estimate money.
+
+Configuration is from the environment only:
+
+| variable | default | meaning |
+|---|---|---|
+| `TYPESAFE_API_KEY` | none, required | bearer key sent with every request |
+| `SYSTEMONE_MODEL` | `jev-latest` | model name |
+| `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint; must be `https` |
+| `SLOPLINT_JUDGE_BACKEND` | `jev` | which adapter to use |
+| `SLOPLINT_JUDGE_CONCURRENCY` | `8` | parallel requests |
+
+The design, the calibration that decides which rules ship, and how to add a backend are in [docs/JUDGE.md](docs/JUDGE.md).
 
 ## The rule catalog
 
