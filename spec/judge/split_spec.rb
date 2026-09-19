@@ -37,6 +37,11 @@ RSpec.describe Sloplint::Split do
     expect(text[paras.last.offset, paras.last.length]).to eq("After the list. Still prose.")
   end
 
+  it "blanks a wrapped bullet whole, and a one-line lead-in ending in a colon" do
+    text = "- Long sentences appeared often. A rule asks\n  for full sentences, so that is fine.\n- Short one.\n\nRun it like this:\n\nProse here. More prose. And more.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose. And more."])
+  end
+
   it "cuts sentence text from the original, so an excerpt is always in the file" do
     text = "Run `bundle exec rspec` to start. See https://example.com/x for more.\n"
     sents = described_class.paragraphs(text, markdown: true).first.sentences

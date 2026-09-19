@@ -35,11 +35,7 @@ module Sloplint
     # so an excerpt is always a string that is in the file. Blanking is
     # character for character, so the offsets agree.
     def paragraphs(text, markdown: false)
-      scan = text
-      if markdown
-        scan = Engine.blank_markdown(text)
-        scan = scan.gsub(/^.*$/) { |l| l.match?(FURNITURE) ? " " * l.length : l }
-      end
+      scan = markdown ? blank_furniture(Engine.blank_markdown(text)) : text
       out = []
       at = 0
       # Split keeping the separators, and walk the offsets arithmetically:
@@ -55,6 +51,10 @@ module Sloplint
 
         offset = start + lead
         sents = sentences(body, base: offset, source: text)
+        # A one-sentence block ending in a colon is the lead-in to whatever
+        # follows (a code block, a list), not a paragraph.
+        next if markdown && sents.size == 1 && body.end_with?(":")
+
         out << Paragraph.new(offset:, length: body.length, text: squash(text[offset, body.length]), sentences: sents) unless sents.empty?
       end
       out
@@ -84,5 +84,16 @@ module Sloplint
     end
 
     def squash(s) = s.gsub(/\s+/, " ").strip
+
+    # Blank furniture lines to same-length spaces, and the indented lines that
+    # continue a blanked one: a wrapped bullet is one bullet, and its second
+    # line is not a sentence of its own.
+    def blank_furniture(scan)
+      dropped = false
+      scan.gsub(/^.*$/) do |l|
+        dropped = l.match?(FURNITURE) || (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
+        dropped ? " " * l.length : l
+      end
+    end
   end
 end
