@@ -42,7 +42,7 @@ RSpec.describe "Sloplint::Judge::RULES" do
 
   # The fixtures are pins against the live backend. Without a key this block
   # skips itself and says so; it is not a pass. See docs/JUDGE.md "Fixtures are live".
-  describe "live fixtures", if: ENV["TYPESAFE_API_KEY"] && !ENV["TYPESAFE_API_KEY"].empty? do
+  describe "live fixtures", if: !ENV["TYPESAFE_API_KEY"].to_s.empty? do
     let(:backend) { Sloplint::Judge::Backend.load("jev") }
 
     Sloplint::Judge::RULES.each do |rule|

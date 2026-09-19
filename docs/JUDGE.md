@@ -272,7 +272,7 @@ Configuration is from the environment. There is no configuration file.
 | variable | default | meaning |
 |---|---|---|
 | `SLOPLINT_JUDGE_BACKEND` | `jev` | which adapter class to load |
-| `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint |
+| `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint; must be `https`, anything else is a usage error (exit 2) |
 | `SYSTEMONE_MODEL` | `jev-latest` | model name sent in the body |
 | `TYPESAFE_API_KEY` | none, required | bearer key |
 | `SLOPLINT_JUDGE_CONCURRENCY` | `8` | parallel requests |

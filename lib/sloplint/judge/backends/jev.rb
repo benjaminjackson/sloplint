@@ -17,6 +17,9 @@ module Sloplint
           raise ArgumentError, "TYPESAFE_API_KEY is not set" if key.nil? || key.empty?
 
           @url = URI(url)
+          # The key goes in a header, so the endpoint is https or nothing.
+          raise ArgumentError, "SYSTEMONE_URL must be https, got #{@url.scheme.inspect}" unless @url.scheme == "https"
+
           @model = model
           @key = key
         end
@@ -25,7 +28,7 @@ module Sloplint
 
         def ask(state, questions)
           http = Net::HTTP.new(@url.host, @url.port)
-          http.use_ssl = @url.scheme == "https"
+          http.use_ssl = true
           http.read_timeout = 90
           req = Net::HTTP::Post.new(@url.path, "Content-Type" => "application/json", "Authorization" => "Bearer #{@key}")
           req.body = JSON.generate({ "state" => state, "model" => @model, "questions" => questions })

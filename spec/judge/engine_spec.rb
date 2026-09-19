@@ -110,6 +110,9 @@ RSpec.describe Sloplint::Judge::Engine do
 
   it "refuses a backend name that is not in the table" do
     expect { Sloplint::Judge::Backend.load("nope") }.to raise_error(ArgumentError, /unknown backend: nope/)
+    require "sloplint/judge/backends/jev"
+    expect { Sloplint::Judge::Backends::Jev.new(url: "http://api.example.com/v1", key: "k") }.to raise_error(ArgumentError, /must be https/)
+    expect(Sloplint::Judge::Backends::Jev.new(url: "https://api.example.com/v1", key: "k").name).to eq("jev-latest")
   end
 
   it "raises BackendError out of the parallel map" do
