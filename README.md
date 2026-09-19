@@ -184,12 +184,12 @@ The one command to know, and the one an agent should use:
 sloplint check --judge --markdown -o json draft.md
 ```
 
-That runs both catalogs and merges the notes in document order. Because the judge spent money, the JSON says how much: the notes sit under `notes` and a `judge` object carries the backend, the number of requests and the token counts the backend reported. The same figures go to stderr in one line for the human formats.
+That runs both catalogs and merges the notes in document order. Because the judge spent money, the JSON says how much: the notes sit under `notes` and a `judge` object carries the backend, the number of requests, the token counts the backend reported and an estimated cost. The same figures go to stderr in one line for the human formats.
 
 ```json
 {
   "notes": [ ... ],
-  "judge": { "backend": "jev-latest", "requests": 9, "input_tokens": 14200, "output_tokens": 610 }
+  "judge": { "backend": "jev-latest", "requests": 9, "input_tokens": 14200, "output_tokens": 610, "estimated_cost_usd": 0.000596 }
 }
 ```
 
@@ -220,7 +220,7 @@ Each note's `confidence` is the lower of the rule's own ceiling and how sure the
 
 ### Cost and configuration
 
-One request per paragraph carries all three paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds. Every run reports requests and tokens, in the JSON under `judge` and on stderr. TypeSafe publishes no price list, so there is no dollar figure: multiply the tokens by your rate.
+One request per paragraph carries all three paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds. Every run reports requests, tokens and an estimated cost, in the JSON under `judge` and on stderr. Jev returns token counts and no price, so the dollar figure is computed from TypeSafe's published rate of $42 per billion input tokens; no output-token price is published, so the estimate counts input only. At that rate a 2,000-word document costs well under a cent.
 
 Configuration is from the environment only:
 

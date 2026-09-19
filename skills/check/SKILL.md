@@ -31,7 +31,7 @@ If that exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
 
-Decide by the exit code and the message, never by looking for an API key in the environment. When the judge did run, end the report with one line from the `judge` object: which backend, how many requests, how many tokens.
+Decide by the exit code and the message, never by looking for an API key in the environment. When the judge did run, end the report with one line from the `judge` object: which backend, how many requests, how many tokens, and the estimated cost.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
 

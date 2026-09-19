@@ -24,7 +24,17 @@ module Sloplint
           @key = key
         end
 
+        # Jev's response carries token counts and no price. The list price on
+        # typesafe.ai (read 2026-09-19) is $42 per billion input tokens; no
+        # output price is published, so the estimate counts input only.
+        # ponytail: one constant, not a config; move to an env var when the
+        # price moves or an output price appears.
+        USD_PER_INPUT_TOKEN = 42.0 / 1_000_000_000
+
         def name = @model
+
+        # Estimated dollars for a summed usage Hash.
+        def cost_usd(usage) = usage.fetch("input_tokens", 0) * USD_PER_INPUT_TOKEN
 
         def ask(state, questions)
           http = Net::HTTP.new(@url.host, @url.port)

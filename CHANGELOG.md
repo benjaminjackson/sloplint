@@ -11,8 +11,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `compare`, `rules`, `explain`, and `script/calibrate`. Not yet published to
   rubygems.org; see "Phase two" in `docs/JUDGE.md`.
 - `check` reports what the judge spent: JSON output is `{"notes", "judge"}`
-  with the backend, request count and token counts under `judge`, and the
-  same line goes to stderr.
+  with the backend, request count, token counts and an estimated cost under
+  `judge`, and the same line goes to stderr. Jev returns no price, so the
+  cost is computed from TypeSafe's published input-token rate.
 
 ## sloplint
 

@@ -95,7 +95,9 @@ module Sloplint
         verdict = Compare.run(File.read(a, encoding: Encoding::UTF_8), File.read(b, encoding: Encoding::UTF_8),
                               place: "for #{opts[:register]}", backend:, drift:)
         out.puts(JSON.pretty_generate(verdict.to_h.except(:usage)))
-        err.puts("sloplint-judge: #{backend.name}, #{verdict.usage.map { |k, v| "#{v} #{k}" }.join(", ")}") unless verdict.usage.empty?
+        usage = { "backend" => backend.name }.merge(verdict.usage)
+        usage["estimated_cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
+        err.puts("sloplint-judge: #{Engine.usage_line(usage)}")
         0
       end
 

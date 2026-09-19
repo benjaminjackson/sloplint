@@ -31,8 +31,20 @@ module Sloplint
           result.notes
         end
         usage = { "backend" => backend.name, "requests" => usage.delete("requests") || 0 }.merge(usage)
-        err.puts("#{name} #{usage.map { |k, v| k == "backend" ? v : "#{v} #{k}" }.join(", ")}")
+        usage["estimated_cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
+        err.puts("#{name} #{usage_line(usage)}")
         Result.new(notes:, usage:)
+      end
+
+      # "jev-latest, 4 requests, 5200 input_tokens, 252 output_tokens, ~$0.000218"
+      def usage_line(usage)
+        usage.map do |k, v|
+          case k
+          when "backend" then v
+          when "estimated_cost_usd" then format("~$%.6f", v)
+          else "#{v} #{k}"
+          end
+        end.join(", ")
       end
 
       # text: the source. rules: judge Rules to run. backend: answers `ask`.

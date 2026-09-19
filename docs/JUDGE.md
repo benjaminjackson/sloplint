@@ -112,7 +112,7 @@ Exit 3 writes nothing to stdout, from either executable. Under `sloplint check -
 
 ## Note (the diagnostic object)
 
-Identical to sloplint's, field for field. One flagged unit = one Note. JSON output is an array of these, or an object keyed by path when several files are scanned, and whenever the judge ran it is wrapped: `{"notes": <that>, "judge": {"backend", "requests", ...token counts}}`. The judge costs money, so its output says what it spent; the same line goes to stderr for the human format.
+Identical to sloplint's, field for field. One flagged unit = one Note. JSON output is an array of these, or an object keyed by path when several files are scanned, and whenever the judge ran it is wrapped: `{"notes": <that>, "judge": {"backend", "requests", ...token counts, "estimated_cost_usd"}}`. The judge costs money, so its output says what it spent; the same line goes to stderr for the human format. Jev returns token counts and no price, so the dollar figure is an estimate from TypeSafe's list price for input tokens; no output price is published.
 
 ```json
 {
@@ -243,6 +243,10 @@ module Sloplint::Judge
 
     # A short, stable string: "jev-latest".
     def name; end
+
+    # Optional. Estimated dollars for a summed usage Hash, from the backend's
+    # list price. Reported as "estimated_cost_usd" when defined.
+    def cost_usd(usage); end
   end
 
   Answer = Data.define(:type, :probabilities, :confidence, :usage)
@@ -279,7 +283,7 @@ Configuration is from the environment. There is no configuration file.
 
 ### Adding a backend
 
-1. Write a class under `lib/sloplint/judge/backends/` that answers `ask` and `name`.
+1. Write a class under `lib/sloplint/judge/backends/` that answers `ask` and `name`, and `cost_usd(usage)` if the backend has a list price.
 2. Add its name to the backend table.
 3. Run `script/calibrate` against the corpus described above: RAID's human side against both its 2023 generations and a current-model side generated from the same prompts. It reports, per rule, register and model side, the probability that the model unit scores higher than the human one; the flip rate under passage-order swap at each confidence band for `compare`; and the agreement rate between two runs of the same units at each band for `check`. A backend is usable when `no-news` and `names-nothing` sit below 0.5 in every register on the list against the current-model side, the `compare` flip rate at or above 0.7 confidence is under 1 percent, and the `check` agreement rate at or above 0.7 is at least 90 percent. If a backend's bands differ from Jev's, the confidence thresholds are per backend.
 
