@@ -211,7 +211,7 @@ version       print the sloplint-judge version
 
 ### The rules
 
-Eight rules in two categories. `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question the model is asked, the answer that flags, and the fixtures.
+Eight rules in two categories. `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question the model is asked, the answer that flags, and the fixtures. The bar is a little different from the regex catalog's: a judge rule ships when a reader shown the flagged unit agrees it should go, whoever wrote it, and how sharply it separates model prose from human prose sets its severity. So `throat-clearing` is `info`, not gone: human abstracts open by announcing the paper, and it is dead weight either way.
 
 - **paragraph** (3): `particulars`, a paragraph that names nothing a reader could check; `wrap-up`, a paragraph that ends by restating itself; `throat-clearing`, a paragraph that opens by announcing its topic.
 - **sentence** (5): `stock-figure`, a stock figure of speech; `no-news`, a sentence that explains what the stated reader already knows; `names-nothing`, a sentence with no specific noun in it; `ends-on-verdict`, a sentence that ends by grading the fact it just stated; `matched-shape`, a pair or triple built to a rhythm rather than to the content. `matched-shape` is off by default; name it in `--select` or pass `--strict`.

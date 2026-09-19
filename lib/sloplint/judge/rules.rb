@@ -104,7 +104,7 @@ module Sloplint
           "Our service caches search results for 30 seconds. The hit rate on Tuesday was 91 percent. Misses go to Postgres, which held at 400 queries a second.",
           "The pager fired at 03:12. The on-call engineer restarted the queue consumer at 03:20. Backlog cleared by 03:41."
         ],
-        rationale: "An opening sentence that tells the reader the topic matters, before saying anything about it, is a warm-up the writer needed and the reader did not. The weakest of the three paragraph rules, hence info."
+        rationale: "An opening sentence that tells the reader the topic matters, before saying anything about it, is a warm-up the writer needed and the reader did not. Humans do it too, abstracts especially, which is why this is info and not warning; it is dead weight either way."
       ),
 
       # ── sentence ────────────────────────────────────────────────────────────
