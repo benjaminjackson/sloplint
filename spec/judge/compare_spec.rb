@@ -15,12 +15,8 @@ RSpec.describe Sloplint::Judge::Compare do
     expect(v.keep).to eq("A")
   end
 
-  it "gates acceptance on the lower of the two confidences" do
-    ok = described_class.run("a", "b", place: "x", backend: backend(p_a: 0.2, p_b: 0.8), drift: true, swap: false)
-    expect(ok.accept?).to be(true)
-    shaky = described_class.run("a", "b", place: "x", backend: backend(p_a: 0.2, p_b: 0.8, drift_conf: 0.4), drift: true, swap: false)
-    expect(shaky.accept?).to be(false)
-    drifted = described_class.run("a", "b", place: "x", backend: backend(p_a: 0.2, p_b: 0.8, drift: 0.7), drift: true, swap: false)
-    expect(drifted.accept?).to be(false)
+  it "carries both confidences and the drift, and applies no acceptance rule" do
+    v = described_class.run("a", "b", place: "x", backend: backend(p_a: 0.2, p_b: 0.8, drift: 0.7, drift_conf: 0.4), drift: true, swap: false)
+    expect(v.to_h.except(:usage)).to eq(keep: "B", p_keep_b: 0.8, keep_confidence: 0.9, drift: 0.7, drift_confidence: 0.4)
   end
 end

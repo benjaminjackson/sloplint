@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## sloplint-judge
+
+### [Unreleased]
+
+- First cut of the judge gem: eight rules, the Jev backend, `check`,
+  `compare`, `rules`, `explain`, and `script/calibrate`. Not yet published to
+  rubygems.org; see "Phase two" in `docs/JUDGE.md`.
+
+## sloplint
+
 ## [Unreleased]
 
 ### Added

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "benchmark"
+
 RSpec.describe Sloplint::Split do
   it "splits paragraphs on blank lines and sentences on terminal punctuation" do
     text = "One thing. Another thing here.\n\nSecond para.\n"
@@ -26,6 +28,27 @@ RSpec.describe Sloplint::Split do
     text = "- a bullet line.\n\n| a | table |\n\n> quoted.\n\nProse here. More prose.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
     expect(described_class.paragraphs(text).size).to eq(4)
+  end
+
+  it "keeps the prose around a tight-bound list and drops only the list lines" do
+    text = "One fact. Two facts. Three facts.\n- ticket OPS-412\n- owner: ops\nAfter the list. Still prose.\n"
+    paras = described_class.paragraphs(text, markdown: true)
+    expect(paras.map(&:text)).to eq(["One fact. Two facts. Three facts.", "After the list. Still prose."])
+    expect(text[paras.last.offset, paras.last.length]).to eq("After the list. Still prose.")
+  end
+
+  it "cuts sentence text from the original, so an excerpt is always in the file" do
+    text = "Run `bundle exec rspec` to start. See https://example.com/x for more.\n"
+    sents = described_class.paragraphs(text, markdown: true).first.sentences
+    expect(sents.map(&:text)).to eq(["Run `bundle exec rspec` to start.", "See https://example.com/x for more."])
+    sents.each { |s| expect(text[s.offset, s.length]).to eq(s.text) }
+  end
+
+  it "walks offsets without rescanning, so non-ASCII text stays linear" do
+    para = "The “quoted” claim held. It held again. And again.\n\n"
+    small = Benchmark.realtime { described_class.paragraphs(para * 500) }
+    large = Benchmark.realtime { described_class.paragraphs(para * 4000) }
+    expect(large).to be < small * 30
   end
 
   it "blanks code under --markdown so a fenced block is not a paragraph" do

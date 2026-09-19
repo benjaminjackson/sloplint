@@ -111,8 +111,8 @@ sloplint's three, plus one.
 |------|---------|
 | 0    | ran, **no notes** |
 | 1    | ran, **notes found** |
-| 2    | bad arguments / usage error, empty input, or judge gem not installed |
-| 3    | backend failure: no key, network down, malformed answer |
+| 2    | bad arguments / usage error, empty input, judge gem not installed, or judge not configured (no key, unknown backend name) |
+| 3    | backend failure: network down, non-200, malformed answer |
 
 Exit 3 writes nothing to stdout, from either executable. Under `sloplint check --judge` that means the regex notes are withheld too: a caller that asked for both and got one would read it as a clean judge run, which is the one lie the exit codes exist to prevent. A caller that wants sloplint's notes regardless runs plain `sloplint check` and `sloplint-judge check` as two commands.
 
@@ -185,7 +185,7 @@ RULES = [
 ]
 ```
 
-`question` is the System One question, verbatim in the shape the adapter sends. `%{register}` is interpolated from `--register`. `flag` says which answer makes a note: `{ level: 0 }` for a score, `{ yes: true }` for a noul. There is no threshold on the probability itself, only on the most likely answer and the model's confidence, because a threshold is a number nobody can defend and the confidence gate already does the job.
+`question` is the System One question, verbatim in the shape the adapter sends. `%{register}` is interpolated from `--register`. `flag` says which answer makes a note: `{ level: 0 }` for a score, which is the only question type a rule flags on today; a first noul rule adds `{ yes: true }` and the branch that reads it. There is no threshold on the probability itself, only on the most likely answer and the model's confidence, because a threshold is a number nobody can defend and the confidence gate already does the job.
 
 `confidence` on the rule means what it means in sloplint, how likely a flag is a false positive, and it is a ceiling: a note's confidence is the lower of the rule's and the model's band for that answer. A rule at `medium` never produces a `high` note however sure the model is, which is how `matched-shape` is marked as a tell of one model family. A rule at `low` stays out of the default run, so `--select`, `--ignore` and `--strict` work on judge rules exactly as they do on sloplint's.
 
@@ -211,7 +211,7 @@ Run on every paragraph of three or more sentences. One request per paragraph car
 
 ### sentence
 
-Run on every sentence of the paragraphs a paragraph rule flagged, so the expensive questions are asked where the cheap ones found something. Two details keep that shortcut honest. A paragraph is "flagged" only by a note that survives the confidence bands; a paragraph answer that fell to `low` and was dropped opens nothing. And when the run contains no paragraph rule at all, because `--select` named only sentence rules or `--ignore paragraph` removed them, the sentence rules run on every sentence, since there is nothing to triage by and a silent clean exit would be a lie. `--strict` runs them on every sentence regardless. One request per sentence carries all five questions, with the sentence's paragraph and its index in the state so the model sees the neighbours.
+Run on every sentence of the paragraphs a paragraph rule flagged, and on the sentences of the short paragraphs no paragraph rule looked at, so the expensive questions are asked where the cheap ones found something and no paragraph goes unexamined. Two details keep that shortcut honest. A paragraph is "flagged" only by a note that survives the confidence bands; a paragraph answer that fell to `low` and was dropped opens nothing. And when the run contains no paragraph rule at all, because `--select` named only sentence rules or `--ignore paragraph` removed them, the sentence rules run on every sentence, since there is nothing to triage by and a silent clean exit would be a lie. `--strict` runs them on every sentence regardless. One request per sentence carries all five questions, with the sentence's paragraph and its index in the state so the model sees the neighbours.
 
 - **stock-figure** (`warning`, `high`). The sentence uses a figure of speech that is stock, a figure that is the writer's own, or no figure. Flags at stock.
 - **no-news** (`warning`, `high`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known. Never reversed in any register tested.
@@ -233,7 +233,7 @@ Tested, not shipped, kept here so nobody tests them again without new evidence. 
 
 ## Splitting
 
-Paragraphs are separated by sloplint's `PARA_BREAK`, and `--markdown` is sloplint's blanker: fenced and inline code, HTML comments and URLs go before splitting. On top of that the judge drops headings, list items, table rows, block quotes and reference lines, because a heading is not a paragraph and a bullet is not a sentence. Sentences are split on terminal punctuation followed by a space and a capital or an opening quote, with a short list of abbreviations that do not end a sentence. This is the splitter the spike used, with one addition: every paragraph and sentence it returns carries its offset into the original text, so a note can be placed on the file as written after the furniture is gone. It lands in the core gem as `Sloplint::Split`, a public module the regex engine does not call, because the reader-test skill needs the same splitter and two consumers make it core's to own. A paragraph with fewer than three sentences is skipped by the paragraph rules, and its sentences are reached by the sentence rules only under `--strict` or when the run has no paragraph rule to triage by.
+Paragraphs are separated by sloplint's `PARA_BREAK`, and `--markdown` is sloplint's blanker: fenced and inline code, HTML comments and URLs go before splitting. On top of that the judge drops headings, list items, table rows, block quotes and reference lines, because a heading is not a paragraph and a bullet is not a sentence. Sentences are split on terminal punctuation followed by a space and a capital or an opening quote, with a short list of abbreviations that do not end a sentence. This is the splitter the spike used, with one addition: every paragraph and sentence it returns carries its offset into the original text, so a note can be placed on the file as written after the furniture is gone. It lands in the core gem as `Sloplint::Split`, a public module the regex engine does not call, because the reader-test skill needs the same splitter and two consumers make it core's to own. A paragraph with fewer than three sentences is skipped by the paragraph rules and goes straight to the sentence rules, so a README written in two-sentence paragraphs is still examined. Splitting runs on the blanked copy, but every text the splitter returns is cut from the original at the same offsets, so an excerpt is always a string that is in the file, code spans and URLs included. Furniture is blanked line by line, so a list bound tight to the paragraph above it takes only its own lines out.
 
 ## Backend adapter
 

@@ -55,6 +55,29 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("judge backend failure: no key")
   end
 
+  it "exits 2 with an install hint when the judge gem is not there" do
+    missing = LoadError.new("cannot load such file -- sloplint/judge")
+    missing.instance_variable_set(:@path, "sloplint/judge")
+    allow(Sloplint::CLI).to receive(:require).and_raise(missing)
+    code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
+    expect([code, out]).to eq([2, ""])
+    expect(err).to include("gem install sloplint-judge")
+  end
+
+  it "exits 2, not 3, when the backend is not configured or not known" do
+    allow(Sloplint::Judge::Backend).to receive(:load).and_raise(ArgumentError, "TYPESAFE_API_KEY is not set")
+    code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
+    expect([code, out]).to eq([2, ""])
+    expect(err).to include("TYPESAFE_API_KEY is not set")
+  end
+
+  it "keeps the files in argv order when merging judge notes" do
+    a = Tempfile.new("a"); a.write(text); a.close
+    b = Tempfile.new("b"); b.write(text); b.close
+    _, out, = run(Sloplint::CLI, ["check", "--judge", "-o", "json", b.path, a.path])
+    expect(JSON.parse(out).keys).to eq([b.path, a.path])
+  end
+
   it "still runs plain check with no judge code involved" do
     code, out, = run(Sloplint::CLI, ["check", "-o", "json", "-"], stdin_text: text)
     expect(code).to eq(1)
@@ -96,10 +119,11 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
       allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
       a = Tempfile.new("a"); a.write("Old."); a.close
       b = Tempfile.new("b"); b.write("New."); b.close
-      code, out, = run(Sloplint::Judge::CLI, ["compare", "--drift", a.path, b.path])
+      code, out, err = run(Sloplint::Judge::CLI, ["compare", "--drift", a.path, b.path])
       expect(code).to eq(0)
       v = JSON.parse(out)
-      expect(v.keys).to include("keep", "p_keep_b", "keep_confidence", "drift", "drift_confidence", "accept")
+      expect(v.keys).to eq(%w[keep p_keep_b keep_confidence drift drift_confidence])
+      expect(err).to include("fake, 100 input_tokens")
       sent = backend.calls.first.first
       expect(v["keep"]).to eq(sent["B"] == "New." ? "B" : "A")
     end

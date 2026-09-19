@@ -25,7 +25,7 @@ Try both linters first. The judge asks a model the questions a regex cannot, and
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
 ```
 
-If that exits `2` with a message naming the sloplint-judge gem, the judge is not installed here. Run the plain check instead and say in the report that only the regex rules ran:
+If that exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_KEY`, the judge is not installed or not configured here. Run the plain check instead and say in the report that only the regex rules ran:
 
 ```bash
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH

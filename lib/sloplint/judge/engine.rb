@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "../engine"
-require_relative "../split"
+require "sloplint/engine"
+require "sloplint/split"
 require_relative "rules"
 require_relative "backend"
 
@@ -18,6 +18,19 @@ module Sloplint
       Result = Data.define(:notes, :usage)
 
       module_function
+
+      # Scan several [label, text] sources, sum the usage, and write the
+      # backend name and token count to err. Returns the notes.
+      def scan_sources(sources, name:, err:, backend: Backend.load, **kwargs)
+        usage = Hash.new(0)
+        notes = sources.flat_map do |label, text|
+          result = scan(text, backend:, path: label, **kwargs)
+          result.usage.each { |k, v| usage[k] += v }
+          result.notes
+        end
+        err.puts("#{name} #{backend.name}, #{usage.map { |k, v| "#{v} #{k}" }.join(", ")}") unless usage.empty?
+        notes
+      end
 
       # text: the source. rules: judge Rules to run. backend: answers `ask`.
       # markdown: blank code, HTML comments and URLs, and drop furniture.
@@ -41,7 +54,7 @@ module Sloplint
           eligible.zip(answered).each do |p, answers|
             add_usage(usage, answers)
             para_rules.each do |rule|
-              note = note_for(rule, answers.fetch(rule.id), unit_for(rule, p), text, path, line_starts, strict)
+              note = note_for(rule, answer_for(answers, rule), unit_for(rule, p), text, path, line_starts, strict)
               next unless note
 
               notes << note
@@ -50,11 +63,13 @@ module Sloplint
           end
         end
 
-        # Sentence rules run where a paragraph rule fired. With no paragraph rule
-        # to triage by, or under --strict, they run everywhere: a silent clean
-        # exit on a document nothing examined would be a lie.
+        # Sentence rules run where a paragraph rule fired, and in the short
+        # paragraphs no paragraph rule looked at. With no paragraph rule to
+        # triage by, or under --strict, they run everywhere. Either way no
+        # paragraph goes unexamined: a clean exit on a document nothing looked
+        # at would be a lie.
         unless sent_rules.empty?
-          targets = strict || para_rules.empty? ? paragraphs : flagged.uniq
+          targets = strict || para_rules.empty? ? paragraphs : (paragraphs - eligible + flagged.uniq).sort_by(&:offset)
           jobs = targets.flat_map { |p| p.sentences.each_index.map { |i| [p, i] } }
           questions = questions_for(sent_rules, register)
           answered = in_parallel(jobs, concurrency) do |(p, i)|
@@ -64,7 +79,7 @@ module Sloplint
           jobs.zip(answered).each do |(p, i), answers|
             add_usage(usage, answers)
             sent_rules.each do |rule|
-              note = note_for(rule, answers.fetch(rule.id), p.sentences[i], text, path, line_starts, strict)
+              note = note_for(rule, answer_for(answers, rule), p.sentences[i], text, path, line_starts, strict)
               notes << note if note
             end
           end
@@ -89,10 +104,11 @@ module Sloplint
         end
       end
 
-      def flagged?(rule, answer)
-        f = rule.flag
-        f.key?(:level) ? answer.top == f[:level] : answer.top == f[:yes]
-      end
+      def flagged?(rule, answer) = answer.top == rule.flag[:level]
+
+      # A backend that answers some questions and not others is a failed
+      # request, not a clean one.
+      def answer_for(answers, rule) = answers.fetch(rule.id) { raise BackendError, "no answer for #{rule.id}" }
 
       # Model confidence to a band. Provisional -- see docs/JUDGE.md "Note".
       def band(confidence)
@@ -112,16 +128,9 @@ module Sloplint
         Note.new(
           path: path, line: line, column: column, severity: rule.severity, confidence: conf,
           rule: rule.id, category: rule.category, message: rule.message,
-          excerpt: unit.text, context: Sloplint::Engine.context_window(text, unit.offset, unit.offset + raw_length(text, unit)),
+          excerpt: unit.text, context: Sloplint::Engine.context_window(text, unit.offset, unit.offset + unit.length),
           count: nil, rationale: rule.rationale, suggestion: rule.suggestion
         )
-      end
-
-      # Length of the unit as written, before its whitespace was collapsed.
-      def raw_length(text, unit)
-        pattern = Regexp.new(unit.text.split(" ").map { |w| Regexp.escape(w) }.join('\s+'))
-        m = text.match(pattern, unit.offset)
-        m ? m.end(0) - unit.offset : unit.text.length
       end
 
       # Every answer in one request carries the same usage; count it once.
@@ -131,31 +140,16 @@ module Sloplint
       end
 
       # Map items through the block on up to `concurrency` threads, keeping
-      # order. The first BackendError stops the run and is re-raised.
+      # order. Thread#value re-raises whatever a chunk raised.
+      # ponytail: static chunks, so one slow request delays its chunk; a queue
+      # if requests stop being uniform.
       def in_parallel(items, concurrency)
         return items.map { |i| yield i } if concurrency <= 1 || items.size <= 1
 
-        queue = Queue.new
-        items.each_with_index { |it, i| queue << [i, it] }
-        results = Array.new(items.size)
-        error = nil
-        Array.new([concurrency, items.size].min) do
-          Thread.new do
-            until error || queue.empty?
-              i, it = queue.pop(true)
-              begin
-                results[i] = yield it
-              rescue BackendError => e
-                error = e
-              end
-            end
-          rescue ThreadError
-            nil
-          end
-        end.each(&:join)
-        raise error if error
-
-        results
+        n = [concurrency, items.size].min
+        items.each_slice((items.size / n.to_f).ceil)
+             .map { |chunk| Thread.new { Thread.current.report_on_exception = false; chunk.map { |i| yield i } } }
+             .flat_map(&:value)
       end
     end
   end

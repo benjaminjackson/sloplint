@@ -8,14 +8,9 @@ module Sloplint
     Answer = Data.define(:type, :probabilities, :confidence, :usage) do
       def initialize(usage: {}, **rest) = super
 
-      # Index of the most likely level (score) or the most likely option (choice).
-      def top
-        case type
-        when "score" then probabilities.each_with_index.max_by { |p, _| p }.last
-        when "choice" then probabilities.max_by { |_, p| p }.first
-        else probabilities >= 0.5
-        end
-      end
+      # Index of the most likely level of a score answer, which is the only
+      # kind a rule flags on today. See docs/JUDGE.md "Rule model".
+      def top = probabilities.each_with_index.max_by { |p, _| p }.last
     end
 
     # Raised for anything that stops the backend answering: no key, network,
@@ -24,14 +19,16 @@ module Sloplint
 
     # The one interface the engine depends on. A backend answers `ask` with a
     # Hash of question name => Answer and `name` with a short stable string.
-    # See docs/JUDGE.md "Backend adapter".
+    # See docs/JUDGE.md "Backend adapter". The table is the guard that keeps
+    # `--backend` from naming an arbitrary file.
     module Backend
       TABLE = { "jev" => "Jev" }.freeze
 
       module_function
 
-      def load(name = ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev"))
-        klass = TABLE[name] or raise BackendError, "unknown backend: #{name} (known: #{TABLE.keys.join(", ")})"
+      def load(name = nil)
+        name ||= ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev")
+        klass = TABLE[name] or raise ArgumentError, "unknown backend: #{name} (known: #{TABLE.keys.join(", ")})"
         require_relative "backends/#{name}"
         Backends.const_get(klass).new
       end

@@ -13,6 +13,8 @@ module Sloplint
         def initialize(url: ENV.fetch("SYSTEMONE_URL", "https://api.typesafe.ai/v1/systemone"),
                        model: ENV.fetch("SYSTEMONE_MODEL", "jev-latest"),
                        key: ENV["TYPESAFE_API_KEY"])
+          raise ArgumentError, "TYPESAFE_API_KEY is not set" if key.nil? || key.empty?
+
           @url = URI(url)
           @model = model
           @key = key
@@ -21,8 +23,6 @@ module Sloplint
         def name = @model
 
         def ask(state, questions)
-          raise BackendError, "TYPESAFE_API_KEY is not set" if @key.nil? || @key.empty?
-
           http = Net::HTTP.new(@url.host, @url.port)
           http.use_ssl = @url.scheme == "https"
           http.read_timeout = 90
@@ -33,8 +33,10 @@ module Sloplint
 
           body = JSON.parse(res.body)
           usage = body["usage"] || {}
-          body.fetch("answers").to_h do |qname, a|
-            type = questions.fetch(qname).fetch("type")
+          answers = body.fetch("answers")
+          questions.to_h do |qname, q|
+            a = answers.fetch(qname) { raise KeyError, "no answer for #{qname}" }
+            type = q.fetch("type")
             probs = normalise(type, type == "noul" ? a.fetch("noul") : a.fetch("probabilities"))
             [qname, Answer.new(type: type, probabilities: probs, confidence: confidence_for(a, type, probs), usage: usage)]
           end

@@ -34,14 +34,17 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(strict.calls.map { |s, _| s["sentence_count"] }).to eq([1, 3, 2])
   end
 
-  it "runs sentence rules only inside flagged paragraphs" do
-    backend = FakeBackend.new do |state, _n, q|
+  it "runs sentence rules in flagged paragraphs and in the short ones no paragraph rule saw" do
+    long = text + "\nA. B. C. D.\n"
+    backend = FakeBackend.new do |state, _n, _q|
       state.key?("target") ? level(0) : (state["paragraph"].include?("In short") ? level(0) : level(2))
     end
-    result = described_class.scan(text, rules: [para_rule, sent_rule], backend: backend)
+    result = described_class.scan(long, rules: [para_rule, sent_rule], backend: backend)
     sentence_calls = backend.calls.select { |s, _| s.key?("target") }
-    expect(sentence_calls.size).to eq(3)
-    expect(result.notes.map(&:rule).tally).to eq("wrap-up" => 1, "no-news" => 3)
+    # 1 + 3 + 2 sentences from the flagged and the short paragraphs; the unflagged four-sentence one is skipped.
+    expect(sentence_calls.size).to eq(6)
+    expect(sentence_calls.none? { |s, _| s["paragraph"]["sentences"] == %w[A. B. C. D.] }).to be(true)
+    expect(result.notes.map(&:rule).tally).to eq("wrap-up" => 1, "no-news" => 6)
   end
 
   it "runs sentence rules everywhere when the run has no paragraph rule" do
@@ -50,10 +53,28 @@ RSpec.describe Sloplint::Judge::Engine do
   end
 
   it "does not let a dropped low-confidence paragraph flag open its sentences" do
+    one_para = "First fact here. Second fact here. In short, facts matter.\n"
     backend = FakeBackend.new { |state, _n, _q| state.key?("target") ? level(0) : level(0, confidence: 0.3) }
-    result = described_class.scan(text, rules: [para_rule, sent_rule], backend: backend)
+    result = described_class.scan(one_para, rules: [para_rule, sent_rule], backend: backend)
     expect(result.notes).to be_empty
     expect(backend.calls.none? { |s, _| s.key?("target") }).to be(true)
+  end
+
+  it "keeps the context window on the sentence under --markdown, with the excerpt as written" do
+    md = "Intro.\n\nRun `x` to start. Run `x` to start. In short, run `x`.\n\nRun `x` to start. Done. Fine.\n"
+    result = described_class.scan(md, rules: [para_rule], backend: flag_all, markdown: true)
+    n = result.notes.first
+    expect(n.excerpt).to eq("In short, run `x`.")
+    expect(n.context).to eq("…Run `x` to start. Run `x` to start. [In short, run `x`.] Run `x` to start. Done. Fine.")
+  end
+
+  it "turns a partial answer set from the backend into a BackendError" do
+    partial = Class.new do
+      def name = "partial"
+      def ask(_state, questions) = questions.keys.first(1).to_h { |k| [k, Sloplint::Judge::Answer.new(type: "score", probabilities: [1.0, 0, 0], confidence: 1.0)] }
+    end.new
+    expect { described_class.scan(text, rules: rules.select { |r| r.unit == :paragraph }, backend: partial) }
+      .to raise_error(Sloplint::Judge::BackendError, /no answer for/)
   end
 
   it "bands the model's confidence and keeps low notes only under strict" do
@@ -84,6 +105,10 @@ RSpec.describe Sloplint::Judge::Engine do
 
   it "reports nothing when nothing flags" do
     expect(described_class.scan(text, rules: rules, backend: flag_none).notes).to be_empty
+  end
+
+  it "refuses a backend name that is not in the table" do
+    expect { Sloplint::Judge::Backend.load("nope") }.to raise_error(ArgumentError, /unknown backend: nope/)
   end
 
   it "raises BackendError out of the parallel map" do

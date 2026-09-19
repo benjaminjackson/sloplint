@@ -12,12 +12,10 @@ module Sloplint
       DRIFT = "Does B state any fact, claim or qualification that A does not, or drop any that A states? " \
               "Answer yes if the meaning differs in any way a careful reader would notice, no if only the wording differs."
 
-      Verdict = Data.define(:keep, :p_keep_b, :keep_confidence, :drift, :drift_confidence, :usage) do
-        # The acceptance rule for a rewrite B of A. Gates on the lower confidence.
-        def accept? = keep == "B" && (drift.nil? || drift <= 0.5) && [keep_confidence, drift_confidence].compact.min >= 0.7
-
-        def to_h = super.merge(accept: accept?)
-      end
+      # The acceptance rule for a rewrite (keep B, drift at or under 0.5, the
+      # lower confidence at or above 0.7) belongs to the phase-two loop; this
+      # reports the inputs and applies nothing. See docs/JUDGE.md "compare".
+      Verdict = Data.define(:keep, :p_keep_b, :keep_confidence, :drift, :drift_confidence, :usage)
 
       module_function
 

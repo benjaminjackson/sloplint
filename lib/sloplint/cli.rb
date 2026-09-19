@@ -79,9 +79,9 @@ module Sloplint
       # plugin cache with every file present. See docs/JUDGE.md "CLI surface".
       if judge
         begin
-          require_relative "judge"
+          require "sloplint/judge"
         rescue LoadError => e
-          raise unless e.path.to_s.end_with?("judge")
+          raise unless e.path == "sloplint/judge"
 
           err.puts("sloplint: --judge needs the sloplint-judge gem: gem install sloplint-judge")
           return 2
@@ -109,16 +109,16 @@ module Sloplint
       end
 
       if judge && !judge_rules.empty?
-        judge_backend = Judge::Backend.load(*[backend].compact)
-        usage = Hash.new(0)
-        judge_notes = sources.flat_map do |label, text|
-          result = Judge::Engine.scan(text, rules: judge_rules, backend: judge_backend, markdown:, path: label,
-                                      register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
-          result.usage.each { |k, v| usage[k] += v }
-          result.notes
+        begin
+          judge_backend = Judge::Backend.load(backend)
+        rescue ArgumentError => e
+          err.puts("sloplint: --judge: #{e.message}")
+          return 2
         end
-        all_notes = (all_notes + judge_notes).sort_by { |n| [n.path, n.line, n.column] }
-        err.puts("sloplint: judge #{judge_backend.name}, #{usage.map { |k, v| "#{v} #{k}" }.join(", ")}") unless usage.empty?
+        judge_notes = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
+                                                          markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
+        order = sources.each_with_index.to_h { |(label, _), i| [label, i] }
+        all_notes = (all_notes + judge_notes).sort_by.with_index { |n, i| [order[n.path], n.line, n.column, i] }
       end
 
       emit(all_notes, opts[:format], out:, by_path:)
@@ -191,19 +191,26 @@ module Sloplint
         o.on("--json", "Emit the catalog as JSON for machine enumeration.") { as_json = true }
       end.order!(argv)
 
-      if as_json
-        payload = RULES.map do |r|
+      render_rules(RULES, json: as_json, out:)
+      0
+    end
+
+    # The catalog as a table or as JSON. Shared with sloplint-judge, whose
+    # rules also carry a unit.
+    def render_rules(catalog, json:, out:)
+      if json
+        payload = catalog.map do |r|
           { id: r.id, category: r.category, severity: r.severity, confidence: r.confidence,
             message: r.message, rationale: r.rationale, suggestion: r.suggestion }
+            .merge(r.respond_to?(:unit) ? { unit: r.unit } : {})
         end
         out.puts(JSON.pretty_generate(payload))
       else
-        RULES.each do |r|
+        catalog.each do |r|
           off = r.confidence == "low" ? " [off by default]" : ""
           out.puts("#{r.id.ljust(24)} #{r.category.ljust(18)} #{r.severity.ljust(8)} #{r.confidence.ljust(7)} #{r.message}#{off}")
         end
       end
-      0
     end
 
     # ── explain ID ────────────────────────────────────────────────────────

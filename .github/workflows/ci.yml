@@ -25,6 +25,13 @@ jobs:
       - run: ruby -e 'Gem::Specification.load("sloplint.gemspec").validate'
       - run: gem build sloplint-judge.gemspec
       - run: ruby -e 'Gem::Specification.load("sloplint-judge.gemspec").validate'
+      # Install both built gems away from the checkout and load them: the two
+      # gems live in different directories once installed, and a require that
+      # resolves only inside the repository would pass every step above.
+      - run: |
+          gem install --local --no-document ./sloplint-*.gem ./sloplint-judge-*.gem
+          cd /tmp && sloplint-judge version && sloplint-judge rules >/dev/null
+          echo "One. Two. Three." | sloplint check --judge -; test $? -eq 2
       # sloplint also ships as a Claude Code plugin. Skipped when the runner
       # has no `claude` binary -- the local check covers it then.
       - run: command -v claude >/dev/null && claude plugin validate . --strict || echo "no claude binary, skipping"

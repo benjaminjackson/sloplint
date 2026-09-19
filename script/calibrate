@@ -19,12 +19,21 @@ require "optparse"
 require "csv"
 require "json"
 require "net/http"
-require_relative "../lib/sloplint/judge"
+require "fileutils"
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+require "sloplint/judge"
 
 CORPUS = File.expand_path("../.corpus", __dir__)
 RAID = File.join(CORPUS, "raid")
 REGISTERS = { "news" => "raid", "abstracts" => "raid", "rfc" => "rfc", "hn" => "hn" }.freeze
 GATED = %w[news abstracts rfc].freeze
+# The reader each register's questions are asked for, and the venue compare names.
+READER = { "news" => "a reader of a news article", "abstracts" => "a researcher reading the abstract of a paper",
+           "rfc" => "an engineer reading a standards document", "hn" => "a reader of a forum thread" }.freeze
+PLACE = { "news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper",
+          "rfc" => "in an engineering standards document", "hn" => "as a forum comment" }.freeze
+# RAID rows pair by title; the rfc and hn sides are generated from their own prompts and pair by position.
+PAIRED = %w[news abstracts].freeze
 BANDS = { "high" => 0.7, "medium" => 0.5, "low" => 0.0 }.freeze
 PARAS_PER_TEXT = 2
 
@@ -51,8 +60,8 @@ def load_register(reg, sample, generated)
     gen = rows(File.join(dir, "generated", generated, "#{reg}.jsonl"))
     sides[generated] = gen unless gen.empty?
   end
-  sides = sides.transform_values { |rs| rs.select { |r| keys.include?(r["source_id"]) } }.reject { |_, v| v.empty? }
-  [human, sides]
+  sides = sides.transform_values { |rs| PAIRED.include?(reg) ? rs.select { |r| keys.include?(r["source_id"]) } : rs.first(sample) }
+  [human, sides.reject { |_, v| v.empty? }]
 end
 
 # Units of one text: the first PARAS_PER_TEXT paragraphs of three or more sentences, and their sentences.
@@ -61,26 +70,20 @@ def units(text)
   [paras, paras.flat_map { |p| p.sentences.each_index.map { |i| [p, i] } }]
 end
 
+# P(a pos value exceeds a neg value), ties at half. Equal to the Mann-Whitney AUC.
+# ponytail: O(n*m) over a few thousand units; rank it if the samples grow.
 def auc(pos, neg)
   return nil if pos.empty? || neg.empty?
 
-  ranked = (pos.map { |v| [v, 1] } + neg.map { |v| [v, 0] }).sort_by(&:first)
-  ranks = Array.new(ranked.size)
-  i = 0
-  while i < ranked.size
-    j = i
-    j += 1 while j + 1 < ranked.size && ranked[j + 1][0] == ranked[i][0]
-    (i..j).each { |k| ranks[k] = (i + j) / 2.0 + 1 }
-    i = j + 1
-  end
-  s = ranked.each_with_index.sum { |(_, y), k| y == 1 ? ranks[k] : 0 }
-  (s - pos.size * (pos.size + 1) / 2.0) / (pos.size * neg.size)
+  pos.sum { |p| neg.count { |n| p > n } + 0.5 * neg.count { |n| p == n } } / (pos.size * neg.size).to_f
 end
 
-# Score every unit of every text with every rule, twice for the agreement rate. Returns
+# Score every unit of every text with every rule, twice for the agreement rate. The score is the
+# expected level, so higher is better prose and level 0 (the flagged level) is the bottom. Returns
 # [{rule:, side:, score:, flagged:, confidence:, flagged_again:}].
-def score(texts, side, rules, backend, register)
+def score(texts, side, rules, backend, reg)
   eng = Sloplint::Judge::Engine
+  register = READER.fetch(reg)
   para_rules, sent_rules = rules.partition { |r| r.unit == :paragraph }
   pq = eng.questions_for(para_rules, register)
   sq = eng.questions_for(sent_rules, register)
@@ -93,7 +96,7 @@ def score(texts, side, rules, backend, register)
   jobs.zip(twice).flat_map do |(q, _), (a, b)|
     q.keys.map do |id|
       rule = rules.find { |r| r.id == id }
-      { rule: id, side: side, score: a[id].probabilities[rule.flag[:level]], flagged: eng.flagged?(rule, a[id]),
+      { rule: id, side: side, score: a[id].probabilities.each_with_index.sum { |p, i| p * i }, flagged: eng.flagged?(rule, a[id]),
         confidence: a[id].confidence, flagged_again: eng.flagged?(rule, b[id]) }
     end
   end
@@ -102,8 +105,6 @@ end
 def run(opts)
   backend = Sloplint::Judge::Backend.load(*[opts[:backend]].compact)
   rules = Sloplint::Judge::RULES.select { |r| opts[:rules].include?(r.id) }
-  place = { "news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper",
-            "rfc" => "in an engineering standards document", "hn" => "as a forum comment" }
   scored = []
   flips = []
   opts[:registers].each do |reg|
@@ -112,22 +113,23 @@ def run(opts)
     scored.concat(score(human, "human", rules, backend, reg).map { |h| h.merge(register: reg) })
     sides.each do |side, texts|
       scored.concat(score(texts, side, rules, backend, reg).map { |h| h.merge(register: reg) })
-      # compare: the human paragraph against the model paragraph for the same title, both orders.
-      pairs = texts.filter_map do |m|
-        h = human.find { |x| (x["source_id"] || x["id"]) == m["source_id"] }
+      # compare: a human paragraph against a model paragraph (same title where RAID pairs them,
+      # same position otherwise), in both orders.
+      pairs = texts.each_with_index.filter_map do |m, i|
+        h = PAIRED.include?(reg) ? human.find { |x| (x["source_id"] || x["id"]) == m["source_id"] } : human[i]
         hp, = units(h["text"]) if h
         mp, = units(m["text"])
         [hp.first.text, mp.first.text] if hp&.first && mp.first
       end
       Sloplint::Judge::Engine.in_parallel(pairs, 8) do |(a, b)|
-        one = Sloplint::Judge::Compare.run(a, b, place: place.fetch(reg, "here"), backend: backend, swap: false)
-        two = Sloplint::Judge::Compare.run(a, b, place: place.fetch(reg, "here"), backend: backend, swap: true)
+        one = Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: false)
+        two = Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: true)
         [one, two]
       end.each { |one, two| flips << { register: reg, side: side, flip: one.keep != two.keep, confidence: [one.keep_confidence, two.keep_confidence].min } }
     end
   end
 
-  puts "\nP(model unit scores higher than human unit)   (>0.5 = the rule ranks model prose above human; want <0.5)"
+  puts "\nP(model unit scores higher than human unit)   (score = expected level, higher is better prose; <0.5 = the rule ranks model prose below human)"
   sides = scored.map { |s| s[:side] }.uniq - ["human"]
   opts[:registers].each do |reg|
     puts "\n#{reg}#{GATED.include?(reg) ? "" : "  (reported, not gated)"}"
@@ -221,8 +223,6 @@ end
 
 def generate(model, opts)
   opts[:registers].each do |reg|
-    next if reg == "hn"
-
     dir = File.join(CORPUS, REGISTERS.fetch(reg), "generated", model)
     FileUtils.mkdir_p(dir)
     out = File.join(dir, "#{reg}.jsonl")
@@ -230,6 +230,9 @@ def generate(model, opts)
     jobs =
       if reg == "rfc"
         ENGINEERING_PROMPTS.each_with_index.map { |p, i| ["eng-#{i}", "engineering prompt #{i}", p] }
+      elsif reg == "hn"
+        human, = load_register(reg, opts[:sample], nil)
+        human.map { |r| [r["source_id"], r["title"], "Write a Hacker News comment, two or three paragraphs, on a story titled \"#{r["title"]}\"."] }
       else
         human, = load_register(reg, opts[:sample], nil)
         prompts = raid_prompts(human.map { |r| r["source_id"] })
@@ -280,7 +283,6 @@ def fetch(what)
   puts "wrote #{out}"
 end
 
-require "fileutils"
 case ARGV.shift
 when "run" then run(opts)
 when "generate" then generate(ARGV.shift || abort("generate MODEL"), opts)

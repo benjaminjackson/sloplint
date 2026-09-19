@@ -9,7 +9,7 @@ class FakeBackend
   attr_reader :calls
 
   def initialize(&answer_for)
-    @answer_for = answer_for || ->(_state, _name, q) { [Array.new(q["criteria"].size) { |i| i.zero? ? 0.9 : 0.1 / (q["criteria"].size - 1) }, 0.9] }
+    @answer_for = answer_for || ->(_s, _n, q) { level(0, size: q["criteria"].size) }
     @calls = []
   end
 

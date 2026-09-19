@@ -2,9 +2,7 @@
 
 require "optparse"
 require "json"
-require_relative "../judge"
-require_relative "../output"
-require_relative "../cli"
+require "sloplint/judge"
 
 module Sloplint
   module Judge
@@ -70,16 +68,9 @@ module Sloplint
         sources = Sloplint::CLI.read_sources(argv.empty? ? ["-"] : argv, err:, stdin:, name: "sloplint-judge")
         return 2 unless sources
 
-        backend = Backend.load(*[opts[:backend]].compact)
-        usage = Hash.new(0)
-        notes = sources.flat_map do |label, text|
-          result = Engine.scan(text, rules:, backend:, markdown:, path: label, register: opts[:register], strict:)
-          result.usage.each { |k, v| usage[k] += v }
-          result.notes
-        end
-        by_path = sources.count { |label, _| label != "-" } > 1
-        Sloplint::CLI.emit(notes, opts[:format], out:, by_path:)
-        err.puts("sloplint-judge: #{backend.name}, #{usage.map { |k, v| "#{v} #{k}" }.join(", ")}") unless usage.empty?
+        backend = load_backend(opts[:backend], err:) or return 2
+        notes = Engine.scan_sources(sources, name: "sloplint-judge", err:, rules:, backend:, markdown:, register: opts[:register], strict:)
+        Sloplint::CLI.emit(notes, opts[:format], out:, by_path: sources.count { |label, _| label != "-" } > 1)
         notes.empty? ? 0 : 1
       rescue ArgumentError, Encoding::CompatibilityError => e
         err.puts("sloplint-judge: invalid input: #{e.message}")
@@ -90,7 +81,7 @@ module Sloplint
       def cmd_compare(argv, opts, out:, err:)
         drift = false
         OptionParser.new do |o|
-          o.banner = "usage: sloplint-judge compare [--drift] A B  (files, or \"-\" for stdin once)"
+          o.banner = "usage: sloplint-judge compare [--drift] A B  (two files)"
           o.on("--drift", "Also ask whether B changes what A says.") { drift = true }
           o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
@@ -100,26 +91,28 @@ module Sloplint
           err.puts("usage: sloplint-judge compare [--drift] A B")
           return 2
         end
+        backend = load_backend(opts[:backend], err:) or return 2
         verdict = Compare.run(File.read(a, encoding: Encoding::UTF_8), File.read(b, encoding: Encoding::UTF_8),
-                              place: "for #{opts[:register]}", backend: Backend.load(*[opts[:backend]].compact), drift:)
-        out.puts(JSON.pretty_generate(verdict.to_h))
+                              place: "for #{opts[:register]}", backend:, drift:)
+        out.puts(JSON.pretty_generate(verdict.to_h.except(:usage)))
+        err.puts("sloplint-judge: #{backend.name}, #{verdict.usage.map { |k, v| "#{v} #{k}" }.join(", ")}") unless verdict.usage.empty?
         0
+      end
+
+      # An unknown backend name or a missing key is a usage error (exit 2),
+      # not a backend failure (exit 3): nothing was tried.
+      def load_backend(name, err:)
+        Backend.load(name)
+      rescue ArgumentError => e
+        err.puts("sloplint-judge: #{e.message}")
+        nil
       end
 
       # ── rules / explain ─────────────────────────────────────────────────────
       def cmd_rules(argv, out:)
         as_json = false
         OptionParser.new { |o| o.on("--json") { as_json = true } }.order!(argv)
-        if as_json
-          out.puts(JSON.pretty_generate(RULES.map do |r|
-            { id: r.id, category: r.category, unit: r.unit, severity: r.severity, confidence: r.confidence,
-              message: r.message, rationale: r.rationale, suggestion: r.suggestion }
-          end))
-        else
-          RULES.each do |r|
-            out.puts("#{r.id.ljust(18)} #{r.category.ljust(10)} #{r.severity.ljust(8)} #{r.confidence.ljust(7)} #{r.message}")
-          end
-        end
+        Sloplint::CLI.render_rules(RULES, json: as_json, out:)
         0
       end
 
