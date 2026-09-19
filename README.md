@@ -174,7 +174,7 @@ gem install sloplint sloplint-judge
 export TYPESAFE_API_KEY=...   # your TypeSafe API key
 ```
 
-Requires Ruby 3.3+ and sloplint 0.9 or later. The judge is not a plugin of its own: the Claude Code plugin at the root of this repository already carries it, and the `/sloplint:check` skill tries the judge first and falls back to the regex rules when there is no key.
+Requires Ruby 3.3+ and sloplint 0.9 or later. The judge is not a plugin of its own: the Claude Code plugin at the root of this repository already carries it, and the `/sloplint:check` skill asks before it runs the judge. A key in the environment makes the judge possible; it does not make it run. The skill puts the question once per conversation, says what leaves the machine and what it costs, and stays offline unless the answer is yes or the request already asked for the judge.
 
 ### Run
 

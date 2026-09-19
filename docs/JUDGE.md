@@ -322,7 +322,7 @@ A 2,000-word design document with forty paragraphs and a quarter of them flagged
 
 ## Agent-first help text
 
-As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill grows one branch: it tries the command with `--judge` first, and if that exits 2 because the judge is not installed it runs plain `check` and says so. The condition is "the judge loads", not "a key is set": a key set for some other tool with no judge installed must not turn a working scan into a usage error. The skill never reads the environment to decide; it runs the command and reads the exit code.
+As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill decides whether the judge runs, and it is the person's decision, not the key's. A key set for some other tool must not send a draft to TypeSafe on its own. The skill tests whether `TYPESAFE_API_KEY` is set, without reading its value; if it is, and the request did not already ask for the judge or refuse it, the skill asks once per conversation, naming where the text goes and what it costs, and stays offline without a yes. If the command then exits 2 because the judge is not installed after all, it runs plain `check` and says so. The report always says when text left the machine. On the command line `--judge` is the consent: a person typed the flag.
 
 ```
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH

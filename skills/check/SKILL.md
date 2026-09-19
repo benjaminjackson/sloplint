@@ -17,21 +17,38 @@ If the prose is in the conversation — pasted in, or drafted with you — write
 
 Ask which file only when there is no prose anywhere to work from.
 
+## Decide whether the judge runs
+
+The regex scanner runs on this machine and nothing leaves it. The judge is the exception: it asks a model the questions a regex cannot, and to do that it sends the text, paragraph by paragraph, to TypeSafe's API at api.typesafe.ai. It costs about a tenth of a cent per thousand words. The person decides whether that happens, not the presence of a key.
+
+First find out whether the judge is even possible here, without reading the key or its value:
+
+```bash
+test -n "$TYPESAFE_API_KEY" && echo judge-available || echo judge-unavailable
+```
+
+- **Unavailable.** Run the plain check. Do not ask, do not mention the judge unless they asked for it, and say in the report that only the regex rules ran.
+- **Available, and they already said so.** If the request itself asks for the judge, the model, Jev, TypeSafe, or says to send it, or they said yes earlier in this conversation, run with `--judge`. Ask once per conversation, not once per file.
+- **Available, and they said to stay offline.** "Offline", "without the judge", "don't send it anywhere", `--no-judge`: run the plain check and say the judge was skipped on request.
+- **Available, and nothing was said.** Ask before running anything, in one question: sloplint can also run the judge, which sends the text to TypeSafe's API (api.typesafe.ai, about a tenth of a cent per thousand words) and catches the vague, restated and already-known sentences a regex cannot. Do that, or stay offline? Use AskUserQuestion where it exists. No answer, or no way to ask, means offline.
+
 ## Run it
 
-Try both linters first. The judge asks a model the questions a regex cannot. When it runs, the JSON is an object: the notes under `notes` (the usual array, or keyed by path for several files) and what it spent under `judge` (backend, requests, token counts):
+With the judge:
 
 ```bash
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
 ```
 
-If that exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_KEY`, the judge is not installed or not configured here. Run the plain check instead and say in the report that only the regex rules ran:
+The JSON is then an object: the notes under `notes` (the usual array, or keyed by path for several files) and what it spent under `judge` (backend, requests, token counts, cost). If it exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_KEY`, the judge is not installed or not configured after all; run the plain check and say so.
+
+Without the judge:
 
 ```bash
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
 
-Decide by the exit code and the message, never by looking for an API key in the environment. When the judge did run, end the report with one line from the `judge` object: which backend, how many requests, how many tokens, and the cost.
+When the judge did run, end the report with one line that says so: the text was sent to api.typesafe.ai, which backend answered, how many requests, how many tokens, and the cost, all from the `judge` object.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
 

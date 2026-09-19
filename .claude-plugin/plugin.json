@@ -1,7 +1,7 @@
 {
   "name": "sloplint",
   "version": "0.9.0",
-  "description": "Checks your writing for the phrases and rhythms that make it read as AI-written, and shows you each one. It runs a real scanner, so it needs somewhere to run code — it will tell you plainly if it cannot.",
+  "description": "Checks your writing for the phrases and rhythms that make it read as AI-written, and shows you each one. It runs a real scanner, so it needs somewhere to run code — it will tell you plainly if it cannot. Everything runs on your machine, with one exception you choose each time: if you have a TypeSafe API key, it can also ask a model about the text, and it asks you before sending anything.",
   "author": { "name": "Benjamin Jackson", "email": "ben@benjaminjackson.co" },
   "homepage": "https://github.com/benjaminjackson/sloplint",
   "repository": "https://github.com/benjaminjackson/sloplint",
