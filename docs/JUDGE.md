@@ -23,9 +23,23 @@ What the model can do is judge one quality of one unit of prose, in a way that s
 
 ## The one test for every rule
 
-sloplint's bar, restated for questions: a rule ships only if the thing it flags ranks current model prose below human prose in every register it has been run on, and a reader shown a flagged unit can name why it was flagged. The first half is measured with the calibration script below. The second half is the fixtures: each rule's `examples_bad` must be sentences or paragraphs where a person would agree the flag is fair.
+sloplint's bar, restated for questions: a rule ships only if the thing it flags ranks current model prose below human prose in every register the tool is for, and a reader shown a flagged unit can name why it was flagged. The first half is measured with the calibration script below. The second half is the fixtures: each rule's `examples_bad` must be sentences or paragraphs where a person would agree the flag is fair.
 
-A dimension that separates the two sides in one register and reverses in another does not ship. Two the spike found that way, `redundancy` and `order`, are in the graveyard at the end of the catalog with the numbers that killed them.
+"The registers the tool is for" is a closed list, because a rule that holds in one and reverses in another is a real finding about the rule, not noise: engineering prose (design documents, incident reports, reference documentation, standards), news, and academic abstracts. Forum comments are not on the list. Two shipped rules reverse there against current models, and the reversal is stated on each. A rule that reverses inside the list does not ship. `redundancy` and `order` went that way and are in the graveyard at the end of the catalog.
+
+"Current model prose" means the models people are drafting with now, not the models a public corpus happened to sample. The next section says why that distinction cost us a section.
+
+## Calibration corpus: current models, and the engineering register
+
+RAID is the standing corpus for both linters, and its human side does the job it is asked to do: eight domains of prose written before language models, paired by title with model generations, fetched on demand and never committed. Its model side is GPT-4, llama-chat and mistral-chat, all sampled in 2023. Every "current models behave differently" finding in this document came from somewhere else. `matched-shape` sits near 0.5 against GPT-4 and separates strongly against Claude 5. `particulars` and `names-nothing` reverse in forum comments against Sonnet 5 and Opus 5 and not against GPT-4. Those runs used Hacker News comments and IETF RFCs on the human side and text from Haiku 4.5, Sonnet 5 and Opus 5 on the model side. A calibration that reads RAID alone cannot see any of it, and would pass a backend that fails on the prose people are writing today.
+
+So calibration has two model sides and two human sources beyond RAID:
+
+- **A current-model side generated from RAID's own prompts.** Every RAID row carries the prompt its generation was written to. `script/calibrate generate MODEL` writes a generation for each sampled prompt into `.corpus/raid/generated/MODEL/`, same domains, same titles, so the human pairing holds. The models are whatever is current when the script runs, named in the commit message that reports the numbers. Nothing generated is committed.
+- **The engineering register.** RAID has no design documents, incident reports or standards prose. BBC news from 2004 and arXiv abstracts are the closest it comes. The human side is IETF RFCs, public and fetched on demand. The model side is design documents, postmortems and READMEs generated on request from the same current models, from prompts that name a system and an incident so the text has something to be particular about.
+- **Forum comments, for the caveat only.** Hacker News comments fetched from the Algolia API, on demand, as the human side that showed the reversals. Comments are not a register the tool is for. They stay in the calibration so the reversal is measured on every run and cannot quietly disappear from the spec.
+
+sloplint's own CLAUDE.md gets one sentence in the same commit: RAID is the floor for false positives, not evidence about current models.
 
 ## Packaging: two gems, one repository, one plugin
 
@@ -49,7 +63,15 @@ Two ways in, one engine.
 sloplint check --judge [check options] [paths...]
 ```
 
-sloplint's own `check`, with `require "sloplint/judge"` attempted when the flag is set. On `LoadError` it prints "install the sloplint-judge gem" and exits 2. Otherwise the regex notes and the judge notes for each path are merged by line and emitted as one array. The other `check` options apply to both linters: `--markdown` blanks once and both scan the same text; `--select` and `--ignore` take ids and categories from either catalog; `--strict` runs sloplint's low-confidence rules and the judge's sentence rules everywhere and keeps its low-confidence notes. This is about ten lines in `cli.rb` and none in `engine.rb`. The regex engine never sees a judge rule.
+sloplint's own `check`, with the judge loaded when the flag is set. The load is `require_relative "judge"` from `lib/sloplint/`, not a bare `require "sloplint/judge"`: nothing in the plugin tree puts `lib/` on the load path, so the bare form fails from the plugin cache even with every file present. The rescue catches `LoadError` only when the missing path is the judge's own, prints "install the sloplint-judge gem", and exits 2. Otherwise the regex notes and the judge notes for each path are merged by line and emitted as one array.
+
+The other `check` options apply to both linters, and each one costs something in `cli.rb`:
+
+- `--markdown` blanks twice, once inside `Engine.scan` as today and once in the judge, because the engine keeps the raw source for each note's `context` window and a pre-blanked text would put runs of spaces where the code and URLs were.
+- `--select` and `--ignore` take ids and categories from either catalog. Unknown-reference checking runs against the union of the two catalogs when `--judge` is set, and each linter is then handed only its own rules. This means the judge `Rule` answers `confidence` like sloplint's does; the rule model below says how.
+- `--strict` runs sloplint's low-confidence rules, runs the judge's sentence rules on every sentence, and keeps the judge's low-confidence notes.
+
+That is a small change to how `cli.rb` validates and partitions rules and none to `engine.rb`. The regex engine never sees a judge rule.
 
 ```
 sloplint-judge [GLOBAL] <command> [ARGS]
@@ -102,7 +124,7 @@ Identical to sloplint's, field for field. One flagged unit = one Note. JSON outp
 {
   "path": "draft.md",
   "line": 40,
-  "column": 1,
+  "column": 30,
   "severity": "warning",
   "confidence": "high",
   "rule": "wrap-up",
@@ -118,8 +140,8 @@ Identical to sloplint's, field for field. One flagged unit = one Note. JSON outp
 The differences are in where the values come from, not in the shape.
 
 - `severity` is fixed per rule, as in sloplint: what the construct costs the prose.
-- `confidence` is per note, not per rule, because the model returns one with every answer. At or above 0.7 is `high`. Between 0.5 and 0.7 is `medium`. Below 0.5 is `low`, and a low note is dropped from the default run the way a low-confidence sloplint rule is; `--strict` keeps it. The bands come from the spike: across 1,058 pairs, no answer at or above 0.7 flipped when the order of the passages was swapped, and below 0.5 one answer in nine did.
-- `line`, `column`, `excerpt` and `context` point at the unit. For a paragraph rule the excerpt is the sentence the rule is about (the last sentence for `wrap-up`, the first for `throat-clearing`, the whole paragraph for `particulars`) so that the note lands where the fix goes.
+- `confidence` is the lower of two things: the rule's own `confidence`, fixed per rule as in sloplint, and the band the model's confidence for this answer falls in. At or above 0.7 is `high`. Between 0.5 and 0.7 is `medium`. Below 0.5 is `low`, and a low note is dropped from the default run the way a low-confidence sloplint rule is; `--strict` keeps it. The bands are provisional. They were measured on `compare`, where swapping the passage order gives a direct test of whether an answer holds (across 1,058 pairs, nothing at or above 0.7 flipped and below 0.5 one answer in nine did). A score question about one passage has no order to swap, so the bands for `check` are borrowed until the stability run in phase two measures them on the questions they gate.
+- `line`, `column`, `excerpt` and `context` point at the unit. For a paragraph rule the excerpt is the sentence the rule is about (the last sentence for `wrap-up`, the first for `throat-clearing`, the whole paragraph for `particulars`) so that the note lands where the fix goes. `column` is the sentence's real start on its line, and `line` counts every line of the file as written: the splitter drops headings, bullets and table rows from what it hands the rules, but it keeps each sentence's byte offset into the original text, and the note is built from that offset the way sloplint's is from a match offset.
 - `count` is never present. No rule counts.
 - The raw probability vector is not on the note. A consumer that wants it runs `explain` for the levels and `check -o json --strict` for every note, or uses the calibration script, which reports probabilities directly. Keeping the note shape identical to sloplint's is worth more than one extra field.
 
@@ -129,7 +151,7 @@ A rule is data. `rules.rb` holds an array of `Rule` objects built with `Data.def
 
 ```ruby
 Rule = Data.define(
-  :id, :category, :unit, :severity, :question, :flag, :message, :suggestion,
+  :id, :category, :unit, :severity, :confidence, :question, :flag, :message, :suggestion,
   :examples_bad, :examples_ok, :rationale
 )
 
@@ -139,6 +161,7 @@ RULES = [
     category: "paragraph",
     unit:     :paragraph,                  # :paragraph or :sentence
     severity: "warning",                   # error, warning, info -- cost to the prose
+    confidence: "high",                    # high, medium, low -- ceiling on the note's confidence
     question: {
       type: "score",
       instructions: "How does this paragraph end, for %{register}?",
@@ -164,6 +187,8 @@ RULES = [
 
 `question` is the System One question, verbatim in the shape the adapter sends. `%{register}` is interpolated from `--register`. `flag` says which answer makes a note: `{ level: 0 }` for a score, `{ yes: true }` for a noul. There is no threshold on the probability itself, only on the most likely answer and the model's confidence, because a threshold is a number nobody can defend and the confidence gate already does the job.
 
+`confidence` on the rule means what it means in sloplint, how likely a flag is a false positive, and it is a ceiling: a note's confidence is the lower of the rule's and the model's band for that answer. A rule at `medium` never produces a `high` note however sure the model is, which is how `matched-shape` is marked as a tell of one model family. A rule at `low` stays out of the default run, so `--select`, `--ignore` and `--strict` work on judge rules exactly as they do on sloplint's.
+
 The engine never grows a branch for a rule. If a rule needs logic, the question is wrong, not the engine. That is sloplint's rule and it holds harder here: a question the model cannot answer from the text in front of it is a question that should not be asked.
 
 ### Fixtures are live
@@ -174,41 +199,41 @@ Fixtures are synthetic, as in sloplint. No sentence read during calibration is p
 
 ## Rule catalog (v1)
 
-Eight rules, two categories. Numbers are the probability that a model paragraph or sentence scores higher than a human one in the same register, from the calibration runs described in the commit that added each rule. Below 0.5 means the rule ranks model prose lower, which is what a rule is for.
+Eight rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
 
 ### paragraph
 
 Run on every paragraph of three or more sentences. One request per paragraph carries all three questions.
 
-- **particulars** (`warning`). How much of the paragraph is a fact, name, number, step or quote a reader could check: none of it, some of it, most of it. Flags at none. 0.08 to 0.30 across six registers of the RAID corpus against GPT-4, and 0.21 to 0.31 in RFC-register prose against Claude Haiku 4.5, Sonnet 5 and Opus 5. It reverses in forum comments against the two Claude 5 models (0.64 and 0.70), where a comment is allowed to have no particulars; see phase two.
-- **wrap-up** (`warning`). How the paragraph ends: restating or moralising, transition, or new fact. Flags at restating. 0.05 in abstracts, 0.22 to 0.39 in RFC-register prose.
-- **throat-clearing** (`info`). How the paragraph begins: a general announcement of the topic, a framing sentence, or a particular. Flags at announcement. 0.25 to 0.50, the weakest of the three, hence `info`.
+- **particulars** (`warning`, `high`). How much of the paragraph is a fact, name, number, step or quote a reader could check: none of it, some of it, most of it. Flags at none. Ranks model prose lower in every register the tool is for, against 2023 models and current ones. It reverses in forum comments against current models (0.64 and 0.70), where a comment is allowed to have no particulars. Comments are outside the list, and the reversal is why.
+- **wrap-up** (`warning`, `high`). How the paragraph ends: restating or moralising, transition, or new fact. Flags at restating. The strongest signal in the catalog, 0.05 in abstracts.
+- **throat-clearing** (`info`, `high`). How the paragraph begins: a general announcement of the topic, a framing sentence, or a particular. Flags at announcement. Reaches 0.50 in some registers, the weakest of the three, hence `info`.
 
 ### sentence
 
-Run on every sentence of the paragraphs a paragraph rule flagged, so the expensive questions are asked where the cheap ones found something. `--strict` runs them on every sentence. One request per sentence carries all five questions, with the sentence's paragraph and its index in the state so the model sees the neighbours.
+Run on every sentence of the paragraphs a paragraph rule flagged, so the expensive questions are asked where the cheap ones found something. Two details keep that shortcut honest. A paragraph is "flagged" only by a note that survives the confidence bands; a paragraph answer that fell to `low` and was dropped opens nothing. And when the run contains no paragraph rule at all, because `--select` named only sentence rules or `--ignore paragraph` removed them, the sentence rules run on every sentence, since there is nothing to triage by and a silent clean exit would be a lie. `--strict` runs them on every sentence regardless. One request per sentence carries all five questions, with the sentence's paragraph and its index in the state so the model sees the neighbours.
 
-- **stock-figure** (`warning`). The sentence uses a figure of speech that is stock, a figure that is the writer's own, or no figure. Flags at stock.
-- **no-news** (`warning`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known. Never reversed in any of six registers against GPT-4, 0.24 to 0.49.
-- **names-nothing** (`warning`). The sentence names nothing, names a kind of thing, or names a thing a reader could look up. Flags at names-nothing. Never reversed against GPT-4. This is the concreteness dimension from the spike, renamed to say what the flag means.
-- **ends-on-verdict** (`info`). The sentence ends on a verdict or moral, trails off on a qualifier, or ends on the fact that carries it. Flags at verdict.
-- **matched-shape** (`info`). A matched pair or triple shaped the content, a list the content needed, or no matched structure. Flags at shaped-the-content. Sits near 0.5 against GPT-4 and separates strongly against the Claude 5 models. It is a tell of one model family and its rationale says so.
+- **stock-figure** (`warning`, `high`). The sentence uses a figure of speech that is stock, a figure that is the writer's own, or no figure. Flags at stock.
+- **no-news** (`warning`, `high`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known. Never reversed in any register tested.
+- **names-nothing** (`warning`, `high`). The sentence names nothing, names a kind of thing, or names a thing a reader could look up. Flags at names-nothing. Reverses in forum comments against current models, like `particulars`, and for the same reason. This is the concreteness dimension from the spike, renamed to say what the flag means.
+- **ends-on-verdict** (`info`, `high`). The sentence ends on a verdict or moral, trails off on a qualifier, or ends on the fact that carries it. Flags at verdict.
+- **matched-shape** (`info`, `medium`). A matched pair or triple shaped the content, a list the content needed, or no matched structure. Flags at shaped-the-content. Near 0.5 against 2023 models and strong against current Claude models: a tell of one model family, which is what the `medium` ceiling says and what its rationale says in words.
 
 Each sentence rule reports on its own. There is no combined score and no threshold that combines them.
 
 ### Graveyard
 
-Tested, not shipped, kept here so nobody tests them again without new evidence.
+Tested, not shipped, kept here so nobody tests them again without new evidence. The reason is in words; the runs are in the spike's commits.
 
 - **claim-count**: one claim, two yoked, or none. No separation in any register.
 - **commitment**, **stake**: measure whether the writer has a stake. Measure genre, not quality: an abstract has no stake and should not.
-- **redundancy**, **order**: flip sign between registers.
+- **redundancy**, **order**: rank model prose lower in one register on the list and higher in another.
 - **glue**, **hedge**, **fat**, **owned-claim**, **unresolved**, **paragraph-role**: below the gating bar in the six-register test or never reached it.
 - **machine-written**: the guard. Measures abstraction, not authorship, and gets it backwards.
 
 ## Splitting
 
-Paragraphs are separated by sloplint's `PARA_BREAK`, and `--markdown` is sloplint's blanker: fenced and inline code, HTML comments and URLs go before splitting. On top of that the judge drops headings, list items, table rows, block quotes and reference lines, because a heading is not a paragraph and a bullet is not a sentence. Sentences are split on terminal punctuation followed by a space and a capital or an opening quote, with a short list of abbreviations that do not end a sentence. This is the splitter the spike used. It lands in the core gem as `Sloplint::Split`, a public module the regex engine does not call, because the reader-test skill needs the same splitter and two consumers make it core's to own. A paragraph with fewer than three sentences is skipped by the paragraph rules and its sentences are never reached by the sentence rules unless `--strict`.
+Paragraphs are separated by sloplint's `PARA_BREAK`, and `--markdown` is sloplint's blanker: fenced and inline code, HTML comments and URLs go before splitting. On top of that the judge drops headings, list items, table rows, block quotes and reference lines, because a heading is not a paragraph and a bullet is not a sentence. Sentences are split on terminal punctuation followed by a space and a capital or an opening quote, with a short list of abbreviations that do not end a sentence. This is the splitter the spike used, with one addition: every paragraph and sentence it returns carries its offset into the original text, so a note can be placed on the file as written after the furniture is gone. It lands in the core gem as `Sloplint::Split`, a public module the regex engine does not call, because the reader-test skill needs the same splitter and two consumers make it core's to own. A paragraph with fewer than three sentences is skipped by the paragraph rules, and its sentences are reached by the sentence rules only under `--strict` or when the run has no paragraph rule to triage by.
 
 ## Backend adapter
 
@@ -262,7 +287,7 @@ Configuration is from the environment. There is no configuration file.
 
 1. Write a class under `lib/sloplint/judge/backends/` that answers `ask` and `name`.
 2. Add its name to the backend table.
-3. Run `script/calibrate` against the RAID paragraph and sentence sets. It reports, per rule and register, the probability that the model unit scores higher than the human one, and the flip rate under passage-order swap at each confidence band. A backend is usable when `no-news` and `names-nothing` sit below 0.5 in every register and the flip rate at or above 0.7 confidence is under 1 percent. If the bands differ, the confidence thresholds are per backend.
+3. Run `script/calibrate` against the corpus described above: RAID's human side against both its 2023 generations and a current-model side generated from the same prompts, plus the engineering register. It reports, per rule, register and model side, the probability that the model unit scores higher than the human one; the flip rate under passage-order swap at each confidence band for `compare`; and the agreement rate between two runs of the same units at each band for `check`. A backend is usable when `no-news` and `names-nothing` sit below 0.5 in every register on the list against the current-model side, the `compare` flip rate at or above 0.7 confidence is under 1 percent, and the `check` agreement rate at or above 0.7 is at least 90 percent. Forum comments are reported and not gated on. If a backend's bands differ from Jev's, the confidence thresholds are per backend.
 
 ## compare
 
@@ -270,9 +295,9 @@ The pairwise judge from the spike, kept as a second command because the rewrite 
 
 > A careful editor who wants prose that is plain, specific and economical, and who distrusts polish for its own sake, must run exactly one of A and B *place*. Which does the editor run?
 
-*place* is the register as a venue: "as the opening of the article", "in an engineering design document read by the team". With `--drift`, a noul rides along: does B state any fact, claim or qualification that A does not, or drop any that A states. Order is randomised per call because the judge has a position bias, and the answer is mapped back before it is reported. Output is `{keep: "A"|"B", p_keep_b: Float, drift: Float|null, confidence: Float}`.
+*place* is the register as a venue: "as the opening of the article", "in an engineering design document read by the team". With `--drift`, a noul rides along: does B state any fact, claim or qualification that A does not, or drop any that A states. Order is randomised per call because the judge has a position bias, and the answer is mapped back before it is reported. Output is `{keep: "A"|"B", p_keep_b: Float, keep_confidence: Float, drift: Float|null, drift_confidence: Float|null}`. Two questions, two confidences; the tool does not collapse them.
 
-The acceptance rule for a rewrite, which the phase-two loop applies and which `compare` only reports: B replaces A only when `p_keep_b >= 0.5` and `drift <= 0.5` and confidence is at or above 0.7. In the spike the judge kept the human passage in 78 to 98 percent of matched pairs across news and abstracts.
+The acceptance rule for a rewrite, which the phase-two loop applies and which `compare` only reports: B replaces A only when `p_keep_b >= 0.5`, `drift <= 0.5`, and the lower of the two confidences is at or above 0.7. Gating on the lower one is the point: a choice the model is sure of and a drift answer it barely trusts is a rewrite that may have changed the meaning, which is the one thing drift exists to catch. In the spike the judge kept the human passage in 78 to 98 percent of matched pairs across news and abstracts.
 
 ## Known failure mode
 
@@ -299,7 +324,7 @@ A 2,000-word design document with forty paragraphs and a quarter of them flagged
 
 ## Agent-first help text
 
-As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill grows one branch: when a key is present it adds `--judge`, otherwise it runs as today.
+As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill grows one branch: it tries the command with `--judge` first, and if that exits 2 because the judge is not installed it runs plain `check` and says so. The condition is "the judge loads", not "a key is set": a key set for some other tool with no judge installed must not turn a working scan into a usage error. The skill never reads the environment to decide; it runs the command and reads the exit code.
 
 ```
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
@@ -312,9 +337,9 @@ One command, one array, already in document order. The skill presents it as it d
 Each item ships only when its test passes. The tests are stated now so they cannot be lowered later to fit a result.
 
 - **Rewrite loop.** An agent proposes a rewrite for a flagged sentence; `compare --drift` decides. Test: on 200 sentences from the RAID human side, accepted rewrites must not lower the paragraph's `particulars` level, and a person reading 50 accepted rewrites blind must prefer the rewrite in at least 35.
-- **Stability.** Test: the same 300 paragraphs scored twice an hour apart, with the flagged set agreeing in at least 90 percent of paragraphs at or above `high` confidence. Until this passes, no rule moves from `warning` to `error`.
+- **Stability, and the `check` confidence bands.** Test: the same 300 paragraphs and 300 sentences scored twice an hour apart, with the flagged set agreeing in at least 90 percent of units at or above `high` confidence. This run is also where the 0.7 and 0.5 bands for `check` get measured on the questions they gate, instead of borrowed from `compare`; if the agreement curve puts the knee somewhere else, the bands move and this document says why. Until this passes, no rule moves from `warning` to `error`.
 - **Grounding.** Put the source material (the code, the ticket, the log) in the state and add a noul rule per sentence: does the source support the claim. Test: on 100 sentences with hand-labelled support, the rule at `high` confidence must be right in 90 or more, and the failure mode above must not reappear as a preference for sentences that claim less.
-- **Register caveat for `particulars` and `names-nothing`.** Both reverse against current Claude models in forum-comment prose. Test: run the six-register set against Claude Opus 5 and Sonnet 5; a rule keeps `warning` in a register only where the model scores higher in under 0.45 of pairs, and drops to `info` there otherwise. Until then the default register is a design document and the README says the comment register is untested.
+- **Per-register severity.** `particulars` and `names-nothing` reverse in forum comments against current models, and the catalog handles that today by keeping comments off the list. Test: run every register, list and comments both, against the generated current-model side; a rule keeps `warning` in a register only where the model scores higher in under 0.45 of pairs, and drops to `info` there otherwise. If comments clear the bar for the other six rules, comments join the list with those two at `info`. Until then the default register is a design document and the README says comments are untested.
 - **Recorded fixtures.** The live fixture spec is slow and needs a key. Test: a recorded run of every fixture that replays offline and fails when a rule's question text changes, so an edited question cannot ride on a stale recording.
 - **Publishing the gem.** Phase one builds `sloplint-judge.gemspec` and runs from the plugin tree; pushing it to rubygems.org waits for stability. Test: `gem install sloplint-judge` on a machine without the repository, then `sloplint check --judge` on a document, reports the token count and the backend name.
 
@@ -324,4 +349,4 @@ reader-test is a separate skill: per document, a four-slot reader definition, tr
 
 ## Provenance
 
-Same rules as sloplint, same repository. The spike's corpora (IETF RFCs, Hacker News comments, six documents from three Claude models, RAID) are not committed. Fixtures are synthetic. `script/calibrate` reuses `script/probe-raid fetch` and the ignored `.corpus/` directory, and the numbers a run produces go in the commit message that adds or changes a rule, never in the shipped rationale.
+Same rules as sloplint, same repository. Nothing read or generated during calibration is committed: not RAID, not the RFCs, not the comments, not the current-model text generated from RAID's prompts. All of it lives under the ignored `.corpus/` directory that `script/probe-raid fetch` already owns, and `script/calibrate` reuses it. Fixtures are synthetic. The numbers a run produces, and the names of the models on each side, go in the commit message that adds or changes a rule; this document keeps only the numbers that decide a severity or a caveat, and the rationale keeps none.
