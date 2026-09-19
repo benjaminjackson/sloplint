@@ -178,7 +178,9 @@ block still exits 0. Only when every source is empty.
 ## Note (the diagnostic object)
 
 One match = one Note. JSON output is an array of these (or an object keyed by
-path when multiple files are scanned).
+path when multiple files are scanned). Under `--judge` the array or object sits
+under `"notes"` beside a `"judge"` object with the backend name, request count
+and token counts; see `docs/JUDGE.md` "Note".
 
 ```json
 {

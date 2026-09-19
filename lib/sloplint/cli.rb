@@ -109,6 +109,7 @@ module Sloplint
         Engine.scan(text, rules: regex_rules, markdown:, path: label)
       end
 
+      judge_usage = nil
       if judge && !judge_rules.empty?
         begin
           judge_backend = Judge::Backend.load(backend)
@@ -117,8 +118,8 @@ module Sloplint
           return 2
         end
         begin
-          judge_notes = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
-                                                            markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
+          judged = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
+                                                       markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
         # Exit 3 withholds the regex notes too: a caller that asked for both
         # and got one would read it as a clean judge run.
         rescue Judge::BackendError => e
@@ -126,10 +127,11 @@ module Sloplint
           return 3
         end
         order = sources.each_with_index.to_h { |(label, _), i| [label, i] }
-        all_notes = (all_notes + judge_notes).sort_by.with_index { |n, i| [order[n.path], n.line, n.column, i] }
+        all_notes = (all_notes + judged.notes).sort_by.with_index { |n, i| [order[n.path], n.line, n.column, i] }
+        judge_usage = judged.usage
       end
 
-      emit(all_notes, opts[:format], out:, by_path:)
+      emit(all_notes, opts[:format], out:, by_path:, judge: judge_usage)
       all_notes.empty? ? 0 : 1
     # Invalid UTF-8 reaches this two ways: String#strip in the empty check
     # raises Encoding::CompatibilityError, the engine's regexes raise
@@ -174,9 +176,9 @@ module Sloplint
       sources
     end
 
-    def emit(notes, format, out:, by_path:)
+    def emit(notes, format, out:, by_path:, judge: nil)
       if format == "json"
-        out.puts(Output.format_json(notes, by_path:))
+        out.puts(Output.format_json(notes, by_path:, judge:))
       else
         text = Output.format_human(notes)
         out.puts(text) unless text.empty?

@@ -10,6 +10,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - First cut of the judge gem: eight rules, the Jev backend, `check`,
   `compare`, `rules`, `explain`, and `script/calibrate`. Not yet published to
   rubygems.org; see "Phase two" in `docs/JUDGE.md`.
+- `check` reports what the judge spent: JSON output is `{"notes", "judge"}`
+  with the backend, request count and token counts under `judge`, and the
+  same line goes to stderr.
 
 ## sloplint
 

@@ -26,7 +26,10 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
   it "merges regex and judge notes in document order under sloplint check --judge" do
     code, out, err = run(Sloplint::CLI, ["check", "--judge", "-o", "json", "-"], stdin_text: text)
     expect(code).to eq(1)
-    notes = JSON.parse(out)
+    doc = JSON.parse(out)
+    expect(doc["judge"]).to include("backend" => "fake", "requests" => be > 0, "input_tokens" => be > 0)
+    expect(err).to include("judge fake, #{doc["judge"]["requests"]} requests, #{doc["judge"]["input_tokens"]} input_tokens")
+    notes = doc["notes"]
     expect(notes.first["rule"]).to eq("thats-the-whole")
     expect(notes.map { |n| n["rule"] }).to include("wrap-up", "no-news")
     positions = notes.map { |n| [n["line"], n["column"]] }
@@ -37,7 +40,7 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
   it "accepts judge ids in --select and --ignore only with --judge" do
     code, out, = run(Sloplint::CLI, ["check", "--judge", "--select", "wrap-up", "-o", "json", "-"], stdin_text: text)
     expect(code).to eq(1)
-    expect(JSON.parse(out).map { |n| n["rule"] }).to eq(["wrap-up"])
+    expect(JSON.parse(out)["notes"].map { |n| n["rule"] }).to eq(["wrap-up"])
     code, _, err = run(Sloplint::CLI, ["check", "--select", "wrap-up", "-"], stdin_text: text)
     expect(code).to eq(2)
     expect(err).to include("unknown rule or category: wrap-up")
@@ -75,7 +78,7 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     a = Tempfile.new("a"); a.write(text); a.close
     b = Tempfile.new("b"); b.write(text); b.close
     _, out, = run(Sloplint::CLI, ["check", "--judge", "-o", "json", b.path, a.path])
-    expect(JSON.parse(out).keys).to eq([b.path, a.path])
+    expect(JSON.parse(out)["notes"].keys).to eq([b.path, a.path])
   end
 
   it "still runs plain check with no judge code involved" do
@@ -90,7 +93,9 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     it "checks with judge rules only" do
       code, out, = run(Sloplint::Judge::CLI, ["check", "-o", "json", "-"], stdin_text: text)
       expect(code).to eq(1)
-      expect(JSON.parse(out).map { |n| n["rule"] }).not_to include("thats-the-whole")
+      doc = JSON.parse(out)
+      expect(doc["notes"].map { |n| n["rule"] }).not_to include("thats-the-whole")
+      expect(doc["judge"]["backend"]).to eq("fake")
     end
 
     it "lists and explains its rules" do

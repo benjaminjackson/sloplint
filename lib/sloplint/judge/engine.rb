@@ -19,8 +19,10 @@ module Sloplint
 
       module_function
 
-      # Scan several [label, text] sources, sum the usage, and write the
-      # backend name and token count to err. Returns the notes.
+      # Scan several [label, text] sources and sum the usage. Writes one line
+      # to err naming the backend, the request count and whatever tokens the
+      # backend reported; the same numbers go into the JSON output under
+      # "judge". Returns a Result.
       def scan_sources(sources, name:, err:, backend: Backend.load, **kwargs)
         usage = Hash.new(0)
         notes = sources.flat_map do |label, text|
@@ -28,12 +30,9 @@ module Sloplint
           result.usage.each { |k, v| usage[k] += v }
           result.notes
         end
-        # Always name the backend: the check skill reads this line. Usage
-        # follows when the backend reported any.
-        line = "#{name} #{backend.name}"
-        line += ", #{usage.map { |k, v| "#{v} #{k}" }.join(", ")}" unless usage.empty?
-        err.puts(line)
-        notes
+        usage = { "backend" => backend.name, "requests" => usage.delete("requests") || 0 }.merge(usage)
+        err.puts("#{name} #{usage.map { |k, v| k == "backend" ? v : "#{v} #{k}" }.join(", ")}")
+        Result.new(notes:, usage:)
       end
 
       # text: the source. rules: judge Rules to run. backend: answers `ask`.
@@ -137,8 +136,10 @@ module Sloplint
         )
       end
 
-      # Every answer in one request carries the same usage; count it once.
+      # Every answer in one request carries the same usage; count it once,
+      # and count the request.
       def add_usage(usage, answers)
+        usage["requests"] += 1
         first = answers.values.first
         first&.usage&.each { |k, v| usage[k] += v.to_i }
       end

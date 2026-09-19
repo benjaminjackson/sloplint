@@ -69,9 +69,9 @@ module Sloplint
         return 2 unless sources
 
         backend = load_backend(opts[:backend], err:) or return 2
-        notes = Engine.scan_sources(sources, name: "sloplint-judge", err:, rules:, backend:, markdown:, register: opts[:register], strict:)
-        Sloplint::CLI.emit(notes, opts[:format], out:, by_path: sources.count { |label, _| label != "-" } > 1)
-        notes.empty? ? 0 : 1
+        result = Engine.scan_sources(sources, name: "sloplint-judge", err:, rules:, backend:, markdown:, register: opts[:register], strict:)
+        Sloplint::CLI.emit(result.notes, opts[:format], out:, by_path: sources.count { |label, _| label != "-" } > 1, judge: result.usage)
+        result.notes.empty? ? 0 : 1
       rescue ArgumentError, Encoding::CompatibilityError => e
         err.puts("sloplint-judge: invalid input: #{e.message}")
         2

@@ -126,7 +126,7 @@ Does not: No parking on Sundays.
 
 ## The note
 
-One match is one note. JSON output is an array of these, or an object keyed by path when more than one file is scanned. The schema is the contract:
+One match is one note. JSON output is an array of these, or an object keyed by path when more than one file is scanned. Under `--judge` that array or object sits under a `notes` key next to a `judge` key with the backend name, request count and token counts (see [sloplint-judge](#sloplint-judge)). The schema is the contract:
 
 ```json
 {
@@ -184,7 +184,16 @@ The one command to know, and the one an agent should use:
 sloplint check --judge --markdown -o json draft.md
 ```
 
-That runs both catalogs and returns one array of notes in document order. Without the sloplint-judge gem it exits 2 and says to install it. Without a key it exits 2 and says which variable to set. If the model cannot be reached, or answers in a shape the judge does not understand, it exits 3 and writes no notes at all, the regex ones included, so a partial run can never pass as a clean one. When the judge ran, the last line on stderr names the backend and the number of input tokens it spent.
+That runs both catalogs and merges the notes in document order. Because the judge spent money, the JSON says how much: the notes sit under `notes` and a `judge` object carries the backend, the number of requests and the token counts the backend reported. The same figures go to stderr in one line for the human formats.
+
+```json
+{
+  "notes": [ ... ],
+  "judge": { "backend": "jev-latest", "requests": 9, "input_tokens": 14200, "output_tokens": 610 }
+}
+```
+
+Without the sloplint-judge gem it exits 2 and says to install it. Without a key it exits 2 and says which variable to set. If the model cannot be reached, or answers in a shape the judge does not understand, it exits 3 and writes no notes at all, the regex ones included, so a partial run can never pass as a clean one.
 
 The gem also puts a `sloplint-judge` executable on your path for the judge on its own:
 
@@ -211,7 +220,7 @@ Each note's `confidence` is the lower of the rule's own ceiling and how sure the
 
 ### Cost and configuration
 
-One request per paragraph carries all three paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds and reports its token count on stderr; TypeSafe publishes no price list, so sloplint does not estimate money.
+One request per paragraph carries all three paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds. Every run reports requests and tokens, in the JSON under `judge` and on stderr. TypeSafe publishes no price list, so there is no dollar figure: multiply the tokens by your rate.
 
 Configuration is from the environment only:
 

@@ -19,7 +19,7 @@ Ask which file only when there is no prose anywhere to work from.
 
 ## Run it
 
-Try both linters first. The judge asks a model the questions a regex cannot, and its notes arrive in the same array:
+Try both linters first. The judge asks a model the questions a regex cannot. When it runs, the JSON is an object: the notes under `notes` (the usual array, or keyed by path for several files) and what it spent under `judge` (backend, requests, token counts):
 
 ```bash
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
@@ -31,7 +31,7 @@ If that exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
 
-Decide by the exit code and the message, never by looking for an API key in the environment. When the judge did run, the last line on stderr names the backend and the token count; say which backend it was.
+Decide by the exit code and the message, never by looking for an API key in the environment. When the judge did run, end the report with one line from the `judge` object: which backend, how many requests, how many tokens.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
 

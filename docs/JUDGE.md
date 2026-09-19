@@ -112,7 +112,7 @@ Exit 3 writes nothing to stdout, from either executable. Under `sloplint check -
 
 ## Note (the diagnostic object)
 
-Identical to sloplint's, field for field. One flagged unit = one Note. JSON output is an array of these, or an object keyed by path when several files are scanned.
+Identical to sloplint's, field for field. One flagged unit = one Note. JSON output is an array of these, or an object keyed by path when several files are scanned, and whenever the judge ran it is wrapped: `{"notes": <that>, "judge": {"backend", "requests", ...token counts}}`. The judge costs money, so its output says what it spent; the same line goes to stderr for the human format.
 
 ```json
 {
@@ -248,7 +248,7 @@ module Sloplint::Judge
   Answer = Data.define(:type, :probabilities, :confidence, :usage)
   # probabilities: for noul, a Float; for choice, a Hash keyed by criterion name; for score, an Array low to high.
   # confidence:    Float in 0..1.
-  # usage:         Hash, whatever the backend counts, passed through for the stderr trailer; may be empty.
+  # usage:         Hash, whatever the backend counts (Jev: input_tokens, output_tokens), summed into the "judge" block; may be empty.
 end
 ```
 
@@ -324,7 +324,7 @@ As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill gro
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
 ```
 
-One command, one array, already in document order. The skill presents it as it does now, quoting `context` and one sentence from `suggestion`, and never prints rule ids or severities unless asked. It says when the judge did not run (exit 3) in different words from when it found nothing (exit 0), and it names the backend in the report because two runs with two backends are two different opinions.
+One command, one document, already in document order, with what the judge spent under `judge`. The skill presents it as it does now, quoting `context` and one sentence from `suggestion`, and never prints rule ids or severities unless asked. It says when the judge did not run (exit 3) in different words from when it found nothing (exit 0), and it names the backend in the report because two runs with two backends are two different opinions.
 
 ## Phase two
 

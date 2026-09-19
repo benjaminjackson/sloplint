@@ -101,7 +101,7 @@ RSpec.describe Sloplint::Judge::Engine do
     result = described_class.scan(text, rules: rules.select { |r| r.unit == :paragraph }, backend: flag_all)
     expect(flag_all.calls.size).to eq(1)
     expect(flag_all.calls.first.last.keys).to contain_exactly("particulars", "wrap-up", "throat-clearing")
-    expect(result.usage).to eq("input_tokens" => 100)
+    expect(result.usage).to eq("requests" => 1, "input_tokens" => 100)
   end
 
   it "reports nothing when nothing flags" do
