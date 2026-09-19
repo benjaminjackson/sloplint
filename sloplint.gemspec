@@ -32,7 +32,9 @@ Gem::Specification.new do |spec|
   # -- and RubyGems' own file resolution after it -- independent of the
   # caller's cwd.
   Dir.chdir(__dir__)
+  # The judge is its own gem (sloplint-judge.gemspec) and ships none of this.
   spec.files = Dir["lib/**/*.rb", "exe/*", "docs/SPEC.md", "LICENSE", "README.md", "CHANGELOG.md"]
+               .reject { |f| f.start_with?("lib/sloplint/judge") || f == "exe/sloplint-judge" }
   spec.bindir      = "exe"
   spec.executables = ["sloplint"]
   spec.require_paths = ["lib"]

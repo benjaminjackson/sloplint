@@ -5,6 +5,21 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `sloplint check --judge` runs the rules of sloplint-judge alongside the
+  regex catalog and merges the notes in document order. The judge is a second
+  gem built from this repository (`sloplint-judge.gemspec`, `exe/sloplint-judge`)
+  whose rules are questions put to a System One model. sloplint loads it by
+  name only and exits 2 with an install hint when it is missing. A backend
+  failure under `--judge` is exit 3 and writes no notes. See `docs/JUDGE.md`.
+- `Sloplint::Split`, a paragraph and sentence splitter that keeps offsets into
+  the source, and `Engine.context_window`, the note's context drawn for any
+  span rather than only a regex match. Both are used by the judge.
+- `script/calibrate`, which measures a judge backend against RAID, a
+  current-model side generated from RAID's own prompts, and the engineering
+  register, and reports the pass lines from `docs/JUDGE.md`.
+
 ## [0.8.0] - 2026-09-15
 
 ### Changed (breaking)

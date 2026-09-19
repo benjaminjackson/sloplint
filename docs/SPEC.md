@@ -96,7 +96,8 @@ dependencies at runtime.
 
 Rationale: rules are regexes; the whole thing is a scanner plus an output
 formatter. A dependency-free `gem install sloplint` is the robust, boring
-choice. The name is free on RubyGems (taken on PyPI, so this also sidesteps the
+choice. The one exception is `check --judge`, which loads the separate
+sloplint-judge gem and calls a model over the network; see `docs/JUDGE.md`. The name is free on RubyGems (taken on PyPI, so this also sidesteps the
 collision). Ships a `sloplint` executable from `exe/` (claude.ai rejects a
 plugin with a top-level `bin/`, and sloplint ships as a Claude Code plugin
 too).
@@ -124,7 +125,7 @@ Rakefile                   # rake spec
 ```
 
 RSpec is a **development** dependency (in the gemspec's `add_development_
-dependency`), so the runtime stays dependency-free.
+dependency`), so the runtime stays dependency-free unless `--judge` is passed.
 
 ## CLI surface
 
@@ -167,6 +168,7 @@ Three codes carry the contract. A crash just exits nonzero on its own.
 | 0    | ran, **no notes** |
 | 1    | ran, **notes found** |
 | 2    | bad arguments / usage error |
+| 3    | `--judge` only: the model backend could not be reached, no notes written |
 
 Empty or whitespace-only input is exit 2, like a mistyped rule id: a scan of
 nothing must not report as a clean scan. The text is tested before
@@ -249,7 +251,9 @@ RULES = [
 ```
 
 Adding a rule = appending one entry + one bad and one ok fixture. That's the
-whole extension story. No new files, no plugin system (YAGNI).
+whole extension story. The only thing that plugs in is sloplint-judge, and it
+plugs in by name: `check --judge` does a lazy `require_relative "judge"` and
+exits 2 with an install hint when it is missing. See `docs/JUDGE.md`.
 
 ### Why Ruby literals, not JSON/YAML
 

@@ -59,14 +59,21 @@ module Sloplint
     # over blanked text shows code and URLs as a run of spaces. Offsets here are
     # character offsets (MatchData#begin), matching the char-based line_starts_for.
     def context_for(source, match)
-      return "[#{match[0].gsub(/\s+/, " ").strip}]" if match[0].length >= CONTEXT_CHARS
+      context_window(source, match.begin(0), match.end(0))
+    end
 
-      b, e = match.begin(0), match.end(0)
+    # The same window for any span [b, e) of source, so a tool that locates a
+    # sentence rather than a regex match (the judge) draws its context the
+    # way sloplint does.
+    def context_window(source, b, e)
+      span = source[b...e]
+      return "[#{span.gsub(/\s+/, " ").strip}]" if span.length >= CONTEXT_CHARS
+
       pre  = source[[b - CONTEXT_CHARS, 0].max...b]
       post = source[e, CONTEXT_CHARS].to_s
       pre  = "…#{pre.sub(/\A\S*\s+/, "")}" if b > CONTEXT_CHARS
       post = "#{post.sub(/\s+\S*\z/, "")}…" if e + CONTEXT_CHARS < source.length
-      "#{pre}[#{match[0]}]#{post}".gsub(/\s+/, " ").strip
+      "#{pre}[#{span}]#{post}".gsub(/\s+/, " ").strip
     end
 
     # 1-indexed line and column for a char offset into text. Binary-searches a

@@ -19,9 +19,19 @@ Ask which file only when there is no prose anywhere to work from.
 
 ## Run it
 
+Try both linters first. The judge asks a model the questions a regex cannot, and its notes arrive in the same array:
+
+```bash
+ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
+```
+
+If that exits `2` with a message naming the sloplint-judge gem, the judge is not installed here. Run the plain check instead and say in the report that only the regex rules ran:
+
 ```bash
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
+
+Decide by the exit code and the message, never by looking for an API key in the environment. When the judge did run, the last line on stderr names the backend and the token count; say which backend it was.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
 
@@ -38,6 +48,7 @@ If none works, do not quote the error. Say that this needs a piece of software c
 
 - `0` — nothing flagged.
 - `1` — notes found, on stdout as JSON.
+- `3` — with `--judge`, the model could not be reached. Nothing was checked, not even the regex rules, so do not report a clean draft. Say the judge backend failed, quote its one-line reason, and offer to run the plain check.
 - `2` — a usage or argument error, on stderr. Two common causes worth translating: the input was empty, meaning nothing reached the scanner and nothing was checked; or the file is not plain text or Markdown. A `.docx` is a zip archive and will fail here — say so in plain words and offer to read the document and scan its text instead.
 
 ## Report it

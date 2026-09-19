@@ -118,6 +118,10 @@ Flags:    No fluff, no filler, no jargon.
 Does not: No parking on Sundays.
 ```
 
+### `--judge`
+
+`sloplint check --judge` adds the rules of sloplint-judge, a second gem in this repository whose rules are questions put to a model rather than regexes: does this paragraph end by restating itself, does this sentence tell the reader anything new, does it name a thing a reader could look up. The notes come back in the same array, in document order, with the same fields. It needs the sloplint-judge gem and a `TYPESAFE_API_KEY`; without the gem it exits 2 and says how to install it, and if the model cannot be reached it exits 3 and writes no notes at all, the regex ones included, so a partial run cannot pass as a clean one. Everything about it is in [docs/JUDGE.md](docs/JUDGE.md).
+
 ## The note
 
 One match is one note. JSON output is an array of these, or an object keyed by path when more than one file is scanned. The schema is the contract:
@@ -151,6 +155,7 @@ Three codes carry the contract. A crash exits nonzero on its own.
 | 0    | ran, no notes |
 | 1    | ran, notes found |
 | 2    | bad arguments or usage error |
+| 3    | `--judge` only: the model could not be reached, no notes written |
 
 An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, naming the id) rather than a silent no-op, so a typo can't masquerade as a clean scan. Input that is empty or only whitespace is exit 2 for the same reason: a pipe that delivered nothing must not read as a clean draft. Only when every source is empty — one empty file among several named ones is taken as deliberate.
 
