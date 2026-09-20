@@ -169,6 +169,17 @@ RSpec.describe Sloplint::Judge::Engine do
     expect { Sloplint::Judge::Backends::Jev.new }.to raise_error(ArgumentError, /run `sloplint-judge key set`/)
   end
 
+  # A DNS name is not case-sensitive, and URI hands the host back as it was
+  # written, so the pin has to be too.
+  it "takes a typesafe.ai host in mixed case, and still refuses another host in mixed case" do
+    require "sloplint/judge/backends/jev"
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("SYSTEMONE_URL", anything).and_return("https://API.TypeSafe.ai/v1/systemone")
+    expect { Sloplint::Judge::Backends::Jev.configured! }.not_to raise_error
+    allow(ENV).to receive(:fetch).with("SYSTEMONE_URL", anything).and_return("https://TypeSafe.ai.Attacker.example/v1")
+    expect { Sloplint::Judge::Backends::Jev.configured! }.to raise_error(ArgumentError, /typesafe\.ai host/)
+  end
+
   # The URL is checked but not rewritten, so a SYSTEMONE_URL with a query
   # string must reach the server with that query string on it.
   it "posts to the whole request-URI, query string and all" do

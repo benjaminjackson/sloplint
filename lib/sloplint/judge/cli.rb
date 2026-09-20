@@ -56,8 +56,9 @@ module Sloplint
           o.on("--markdown", "Skip fenced/inline code spans, HTML comments, URLs and Markdown furniture.") { markdown = true }
           o.on("--select IDS", "Only run these rules (comma-separated rule ids or categories).") { |v| select = v.split(",").map(&:strip) }
           o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or categories).") { |v| ignore = v.split(",").map(&:strip) }
-          o.on("--strict", "Run sentence rules on every sentence and keep low-confidence notes;",
-               "about three times the requests of a default run.") { strict = true }
+          o.on("--strict", "Run the rules that are off by default, ask the sentence rules about",
+               "every sentence, and keep low-confidence notes; about three times the",
+               "requests of a default run.") { strict = true }
           o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
           # OptionParser answers -h itself when nobody else does, and it

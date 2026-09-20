@@ -117,7 +117,11 @@ module Sloplint
       unknown = unknown_rule_refs(select, catalog) + unknown_rule_refs(ignore, catalog)
       unless unknown.empty?
         err.puts("sloplint: unknown rule or category: #{unknown.join(", ")}")
-        err.puts("run `sloplint rules` to list them.")
+        # Under --judge the selection is read against both catalogs, and
+        # `sloplint rules` lists only one of them: a judge rule id typed with
+        # a letter wrong is not in the list the hint would send you to.
+        lists = judge ? "`sloplint rules` and `sloplint-judge rules`" : "`sloplint rules`"
+        err.puts("run #{lists} to list them.")
         return 2
       end
 
@@ -147,24 +151,27 @@ module Sloplint
       # reads the wrapper, and an empty selection is 0 requests, not a
       # different output shape. 0 requests also means no key: `--judge
       # --select em-dash` must run on a machine that has none.
-      if judge && judge_rules.empty?
-        # Nothing to ask, so no key is read, and an unknown --backend is
-        # still exit 2. The same helper `sloplint-judge check` reports an
-        # empty selection through, so the two commands print one line.
-        judge_usage = begin
-          Judge::Engine.nothing_asked(backend)
-        rescue ArgumentError => e
-          err.puts("sloplint: --judge: #{e.message}")
-          return 2
-        end
-        err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
-      elsif judge
+      if judge
+        # With nothing to ask, no key is read: the backend is named and never
+        # built, and `sloplint-judge check` reports an empty selection through
+        # the same helper, so the two commands print one line. Either way an
+        # unknown --backend or a key that is not there is the same usage
+        # error, so one rescue answers for both.
         begin
-          judge_backend = Judge::Backend.load(backend)
+          if judge_rules.empty?
+            judge_usage = Judge::Engine.nothing_asked(backend)
+          else
+            judge_backend = Judge::Backend.load(backend)
+          end
         rescue ArgumentError => e
           err.puts("sloplint: --judge: #{e.message}")
           return 2
         end
+      end
+
+      if judge_usage
+        err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
+      elsif judge_backend
         begin
           judged = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
                                                        markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)

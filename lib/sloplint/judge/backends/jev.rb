@@ -43,7 +43,10 @@ module Sloplint
           "model #{model_name}"
         end
 
-        HOST = /\A(?:.+\.)?typesafe\.ai\z/
+        # Case-insensitive, because a DNS name is: API.TypeSafe.ai is the
+        # same host as api.typesafe.ai, and URI hands back the host as it was
+        # written. The scheme needs no such care -- URI lowercases that one.
+        HOST = /\A(?:.+\.)?typesafe\.ai\z/i
 
         # The key and the whole document go to this URL, so it is https and
         # a TypeSafe host or nothing. The host pin is what keeps an injected

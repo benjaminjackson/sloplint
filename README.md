@@ -212,7 +212,7 @@ key unset     remove it from the OS keychain
 version       print the sloplint-judge version
 ```
 
-`check` takes `--markdown`, `--select`, `--ignore` and `--strict` with the same meanings as sloplint's. `--strict` also runs the sentence rules on every sentence, rather than only in the paragraphs a paragraph rule flagged or skipped as too short, and keeps the notes the model was not confident about. `--register TEXT` says who the reader is; the default is an engineer on the team reading a design document, and every question is asked on that reader's behalf, so a rule such as `no-news` flags a sentence that reader already knows rather than one anybody would.
+`check` takes `--markdown`, `--select`, `--ignore` and `--strict` with the same meanings as sloplint's. `--strict` runs the three rules that are off by default, runs the sentence rules on every sentence, rather than only in the paragraphs a paragraph rule flagged or skipped as too short, and keeps the notes the model was not confident about. `--register TEXT` says who the reader is; the default is an engineer on the team reading a design document, and every question is asked on that reader's behalf, so a rule such as `no-news` flags a sentence that reader already knows rather than one anybody would.
 
 ### The rules
 

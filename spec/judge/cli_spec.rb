@@ -102,6 +102,14 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     code, _, err = run(Sloplint::CLI, ["check", "--select", "wrap-up", "-"], stdin_text: text)
     expect(code).to eq(2)
     expect(err).to include("unknown rule or category: wrap-up")
+    # Without --judge the judge's catalog is not in play, so one list is the
+    # right list.
+    expect(err).to include("run `sloplint rules` to list them")
+    # With it, a mistyped judge id is in neither list the other hint names:
+    # `sloplint rules` never prints the judge's rules.
+    code, _, err = run(Sloplint::CLI, ["check", "--judge", "--select", "wrap-upp", "-"], stdin_text: text)
+    expect(code).to eq(2)
+    expect(err).to include("run `sloplint rules` and `sloplint-judge rules` to list them")
   end
 
   it "exits 3 and writes no notes when the backend fails under --judge" do
@@ -199,13 +207,21 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
   # parsers answer -h themselves, on the out they were given and with a
   # return code; OptionParser's own -h prints on the real stdout and ends the
   # process, which here would end the spec run.
-  it "says what --strict costs in both check parsers" do
+  it "says what --strict turns on and what it costs, in both check parsers" do
+    # The whole entry, however many lines it is wrapped over: the flag line
+    # and every line after it that does not start another flag.
+    entry = lambda do |help|
+      lines = help.lines.drop_while { |l| !l.include?("--strict") }
+      lines.take_while.with_index { |l, i| i.zero? || !l.match?(/\A\s*-/) }.join(" ").gsub(/\s+/, " ")
+    end
     code, out, = run(Sloplint::Judge::CLI, ["check", "--help"])
     expect(code).to eq(0)
-    expect(out).to match(/--strict.*\n.*three times the requests/)
+    # Three things, not two: the rules that are off by default are part of
+    # what the flag turns on, and the cost is what the person pays for it.
+    expect(entry.call(out)).to include("off by default").and include("every sentence").and include("three times the requests")
     code, out, = run(Sloplint::CLI, ["check", "--help"])
     expect(code).to eq(0)
-    expect(out).to match(/--strict.*\n.*with --judge.*three times the requests/)
+    expect(entry.call(out)).to include("off by default").and include("with --judge").and include("three times the requests")
   end
 
   it "status answers from the key's presence, never its value, and exits 2 when there is none" do

@@ -65,7 +65,7 @@ The other `check` options apply to both linters, and each one costs something in
 
 - `--markdown` blanks twice, once inside `Engine.scan` as today and once in the judge, because the engine keeps the raw source for each note's `context` window and a pre-blanked text would put runs of spaces where the code and URLs were.
 - `--select` and `--ignore` take ids and categories from either catalog. Unknown-reference checking runs against the union of the two catalogs when `--judge` is set, and each linter is then handed only its own rules. This means the judge `Rule` answers `confidence` like sloplint's does; the rule model below says how.
-- `--strict` runs sloplint's low-confidence rules, runs the judge's sentence rules on every sentence, and keeps the judge's low-confidence notes.
+- `--strict` runs the low-confidence rules of both catalogs, the judge's `same-weight`, `stated-stakes` and `matched-shape` among them, runs the judge's sentence rules on every sentence, and keeps the judge's low-confidence notes.
 
 That is a small change to how `cli.rb` validates and partitions rules and none to `engine.rb`. The regex engine never sees a judge rule.
 
@@ -89,7 +89,7 @@ check options:
   --markdown           skip fenced/inline code spans, HTML comments, and URLs
   --select IDS         only run these rules (comma-separated ids or categories)
   --ignore IDS         skip these rules
-  --strict             run every rule on every unit, and keep low-confidence notes
+  --strict             run the off-by-default rules too, ask about every sentence, keep low-confidence notes
 
 compare options:
   --drift              also ask whether B changes what A says (sentence rewrites)
