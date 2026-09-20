@@ -35,6 +35,20 @@ module Sloplint
         Result.new(notes:, usage:)
       end
 
+      # The usage of a run with nothing to ask: no question, so no request,
+      # so no key. The backend is named and its endpoint checked the way
+      # `status` does it, without constructing one, because constructing one
+      # reads the key -- a selection that holds no judge rule must run on a
+      # machine that has none. The line and the keys are a real run's, cost
+      # included, so a reader is not handed a different shape for an empty
+      # selection. An unknown backend name raises ArgumentError, as loading
+      # one does, and both callers report it as a usage error.
+      def nothing_asked(name)
+        klass = Backend.klass(name)
+        klass.configured!
+        with_cost({ "backend" => klass.model_name, "requests" => 0 }, klass)
+      end
+
       # The dollar line, last, when the backend prices its own tokens. Both
       # the commands that print a usage line end with the same number.
       def with_cost(usage, backend)

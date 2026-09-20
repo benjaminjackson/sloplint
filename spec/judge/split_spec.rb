@@ -26,6 +26,32 @@ RSpec.describe Sloplint::Split do
     expect(described_class.sentences("The answer was no. We moved on. Then it broke.").size).to eq(3)
   end
 
+  it "does not split on letters written one at a time" do
+    expect(described_class.sentences("The U.S. Army bought 400 copies. It cost $2.").map(&:text))
+      .to eq(["The U.S. Army bought 400 copies.", "It cost $2."])
+    # The cost of that, written down: a sentence that really ends in one of
+    # these takes the next one with it.
+    expect(described_class.sentences("It was in the U.S. It cost $2.").map(&:text))
+      .to eq(["It was in the U.S. It cost $2."])
+  end
+
+  # A single capital before a period is left alone, and that is a choice: a
+  # design document writes "Service A." as a whole sentence far more often
+  # than it names anyone by initial, so the name is what loses.
+  it "splits after a single capital, initial or not" do
+    expect(described_class.sentences("Service A. Service B handles the rest.").map(&:text))
+      .to eq(["Service A.", "Service B handles the rest."])
+    expect(described_class.sentences("J. K. Rowling wrote the book.").map(&:text))
+      .to eq(["J.", "K.", "Rowling wrote the book."])
+  end
+
+  # Two pairs at least, so the last letter of a word is not a run of them.
+  it "still ends a sentence after a word that happens to end in a capital" do
+    expect(described_class.sentences("It is bigger than AT&T. Consolidation followed.").size).to eq(2)
+    expect(described_class.sentences("The free upgrade was from 512K. The cable firm paid.").size).to eq(2)
+    expect(described_class.sentences("She left Liberty-X. Each of them stayed.").size).to eq(2)
+  end
+
   it "keeps an inline code span as a word of its sentence under --markdown" do
     text = "`sloplint check` scans the file. Then it prints notes. `x` runs next. Done here.\n"
     sents = described_class.paragraphs(text, markdown: true).first.sentences

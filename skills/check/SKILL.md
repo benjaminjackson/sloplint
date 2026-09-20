@@ -48,7 +48,7 @@ Without the judge:
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
 
-When the judge did run, end the report with one line that says so: the text was sent to api.typesafe.ai, which backend answered, how many requests, how many tokens, and the cost, all from the `judge` object.
+When the judge did run, end the report with one line that says so: the text was sent to api.typesafe.ai, which backend answered, how many requests, how many tokens, and the cost, all from the `judge` object. If `requests` is 0, the judge examined nothing: the document was all Markdown furniture, or its paragraphs were too short for the rules that ran. Say that only the regex rules examined the text; do not say the judge found nothing.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
 

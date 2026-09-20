@@ -221,9 +221,20 @@ def generate(model, opts)
     prompts = raid_prompts(human.map { |r| r["source_id"] })
     jobs = human.filter_map { |r| (p = prompts[r["source_id"]]) && !done[r["source_id"]] && [r["source_id"], r["title"], p] }
     warn "#{reg}: generating #{jobs.size} texts with #{model}"
+    # Each row is written as its own generation comes back, not after the
+    # last one: the generations are paid for, and a run that stops part way
+    # through -- an error, a rate limit, a keyboard interrupt -- leaves the
+    # ones already paid for on disk, where `done` above finds them and the
+    # next run asks only for the rest.
+    lock = Mutex.new
     File.open(out, "a") do |f|
-      Sloplint::Judge::Engine.in_parallel(jobs, 4) { |(id, title, prompt)| [id, title, anthropic(model, prompt)] }
-                            .each { |id, title, text| f.puts JSON.generate(model: model, source_id: id, title: title, text: text) }
+      Sloplint::Judge::Engine.in_parallel(jobs, 4) do |(id, title, prompt)|
+        text = anthropic(model, prompt)
+        lock.synchronize do
+          f.puts JSON.generate(model: model, source_id: id, title: title, text: text)
+          f.flush
+        end
+      end
     end
   end
 end

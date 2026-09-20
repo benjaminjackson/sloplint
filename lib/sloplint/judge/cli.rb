@@ -88,12 +88,30 @@ module Sloplint
         end
         return 2 unless sources
 
+        # A selection that holds no rule is decided here, before a backend is
+        # built, because building one reads the key: `--ignore` every rule
+        # must run on a machine that has none. Nothing was asked, so nothing
+        # was found, and that is exit 0 with a 0-request usage line -- not
+        # the "nothing examined" error below, which is a document that had no
+        # prose in it.
+        if rules.empty?
+          usage = begin
+            Engine.nothing_asked(opts[:backend])
+          rescue ArgumentError => e
+            err.puts("sloplint-judge: #{e.message}")
+            return 2
+          end
+          err.puts("sloplint-judge #{Engine.usage_line(usage)}")
+          Sloplint::CLI.emit([], opts[:format], out:, by_path: false, judge: usage)
+          return 0
+        end
+
         backend = load_backend(opts[:backend], err:) or return 2
         result = Engine.scan_sources(sources, name: "sloplint-judge", err:, rules:, backend:, markdown:, register: opts[:register], strict:)
         # Nothing asked is nothing examined, and exit 0 would report that the
         # judge read the document and found nothing in it. The same reason
         # empty input is a usage error, and the same exit code.
-        if result.usage["requests"].to_i.zero? && !rules.empty?
+        if result.usage["requests"].zero?
           names = sources.map { |label, _| label == "-" ? "stdin" : label }
           err.puts("sloplint-judge: nothing examined in #{names.join(", ")}: no prose reached the judge.")
           err.puts("a document that is all Markdown furniture, or whose paragraphs are too short for the rules selected, leaves nothing to ask about.")

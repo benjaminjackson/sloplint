@@ -148,22 +148,15 @@ module Sloplint
       # different output shape. 0 requests also means no key: `--judge
       # --select em-dash` must run on a machine that has none.
       if judge && judge_rules.empty?
-        # Nothing to ask, so no key is read: the backend is named and its
-        # endpoint checked, the way `sloplint-judge status` does it, and an
-        # unknown --backend is still exit 2.
-        begin
-          klass = Judge::Backend.klass(backend)
-          klass.configured!
+        # Nothing to ask, so no key is read, and an unknown --backend is
+        # still exit 2. The same helper `sloplint-judge check` reports an
+        # empty selection through, so the two commands print one line.
+        judge_usage = begin
+          Judge::Engine.nothing_asked(backend)
         rescue ArgumentError => e
           err.puts("sloplint: --judge: #{e.message}")
           return 2
         end
-        # The same identifier a run reports, which is the model and not the
-        # adapter, so a reader of the JSON is not told two different things
-        # about one flag. The class knows it without a key.
-        # Through the same builder a real run's line goes through, so the
-        # JSON carries the same keys either way, cost_usd among them.
-        judge_usage = Judge::Engine.with_cost({ "backend" => klass.model_name, "requests" => 0 }, klass)
         err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
       elsif judge
         begin

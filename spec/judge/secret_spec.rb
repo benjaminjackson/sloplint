@@ -132,6 +132,15 @@ RSpec.describe Sloplint::Judge::Secret do
     expect(out&.length).to eq(200_000)
   end
 
+  # The child can finish between the join and the kill, and then the signal
+  # finds no process. Killing nothing is not a timeout.
+  it "reports what the child did when it finishes just before the kill" do
+    stub_const("Sloplint::Judge::Secret::TIMEOUT", 0.05)
+    allow(Process).to receive(:kill).with("KILL", anything).and_raise(Errno::ESRCH)
+    expect(described_class.run("/bin/sh", "-c", "sleep 0.3; echo late")).to eq("late\n")
+    expect(described_class.ran?("/bin/sh", "-c", "sleep 0.3; exit 1")).to be(false)
+  end
+
   it "kills a run that outlives the timeout and says a dialog may be waiting" do
     stub_const("Sloplint::Judge::Secret::TIMEOUT", 0.2)
     expect { described_class.run("/bin/sh", "-c", "sleep 5") }.to raise_error(ArgumentError, /dialog may be waiting/)

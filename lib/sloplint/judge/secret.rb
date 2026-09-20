@@ -137,7 +137,19 @@ module Sloplint
       def wait!(waiter, argv)
         return if waiter.join(TIMEOUT)
 
-        Process.kill("KILL", waiter.pid)
+        begin
+          Process.kill("KILL", waiter.pid)
+        rescue Errno::ESRCH
+          # The child finished on its own between the join and the signal, so
+          # there was nothing left to kill. What it answered is the honest
+          # outcome, and a timeout it did not hit is not: wait for the thread
+          # that reaped it and let the caller read the status.
+          waiter.join
+          return
+        end
+        # Reap the one that was killed here, rather than leaving a child
+        # behind for the error below to unwind past.
+        waiter.join(1)
         raise ArgumentError, "keychain lookup gave no answer in #{TIMEOUT} s: a keychain dialog may be waiting, " \
                              "or the item does not allow #{argv.first}; see docs/JUDGE.md"
       end

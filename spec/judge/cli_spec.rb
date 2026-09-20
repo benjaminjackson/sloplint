@@ -68,6 +68,23 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("unknown backend: nope")
   end
 
+  # The same decision in `sloplint-judge check`: nothing to ask is settled
+  # before a backend exists, because building one reads the key.
+  it "asks nothing and builds no backend when the selection holds no rule" do
+    expect(Sloplint::Judge::Backend).not_to receive(:load)
+    args = ["check", "--select", "wrap-up", "--ignore", "wrap-up", "-o", "json", "-"]
+    code, out, err = run(Sloplint::Judge::CLI, args, stdin_text: text)
+    expect(code).to eq(0)
+    doc = JSON.parse(out)
+    expect(doc["notes"]).to eq([])
+    expect(doc["judge"]).to eq("backend" => "jev-latest", "requests" => 0, "cost_usd" => 0.0)
+    expect(err).to include("sloplint-judge jev-latest, 0 requests, $0.000000")
+    # And an unknown backend is still a usage error on that path.
+    code, _, err = run(Sloplint::Judge::CLI, ["check", "--backend", "nope", "--select", "wrap-up", "--ignore", "wrap-up", "-"], stdin_text: text)
+    expect(code).to eq(2)
+    expect(err).to include("unknown backend: nope")
+  end
+
   it "reads a flag written after the path" do
     file = Tempfile.new(["draft", ".md"]); file.write(text); file.close
     code, out, = run(Sloplint::CLI, ["check", file.path, "--judge", "-o", "json"])

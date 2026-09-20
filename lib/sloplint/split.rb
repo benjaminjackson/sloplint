@@ -30,6 +30,24 @@ module Sloplint
     # matters: "No." is an abbreviation, "no." is the end of a sentence.
     ABBREV = /\b(?:e\.g|i\.e|vs|etc|cf|Fig|No|Dr|Mr|Mrs|Ms|St|Inc|Ltd|Sec|Ch|Vol)\.\z/
 
+    # The other period that does not end a sentence, matched on its shape
+    # rather than on a list of words: letters written one at a time with a
+    # period after each, which is "U.S.", "U.K.", "e.g.", "i.e." and the rest
+    # of them. Two pairs at least, so the last letter of a word is not one:
+    # "bigger than AT&T." and "a free upgrade from 512K." still end their
+    # sentences. The run is bounded, so a piece is read in one pass.
+    #
+    # One period of this shape is left alone: a single capital standing as a
+    # word. It is an initial in "J. K. Rowling wrote the book.", which is
+    # split into three sentences here, and it is a whole sentence in "Service
+    # A. Service B handles the rest.", which a design document writes far more
+    # often than it names anyone by initial.
+    #
+    # What the run costs instead: a sentence that really ends in one of these
+    # joins the one after it, so "It was in the U.S. It cost $2." is read as
+    # one sentence.
+    INITIALS = /(?<![[:alpha:]])(?:[[:alpha:]]\.){2,6}\z/
+
     # The judge's view of Markdown differs from the regex engine's in one
     # way. Fenced code and comments become spaces, as there, but an inline
     # code span or a URL becomes a run of this character, same length: it is
@@ -139,7 +157,7 @@ module Sloplint
         # The abbreviation ends where the piece does, and a piece ends at a
         # .!? that a boundary follows, so it is always inside this piece: the
         # whole buffer never has to be cut out of the body to see it.
-        next if piece.match?(ABBREV)
+        next if piece.match?(ABBREV) || piece.match?(INITIALS)
 
         parts << cut.call(buf_start, pos - buf_start)
         buf_start = nil
