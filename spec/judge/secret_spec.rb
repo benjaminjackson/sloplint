@@ -78,6 +78,23 @@ RSpec.describe Sloplint::Judge::Secret do
       .to eq(["/usr/bin/secret-tool", "clear", "service", "sloplint-judge", "account", name])
   end
 
+  it "answers present? on Linux from the exit status, never reading the value" do
+    linux!
+    expect(described_class).not_to receive(:run)
+    expect(described_class).to receive(:ran?)
+      .with("/usr/bin/secret-tool", "lookup", "service", "sloplint-judge", "account", name)
+      .and_return(true)
+    expect(described_class.present?(name)).to eq("keychain")
+  end
+
+  it "throws the child's stdout away in ran?, so a printed secret goes nowhere" do
+    allow(Process).to receive(:spawn).and_call_original
+    expect(described_class.ran?("/bin/sh", "-c", "echo x")).to be(true)
+    expect(Process).to have_received(:spawn).with("/bin/sh", "-c", "echo x", hash_including(out: File::NULL))
+    expect(described_class.ran?("/bin/sh", "-c", "exit 1")).to be(false)
+    expect(described_class.ran?("/nonexistent/binary-for-this-spec")).to be(false)
+  end
+
   it "stored? looks at the keychain even when the environment has a key" do
     darwin!
     ENV[name] = "from-env"

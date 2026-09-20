@@ -56,12 +56,15 @@ module Sloplint
         raise ArgumentError, "#{name} contains a control character; store it again" if value.match?(/[[:cntrl:]]/)
       end
 
-      # Is there a keychain item, whatever the environment says. Attribute
-      # lookups do not open the access dialog and do not return the value.
+      # Is there a keychain item, whatever the environment says. On macOS an
+      # attribute lookup does not open the access dialog and does not return
+      # the value. On Linux there is no attribute-only lookup: secret-tool
+      # prints the secret, so this reads the exit status and throws the
+      # child's stdout away.
       def stored?(name)
         case platform
         when :darwin then !run(SECURITY, "find-generic-password", "-s", SERVICE, "-a", name).nil?
-        when :linux then !!(tool = secret_tool) && !run(tool, "search", "service", SERVICE, "account", name).to_s.empty?
+        when :linux then !!(tool = secret_tool) && ran?(tool, "lookup", "service", SERVICE, "account", name)
         else false
         end
       end
@@ -109,16 +112,30 @@ module Sloplint
       def run(*argv)
         Open3.popen2(*argv, err: File::NULL) do |stdin, stdout, waiter|
           stdin.close
-          unless waiter.join(TIMEOUT)
-            Process.kill("KILL", waiter.pid)
-            raise ArgumentError, "keychain lookup gave no answer in #{TIMEOUT} s: a keychain dialog may be waiting, " \
-                                 "or the item does not allow #{argv.first}; see docs/JUDGE.md"
-          end
+          wait!(waiter, argv)
           out = stdout.read
           waiter.value.success? ? out : nil
         end
       rescue Errno::ENOENT
         nil
+      end
+
+      # True when argv exits 0, with its stdout sent to /dev/null: this is how
+      # a presence check runs a tool that would otherwise print the secret.
+      def ran?(*argv)
+        waiter = Process.detach(Process.spawn(*argv, in: File::NULL, out: File::NULL, err: File::NULL))
+        wait!(waiter, argv)
+        waiter.value.success?
+      rescue Errno::ENOENT
+        false
+      end
+
+      def wait!(waiter, argv)
+        return if waiter.join(TIMEOUT)
+
+        Process.kill("KILL", waiter.pid)
+        raise ArgumentError, "keychain lookup gave no answer in #{TIMEOUT} s: a keychain dialog may be waiting, " \
+                             "or the item does not allow #{argv.first}; see docs/JUDGE.md"
       end
     end
   end

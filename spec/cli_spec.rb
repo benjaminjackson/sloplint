@@ -423,6 +423,13 @@ RSpec.describe Sloplint::CLI do
       expect(out).not_to include("sloplint-judge status")
     end
 
+    # The recipe asks RubyGems whether the judge is installed, which scans
+    # every installed gem. A check has no use for it.
+    it "builds the help banner only when help is asked for" do
+      expect(Sloplint::CLI).not_to receive(:judge_recipe)
+      run(["check", "-"], stdin_text: "Plain prose here.\n")
+    end
+
     it "--help behaves the same as -h" do
       code, out = run(["--help"])
       expect(code).to eq(0)

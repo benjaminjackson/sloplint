@@ -32,10 +32,15 @@ module Sloplint
 
       def load(name = nil) = klass(name).new
 
+      # Which adapter a command runs: --backend, else the environment, else
+      # jev. One place, because the commands that only print the name must
+      # print the one `klass` would load.
+      def default_name(chosen = nil) = chosen || ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev")
+
       # The class alone, for `status` and the key commands: they must not
       # construct a backend, because constructing one reads the key.
       def klass(name = nil)
-        name ||= ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev")
+        name = default_name(name)
         const = TABLE[name] or raise ArgumentError, "unknown backend: #{name} (known: #{TABLE.keys.join(", ")})"
         require_relative "backends/#{name}" unless Backends.const_defined?(const, false)
         Backends.const_get(const)

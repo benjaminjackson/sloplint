@@ -130,7 +130,7 @@ module Sloplint
           err.puts("sloplint: --judge: #{e.message}")
           return 2
         end
-        judge_usage = { "backend" => backend || ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev"), "requests" => 0 }
+        judge_usage = { "backend" => Judge::Backend.default_name(backend), "requests" => 0 }
         err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
       elsif judge
         begin
@@ -328,9 +328,11 @@ module Sloplint
       RECIPE
     end
 
-    def global_parser(opts, out:)
-      OptionParser.new do |o|
-        o.banner = <<~BANNER
+    # The banner names whether the judge gem is here, which costs a scan of
+    # the installed gems. Only --help reads it, so it is built when it is
+    # read and never on the way to a scan.
+    def global_banner
+      <<~BANNER
           sloplint — flag the rhetorical tics and puffery that mark AI-generated prose.
 
           # Recommended for agents:
@@ -351,7 +353,11 @@ module Sloplint
             version      print the sloplint version
 
           global options:
-        BANNER
+      BANNER
+    end
+
+    def global_parser(opts, out:)
+      parser = OptionParser.new do |o|
         o.on("-o", "--output-format FORMAT", %w[full json],
              "Output format: 'full' (human-readable text) or 'json' (default: full).") do |v|
           opts[:format] = v
@@ -367,6 +373,8 @@ module Sloplint
         o.separator ""
         o.separator "See `sloplint explain <id>` for any rule, or docs/SPEC.md for the JSON contract."
       end
+      parser.define_singleton_method(:banner) { CLI.global_banner }
+      parser
     end
   end
 end

@@ -142,8 +142,59 @@ RSpec.describe Sloplint::Judge::Engine do
                          "answers" => { "q" => { "probabilities" => { "0" => 0.9, "1" => 0.1 }, "confidence" => 0.8 } })
     sent = nil
     allow(http).to receive(:request) { |req| sent = req; instance_double(Net::HTTPResponse, code: "200", body: body) }
-    jev.ask({ "x" => 1 }, { "q" => { "type" => "score" } })
+    jev.ask({ "x" => 1 }, { "q" => { "type" => "score", "criteria" => %w[yes no] } })
     expect(sent.path).to eq("/v1/systemone?deployment=eu")
+  end
+
+  # Jev may leave out a level whose probability is zero. Sorted keys alone
+  # would then shift every level down one and flag the wrong criterion.
+  it "gives a score one probability per level, whatever keys come back" do
+    answers = { "q" => { "probabilities" => { "0" => 0.1, "2" => 0.9 } } }
+    a = jev_answer(answers, "type" => "score", "criteria" => %w[a b c])
+    expect(a.probabilities).to eq([0.1, 0.0, 0.9])
+    expect(a.top).to eq(2)
+    a = jev_answer({ "q" => { "probabilities" => { "1" => 0.1, "2" => 0.9 } } }, "type" => "score", "criteria" => %w[a b c])
+    expect(a.probabilities).to eq([0.0, 0.1, 0.9])
+  end
+
+  it "calls a body Jev could not have sent a backend failure, and a bug in our code a bug" do
+    q = { "type" => "score", "criteria" => %w[a b c] }
+    expect { jev_answer({ "q" => { "probabilities" => { "3" => 1.0 } } }, q) }
+      .to raise_error(Sloplint::Judge::BackendError, /not one of the 3 levels/)
+    expect { jev_answer({ "q" => { "probabilities" => [0.1, 0.9] } }, q) }
+      .to raise_error(Sloplint::Judge::BackendError, /not a Hash keyed by level/)
+    expect { jev_answer({ "q" => nil }, q) }.to raise_error(Sloplint::Judge::BackendError, /not a Hash/)
+    expect { jev_answer([], q) }.to raise_error(Sloplint::Judge::BackendError, /not a Hash keyed by question/)
+    # A NoMethodError from our own code is not the backend's fault, so it is
+    # not dressed up as one.
+    broken = Class.new(Sloplint::Judge::Backends::Jev) do
+      private
+
+      def normalise(*) = raise(NoMethodError, "oops")
+    end
+    expect { jev_answer({ "q" => { "probabilities" => { "0" => 1.0 } } }, q, broken) }
+      .to raise_error(NoMethodError, "oops")
+  end
+
+  # One Jev request with this response body, answering one question named "q".
+  def jev_answer(answers, question, klass = nil)
+    require "sloplint/judge/backends/jev"
+    klass ||= Sloplint::Judge::Backends::Jev
+    http = instance_double(Net::HTTP)
+    allow(http).to receive(:use_ssl=)
+    allow(http).to receive(:read_timeout=)
+    allow(Net::HTTP).to receive(:new).and_return(http)
+    allow(http).to receive(:request)
+      .and_return(instance_double(Net::HTTPResponse, code: "200",
+                                                     body: JSON.generate("usage" => {}, "answers" => answers)))
+    klass.new(url: "https://api.typesafe.ai/v1", key: "k").ask({}, { "q" => question }).fetch("q")
+  end
+
+  it "deals work over every thread and still returns results in input order" do
+    threads = Queue.new
+    out = described_class.in_parallel((1..9).to_a, 8) { |i| threads << Thread.current.object_id; i * 2 }
+    expect(out).to eq((1..9).map { |i| i * 2 })
+    expect(Array.new(threads.size) { threads.pop }.uniq.size).to eq(8)
   end
 
   it "raises BackendError out of the parallel map" do

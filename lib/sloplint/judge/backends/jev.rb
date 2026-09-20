@@ -75,19 +75,23 @@ module Sloplint
           raise BackendError, "#{@url.host} returned #{res.code}: #{res.body.to_s[0, 200]}" unless res.code == "200"
 
           body = JSON.parse(res.body)
-          usage = body["usage"] || {}
+          usage = body["usage"].is_a?(Hash) ? body["usage"] : {}
           answers = body.fetch("answers")
+          malformed!("answers is #{answers.class}, not a Hash keyed by question") unless answers.is_a?(Hash)
           questions.to_h do |qname, q|
             a = answers.fetch(qname) { raise KeyError, "no answer for #{qname}" }
+            malformed!("the answer for #{qname} is #{a.class}, not a Hash") unless a.is_a?(Hash)
             type = q.fetch("type")
-            probs = normalise(type, type == "noul" ? a.fetch("noul") : a.fetch("probabilities"))
+            probs = normalise(type, type == "noul" ? a.fetch("noul") : a.fetch("probabilities"), q)
             [qname, Answer.new(type: type, probabilities: probs, confidence: confidence_for(a, type, probs), usage: usage)]
           end
-        # Transport errors, and a body that is not the shape Jev documents
-        # (TypeError, NoMethodError on a nil answer), are one thing to the
-        # caller: the backend did not answer. Exit 3, not a backtrace.
+        # Transport errors, and a body missing a key Jev documents, are one
+        # thing to the caller: the backend did not answer. Exit 3, not a
+        # backtrace. A body of the wrong shape raises BackendError where it is
+        # read, so this list stays off our own code: a bug in normalise is a
+        # bug, and it gets to raise like one.
         rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError, Net::ProtocolError, Net::OpenTimeout,
-               Net::ReadTimeout, JSON::ParserError, KeyError, TypeError, NoMethodError => e
+               Net::ReadTimeout, JSON::ParserError, KeyError => e
           raise BackendError, "#{e.class}: #{e.message}"
         end
 
@@ -95,16 +99,41 @@ module Sloplint
 
         # Jev returns score probabilities keyed by level index as strings, choice
         # probabilities keyed by option, and a noul as one float under "noul".
-        def normalise(type, probs)
+        # Anything else in those slots is a malformed body, said so here, which
+        # is what lets `ask` rescue only the reads and not our own arithmetic.
+        def normalise(type, probs, question)
           case type
-          when "score"
-            raise BackendError, "score probabilities are #{probs.class}, not a Hash keyed by level" unless probs.is_a?(Hash)
+          when "score" then scores(probs, question.fetch("criteria").size)
+          when "choice"
+            malformed!("choice probabilities are #{probs.class}, not a Hash keyed by option") unless probs.is_a?(Hash)
 
-            probs.sort_by { |k, _| k.to_i }.map { |_, p| p.to_f }
-          when "choice" then probs.transform_values(&:to_f)
-          else probs.to_f
+            probs.transform_values { |p| number(p) }
+          else
+            malformed!("noul is #{probs.class}, not a number") unless probs.is_a?(Numeric)
+
+            probs.to_f
           end
         end
+
+        # One probability per level, in level order. Jev may leave out a level
+        # whose probability is zero, so the array is as long as the question's
+        # criteria and the gaps are 0.0. Otherwise a short array would slide
+        # every level down one and Answer#top would name the wrong criterion.
+        def scores(probs, levels)
+          malformed!("score probabilities are #{probs.class}, not a Hash keyed by level") unless probs.is_a?(Hash)
+
+          out = Array.new(levels, 0.0)
+          probs.each do |k, p|
+            i = Integer(k.to_s, 10, exception: false)
+            malformed!("score probability key #{k.inspect} is not one of the #{levels} levels") unless i&.between?(0, levels - 1)
+            out[i] = number(p)
+          end
+          out
+        end
+
+        def number(p) = Float(p, exception: false) || malformed!("#{p.class} is not a probability")
+
+        def malformed!(why) = raise(BackendError, "#{@url.host} returned a malformed body: #{why}")
 
         # Score and choice answers carry a confidence. A noul does not, so it
         # gets the one thing its answer can defend: distance from the fence,

@@ -68,6 +68,20 @@ RSpec.describe Sloplint::Split do
     expect(large).to be < small * 30
   end
 
+  it "keeps a wrapped line that starts with a year, as CommonMark does" do
+    text = "The library was released in\n2019. It was rewritten in\n2021. Adoption grew after that.\n"
+    paras = described_class.paragraphs(text, markdown: true)
+    expect(paras.map { |p| p.sentences.map(&:text) })
+      .to eq([["The library was released in 2019.", "It was rewritten in 2021.", "Adoption grew after that."]])
+  end
+
+  it "drops an ordered list after a blank line, or one that starts at 1 after prose" do
+    text = "Intro here.\n\n2. second item\n3. third item\n\nProse again.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Intro here.", "Prose again."])
+    text = "Do this first.\n1. wash it\n2. dry it\nDone now.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Do this first.", "Done now."])
+  end
+
   it "blanks code under --markdown so a fenced block is not a paragraph" do
     text = "Prose.\n\n```\nnot. prose. here.\n```\n\nMore prose.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose.", "More prose."])

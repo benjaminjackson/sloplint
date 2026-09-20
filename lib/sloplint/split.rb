@@ -17,7 +17,11 @@ module Sloplint
     # Furniture: a line that is not prose, whatever a regex would think.
     # Headings, list items, table rows, block quotes, horizontal rules,
     # reference-style link definitions and a lone image or link line.
-    FURNITURE = /\A[ \t]*(?:\#{1,6}[ \t]|[-*+][ \t]|\d+[.)][ \t]|\||>|[-*_]{3,}[ \t]*\z|\[[^\]]+\]:[ \t]|!\[)/
+    FURNITURE = /\A[ \t]*(?:\#{1,6}[ \t]|[-*+][ \t]|\||>|[-*_]{3,}[ \t]*\z|\[[^\]]+\]:[ \t]|!\[)/
+
+    # An ordered-list item, which is furniture too but only sometimes: see
+    # ordered_item?.
+    ORDERED = /\A[ \t]*(\d+)[.)][ \t]/
 
     # Abbreviations whose trailing period does not end a sentence. Case
     # matters: "No." is an abbreviation, "no." is the end of a sentence.
@@ -109,10 +113,22 @@ module Sloplint
 
     def blank_furniture(scan)
       dropped = false
+      prose = false
       scan.gsub(/^.*$/) do |l|
-        dropped = l.match?(FURNITURE) || l.match?(LONE_INLINE) || (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
+        dropped = l.match?(FURNITURE) || ordered_item?(l, prose) || l.match?(LONE_INLINE) ||
+                  (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
+        prose = !dropped && !l.strip.empty?
         dropped ? " " * l.length : l
       end
+    end
+
+    # CommonMark lets an ordered list interrupt a paragraph only when it
+    # starts at 1. So a hard-wrapped prose line that begins with a year --
+    # "The library was released in\n2019. It was rewritten in\n2021." -- is
+    # prose, not two list items, and the sentences on it stay in view.
+    def ordered_item?(line, after_prose)
+      m = ORDERED.match(line) or return false
+      !after_prose || m[1] == "1"
     end
   end
 end

@@ -20,6 +20,12 @@ RSpec.describe "Sloplint::Judge::RULES" do
     rules.each { |r| expect(doc).to include("**#{r.id}**"), "#{r.id} missing from docs/JUDGE.md" }
   end
 
+  it "names the low-confidence rules in docs/JUDGE.md" do
+    doc = File.read(File.expand_path("../../docs/JUDGE.md", __dir__), encoding: "UTF-8")
+    low = rules.select { |r| r.confidence == "low" }.map { |r| "`#{r.id}`" }
+    expect(doc).to include("#{low[0..-2].join(", ")} and #{low[-1]} sit there.")
+  end
+
   describe "the README rule counts" do
     readme = File.read(File.expand_path("../../README.md", __dir__), encoding: "UTF-8")
 

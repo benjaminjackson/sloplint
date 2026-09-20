@@ -30,10 +30,16 @@ module Sloplint
           result.usage.each { |k, v| usage[k] += v }
           result.notes
         end
-        usage = { "backend" => backend.name, "requests" => usage.delete("requests") || 0 }.merge(usage)
-        usage["cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
+        usage = with_cost({ "backend" => backend.name, "requests" => usage.delete("requests") || 0 }.merge(usage), backend)
         err.puts("#{name} #{usage_line(usage)}")
         Result.new(notes:, usage:)
+      end
+
+      # The dollar line, last, when the backend prices its own tokens. Both
+      # the commands that print a usage line end with the same number.
+      def with_cost(usage, backend)
+        usage["cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
+        usage
       end
 
       # "jev-latest, 4 requests, 5200 input_tokens, 252 output_tokens, $0.000218"
@@ -162,16 +168,21 @@ module Sloplint
       end
 
       # Map items through the block on up to `concurrency` threads, keeping
-      # order. Thread#value re-raises whatever a chunk raised.
-      # ponytail: static chunks, so one slow request delays its chunk; a queue
-      # if requests stop being uniform.
+      # order. Items are dealt out round-robin, so 9 items over 8 threads is
+      # 2 + 1 + 1 ... and not 8 + 1: slicing into equal chunks leaves a
+      # thread with one item and the rest with a full chunk each. Thread#value
+      # re-raises whatever a thread raised.
+      # ponytail: a static deal, so one slow request delays the rest of its
+      # thread's items; a queue if requests stop being uniform.
       def in_parallel(items, concurrency)
         return items.map { |i| yield i } if concurrency <= 1 || items.size <= 1
 
         n = [concurrency, items.size].min
-        items.each_slice((items.size / n.to_f).ceil)
-             .map { |chunk| Thread.new { Thread.current.report_on_exception = false; chunk.map { |i| yield i } } }
-             .flat_map(&:value)
+        out = Array.new(items.size)
+        items.each_with_index.group_by { |_, i| i % n }
+             .map { |_, deal| Thread.new { Thread.current.report_on_exception = false; deal.each { |item, i| out[i] = yield item } } }
+             .each(&:value)
+        out
       end
     end
   end

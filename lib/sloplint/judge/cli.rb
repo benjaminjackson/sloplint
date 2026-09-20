@@ -102,8 +102,7 @@ module Sloplint
         verdict = Compare.run(File.read(a, encoding: Encoding::UTF_8), File.read(b, encoding: Encoding::UTF_8),
                               place: "for #{opts[:register]}", backend:, drift:)
         out.puts(JSON.pretty_generate(verdict.to_h.except(:usage)))
-        usage = { "backend" => backend.name }.merge(verdict.usage)
-        usage["cost_usd"] = backend.cost_usd(usage).round(6) if backend.respond_to?(:cost_usd)
+        usage = Engine.with_cost({ "backend" => backend.name }.merge(verdict.usage), backend)
         err.puts("sloplint-judge: #{Engine.usage_line(usage)}")
         0
       end
@@ -125,7 +124,7 @@ module Sloplint
         klass = Backend.klass(opts[:backend])
         settings = klass.configured!
         source = Secret.present?(klass::KEY) or raise ArgumentError, Secret.missing(klass::KEY)
-        out.puts("backend #{opts[:backend] || ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev")} (#{settings}), key from #{source}")
+        out.puts("backend #{Backend.default_name(opts[:backend])} (#{settings}), key from #{source}")
         0
       rescue ArgumentError => e
         err.puts("sloplint-judge: #{e.message}")
