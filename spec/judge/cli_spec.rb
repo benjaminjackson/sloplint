@@ -37,13 +37,31 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("judge fake")
   end
 
-  it "writes the judge wrapper under --judge even when no judge rule ran" do
+  it "writes the judge wrapper under --judge even when no judge rule ran, and reads no key" do
+    # Nothing is asked, so nothing is built: a machine with no key runs this.
+    expect(Sloplint::Judge::Backend).not_to receive(:load)
     code, out, err = run(Sloplint::CLI, ["check", "--judge", "--select", "em-dash", "-o", "json", "-"], stdin_text: text)
     expect(code).to eq(0)
     doc = JSON.parse(out)
     expect(doc["notes"]).to eq([])
-    expect(doc["judge"]).to eq("backend" => "fake", "requests" => 0)
-    expect(err).to include("judge fake, 0 requests")
+    expect(doc["judge"]).to eq("backend" => "jev", "requests" => 0)
+    expect(err).to include("judge jev, 0 requests")
+  end
+
+  it "exits 2 on an unknown --backend even when no judge rule ran" do
+    code, _, err = run(Sloplint::CLI, ["check", "--judge", "--backend", "nope", "--select", "em-dash", "-"], stdin_text: text)
+    expect(code).to eq(2)
+    expect(err).to include("unknown backend: nope")
+  end
+
+  it "reads a flag written after the path" do
+    file = Tempfile.new(["draft", ".md"]); file.write(text); file.close
+    code, out, = run(Sloplint::CLI, ["check", file.path, "--judge", "-o", "json"])
+    expect(code).to eq(1)
+    expect(JSON.parse(out)["judge"]).to include("backend" => "fake")
+    code, _, err = run(Sloplint::Judge::CLI, ["check", file.path, "--markdown"])
+    expect(code).to eq(1)
+    expect(err).not_to include("no such file")
   end
 
   it "accepts judge ids in --select and --ignore only with --judge" do
@@ -71,6 +89,16 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     missing = LoadError.new("cannot load such file -- sloplint/judge")
     missing.instance_variable_set(:@path, "sloplint/judge")
     allow(Sloplint::CLI).to receive(:require).and_raise(missing)
+    code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
+    expect([code, out]).to eq([2, ""])
+    expect(err).to include("gem install sloplint-judge")
+  end
+
+  # An installed judge that asks for another sloplint: RubyGems refuses to
+  # activate it, and the reader gets the install hint, not a backtrace.
+  it "exits 2 with the same hint when the installed judge conflicts with this sloplint" do
+    conflict = Gem::ConflictError.new(Gem::Specification.new("sloplint-judge", "9.9.9"), [])
+    allow(Sloplint::CLI).to receive(:require).and_raise(conflict)
     code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
     expect([code, out]).to eq([2, ""])
     expect(err).to include("gem install sloplint-judge")

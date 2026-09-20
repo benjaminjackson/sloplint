@@ -62,7 +62,14 @@ RSpec.describe "Sloplint::Judge::RULES" do
   # The backend's own constant, not a copy of the name: a rename there must
   # not turn the fixtures off silently.
   JEV_KEY = Sloplint::Judge::Backend.klass("jev")::KEY
-  KEY_PRESENT = !Sloplint::Judge::Secret.present?(JEV_KEY).nil?
+  # present? refuses a key with a control character, and this runs at load
+  # time: a bad key in the environment must skip the fixtures, not stop the
+  # whole run before a single example.
+  KEY_PRESENT = begin
+    !Sloplint::Judge::Secret.present?(JEV_KEY).nil?
+  rescue ArgumentError
+    false
+  end
   describe "live fixtures", if: KEY_PRESENT do
     let(:backend) { Sloplint::Judge::Backend.load("jev") }
 

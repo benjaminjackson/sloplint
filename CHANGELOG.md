@@ -7,6 +7,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [0.1.0] - unreleased
 
+- A rule at `low` confidence (`same-weight`, `matched-shape`) now reports its
+  notes when `--select` names it; before, they ran and printed nothing
+  without `--strict`. The rule's `low` caps the note's confidence; what a
+  default run drops is an answer the model itself gave at low confidence.
+- `check --judge` always writes the `{"notes", "judge"}` object, with 0
+  requests when no judge rule survived selection. `compare` accepts
+  `--drift` after the two files and refuses a third. `status` refuses a key
+  with a control character the way `check --judge` does.
 - New paragraph rule `promotional` (`warning`, `medium`): a paragraph in
   which every judgment is favorable, none comes with a measure and no
   drawback appears. The paragraph-level reading behind `puffery-words`,

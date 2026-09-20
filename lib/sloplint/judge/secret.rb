@@ -29,10 +29,7 @@ module Sloplint
         env = ENV[name].to_s
         value, source = env.empty? ? [read(name), "keychain"] : [env, "environment"]
         return nil if value.nil? || value.empty?
-        # Net::HTTP refuses a header with CR or LF by raising an ArgumentError
-        # that quotes the whole header value, and the CLIs print ArgumentError
-        # messages. Refuse here, without the value, so a wrapped paste stored
-        # once is never printed on every run after.
+
         refuse_control!(name, value)
         [value, source]
       end

@@ -407,9 +407,16 @@ RSpec.describe Sloplint::CLI do
       allow(Gem::Specification).to receive(:find_all_by_name).and_call_original
       # Installed as a gem, the judge is off the load path until RubyGems
       # activates it. That is installed, and the recipe must say so.
-      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([:a_spec])
+      judge_gem = ->(requirement) { Gem::Specification.new("sloplint-judge", "9.9.9") { |g| g.add_dependency("sloplint", requirement) } }
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([judge_gem.call(Sloplint::VERSION)])
       _, out = run(["--help"])
       expect(out).to include("sloplint-judge status")
+      # A gem that asks for another sloplint cannot be required beside this
+      # one, so the recipe must not send the agent to --judge.
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([judge_gem.call("= 0.0.1")])
+      _, out = run(["--help"])
+      expect(out).to include("not installed here")
+      expect(out).not_to include("sloplint-judge status")
       allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([])
       _, out = run(["--help"])
       expect(out).to include("not installed here").and include("gem install sloplint-judge")

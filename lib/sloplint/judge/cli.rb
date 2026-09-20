@@ -58,7 +58,9 @@ module Sloplint
           o.on("--strict", "Run sentence rules on every sentence and keep low-confidence notes.") { strict = true }
           o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
-        end.order!(argv)
+        # permute!, so a flag written after the path is a flag: `sloplint-judge
+        # check draft.md --markdown` reads the way anyone would write it.
+        end.permute!(argv)
 
         unknown = Sloplint::CLI.unknown_rule_refs(select, RULES) + Sloplint::CLI.unknown_rule_refs(ignore, RULES)
         unless unknown.empty?

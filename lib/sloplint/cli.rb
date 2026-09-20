@@ -71,7 +71,9 @@ module Sloplint
         o.on("--register TEXT", "With --judge: who the reader is.") { |v| register = v }
         o.on("--backend NAME", "With --judge: which model adapter to use.") { |v| backend = v }
       end
-      p.order!(argv)
+      # permute!, so a flag written after the path is a flag: `sloplint check
+      # draft.md --judge` reads the way anyone would write it.
+      p.permute!(argv)
 
       # The judge is a separate gem that depends on this one. The bare require
       # goes through the load path: exe/sloplint puts this checkout's lib/ at
@@ -81,8 +83,11 @@ module Sloplint
       if judge
         begin
           require "sloplint/judge"
+        # A Gem::ConflictError is an installed sloplint-judge that asks for a
+        # different sloplint: it carries no path, and to the reader it is the
+        # same thing as no judge at all.
         rescue LoadError => e
-          raise unless e.path == "sloplint/judge"
+          raise unless e.path == "sloplint/judge" || e.is_a?(Gem::ConflictError)
 
           err.puts("sloplint: --judge needs the sloplint-judge gem: gem install sloplint-judge")
           return 2
@@ -113,8 +118,21 @@ module Sloplint
       # Under --judge the output is the {"notes", "judge"} object whether or
       # not a judge rule survived selection: a caller that asked for the judge
       # reads the wrapper, and an empty selection is 0 requests, not a
-      # different output shape.
-      if judge
+      # different output shape. 0 requests also means no key: `--judge
+      # --select em-dash` must run on a machine that has none.
+      if judge && judge_rules.empty?
+        # Nothing to ask, so no key is read: the backend is named and its
+        # endpoint checked, the way `sloplint-judge status` does it, and an
+        # unknown --backend is still exit 2.
+        begin
+          Judge::Backend.klass(backend).configured!
+        rescue ArgumentError => e
+          err.puts("sloplint: --judge: #{e.message}")
+          return 2
+        end
+        judge_usage = { "backend" => backend || ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev"), "requests" => 0 }
+        err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
+      elsif judge
         begin
           judge_backend = Judge::Backend.load(backend)
         rescue ArgumentError => e
@@ -290,8 +308,14 @@ module Sloplint
     # before the flag: the judge sends the text to an API, so ask the person.
     def judge_recipe
       # Installed as a gem, the judge is not on the load path until RubyGems
-      # activates it, so the load path alone reports a missing gem.
-      unless $LOAD_PATH.resolve_feature_path("sloplint/judge") || Gem::Specification.find_all_by_name("sloplint-judge").any?
+      # activates it, so the load path alone reports a missing gem. A gem on
+      # disk that asks for a different sloplint cannot be activated beside
+      # this one, and advertising it would send the agent into a conflict.
+      installed = $LOAD_PATH.resolve_feature_path("sloplint/judge") ||
+                  Gem::Specification.find_all_by_name("sloplint-judge").any? { |spec|
+                    spec.dependencies.find { |d| d.name == "sloplint" }&.match?("sloplint", Sloplint::VERSION)
+                  }
+      unless installed
         return "# sloplint-judge (not installed here) adds model-backed rules for what a regex cannot see: gem install sloplint-judge\n"
       end
 
