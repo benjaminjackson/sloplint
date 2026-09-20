@@ -15,6 +15,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   requests when no judge rule survived selection. `compare` accepts
   `--drift` after the two files and refuses a third. `status` refuses a key
   with a control character the way `check --judge` does.
+- Graveyard: `owned-claim` was retried as `no-actor` and stays out, and
+  `buried-verbs`, the paragraph reading of the nominalization shift, joins
+  it; neither crossed the flag on any side. The entries in `docs/JUDGE.md`
+  say so.
 - New paragraph rule `promotional` (`warning`, `medium`): a paragraph in
   which every judgment is favorable, none comes with a measure and no
   drawback appears. The paragraph-level reading behind `puffery-words`,
