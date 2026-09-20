@@ -5,6 +5,25 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-20
+
+### Added
+
+- `cataphoric-teaser` (self-rating, warning, high confidence): the
+  forward-pointing tease that sells a claim as rare knowledge before making
+  it. "Here's what nobody tells you about hiring.", "The part most people get
+  wrong is the rollback." Three closed frames (a forward demonstrative, a
+  noun slot, a scarcity subject and a verb of telling); the bare-subject
+  form must reach a copula or colon, and "that's what nobody understands"
+  points backward and is left alone.
+- `punch-sentence` (cadence, info, medium confidence): the verbless beat of
+  one to three words wedged between two long sentences in the middle of a
+  paragraph, "Not anymore." and "Simple.", which `mic-drop-closer` and
+  `bare-auxiliary-closer` only see at a paragraph's end. Two closed shapes:
+  a negator with up to two words after it, or one capitalised word of five
+  letters or more. Titles, initials and case citations before the stop are
+  guarded, and short clauses with a subject ("He agrees.") are not matched.
+
 ## [0.8.0] - 2026-09-15
 
 ### Changed (breaking)

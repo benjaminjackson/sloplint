@@ -1896,6 +1896,59 @@ module Sloplint
                  "should be doing — a model habit borrowed from thought-leader prose."
     ),
     Rule.new(
+      id: "cataphoric-teaser",
+      category: "self-rating",
+      severity: "warning",
+      confidence: "high",
+      # The forward-pointing tease: "Here's what nobody tells you", "the
+      # part most people get wrong". Three parts, each a closed frame. A
+      # sentence-initial position, optionally opened by a forward demonstrative
+      # (here's / this is; "that's what nobody understands" points backward
+      # and is left alone). A noun slot: what / the part / the thing / the
+      # bit / the secret. A subject that claims scarcity for the reader's
+      # benefit: nobody, no one, most people, few people, hardly anyone,
+      # they, people. Then up to two adverbs and a verb of telling, getting
+      # wrong, talking about, admitting or noticing. The bare subject form
+      # ("What nobody tells you ...") must also reach a copula or colon in
+      # the same sentence, since that is what makes it a setup rather than a
+      # plain report ("What nobody tells you gets forgotten."), and it may
+      # not take "they": without a demonstrative in front, "what they don't
+      # realize is" refers to the people the story is about, and narrative
+      # says it. Read across 8.7 MB of RAID that was the one human hit.
+      pattern: /(?:\A|[.!?]\s+|\n\s*\n|:\s+)\s*
+                (?:(?<demo>(?:\w+,?\s+)?(?:here'?s|here\s+is|this\s+is)\s+)|(?-i:(?=[A-Z])))
+                (?:what|the\s+(?:part|thing|bit|secret))\s+
+                (?:nobody|no[-\s]?one|most\s+\w+(?:\s+\w+)?|few\s+people|hardly\s+anyone|almost\s+(?:nobody|no[-\s]?one)|people|(?(<demo>)they|(?!)))\s+
+                (?:(?:will|won'?t|don'?t|doesn'?t|actually|ever|really|never|rarely|wants?\s+to)\s+){0,2}
+                (?:tells?|gets?|talks?|says?|admits?|mentions?|warns?|teach(?:es)?|explains?|notices?|realizes?|understands?|hears?)\b
+                (?(<demo>)|[^.!?\n:]{0,60}?(?:\s+is\b|:))/ix,
+      message: "Cataphoric teaser promises a hidden insight before giving it.",
+      suggestion: "Cut the tease and state the thing itself.",
+      examples_bad: [
+        "Here's what nobody tells you about hiring.",
+        "Here is the part most people get wrong.",
+        "This is the thing they don't tell you.",
+        "What nobody tells you is that the migration is the easy part.",
+        "The part nobody talks about is the rollback.",
+        "What most senior engineers won't admit is that the estimate was a guess.",
+        "So here's what few people realize: the cache is cold on every deploy."
+      ],
+      examples_ok: [
+        # Backward-pointing: the sentence reports, it does not tease.
+        "That's what nobody understands.",
+        "That is the part most people get wrong.",
+        # A bare-subject sentence that never reaches a copula is a report.
+        "What nobody tells you gets forgotten by lunch.",
+        # Mid-sentence, the phrase is an object, not a setup.
+        "I finally learned what nobody tells you about hiring.",
+        # Lowercase after a hard wrap is a continuation, not a sentence start.
+        "the reviewer read it and\nwhat nobody tells you is that she signed it anyway."
+      ],
+      rationale: "The tease sells the claim as rare knowledge before the claim exists, so the " \
+                 "reader is asked to rate it before reading it. Models reach for it as an " \
+                 "opener because engagement training rewards the hook."
+    ),
+    Rule.new(
       id: "is-is",
       category: "cadence",
       severity: "warning",
@@ -3078,6 +3131,80 @@ module Sloplint
                  "clauses, and the balance is what makes it sound settled. Models reach for " \
                  "it to close a setup; careful writers join the clauses with a conjunction " \
                  "or give the problem its own sentence."
+    ),
+    Rule.new(
+      id: "punch-sentence",
+      category: "cadence",
+      severity: "info",
+      confidence: "medium",
+      # The mid-paragraph punch: a verbless beat of one to three words wedged
+      # between two long sentences. "...for the third time that quarter. Not
+      # anymore. The new rota puts..." mic-drop-closer and
+      # bare-auxiliary-closer take the long-then-short shape at the end of a
+      # paragraph; this is the one in the middle, which the closer rules
+      # refuse. The setup is the shared sixty-character prefix, and a
+      # sentence of forty or more characters must follow on the same
+      # paragraph, so a closer and a run of short sentences (short-run's
+      # tell) are both left to their own rules.
+      #
+      # Read against RAID, the first draft fired on human prose at four
+      # times its model rate, and every kind of hit is now a guard:
+      #
+      # A title or initial before the stop ("Mrs. Cadaver.", "John F.
+      # Kennedy.", "St. Petersburg.") makes the proper name after it look
+      # like a one-word sentence, so the stop the punch follows may not
+      # close a capitalised word of one to four letters, or a lone lowercase
+      # letter ("Swift v. Tyson"). The same guard on
+      # the punch's own last word ("When Mr.", "Felix and Rev.") is why a
+      # lone word must be five letters or more when capitalised; a lowercase
+      # last word ("Not anymore.") is never an abbreviation.
+      #
+      # A short clause with a pronoun subject ("He agrees.", "She complies.",
+      # "Both die.") is how a plot summary and a news brief move the story
+      # along, and an imperative with a name or a noun subject ("Dawes
+      # refuses.", "Set aside.") reads the same to a regex as a beat, so the
+      # punch is two closed shapes: a negator (Not, No, Never, Nothing,
+      # None) with up to two lowercase words after it, or one capitalised
+      # word of five letters or more. A one-word imperative in procedural
+      # prose ("Drain.", "Repeat.") still lands in the second shape, at about
+      # one per 25,000 words of recipes, which the info severity allows for.
+      pattern: /#{SENTENCE_OF_SIXTY_CHARACTERS_ENDING_IN_PUNCTUATION_AND_SPACE}\K
+                (?<![A-Z]\.[ \t]|[A-Z][a-z]\.[ \t]|[A-Z][a-z]{2}\.[ \t]|[A-Z][a-z]{3}\.[ \t]|[ \t][a-z]\.[ \t]
+                  |[A-Z]\.[ \t]{2}|[A-Z][a-z]\.[ \t]{2}|[A-Z][a-z]{2}\.[ \t]{2}|[A-Z][a-z]{3}\.[ \t]{2}|[ \t][a-z]\.[ \t]{2})
+                (?:(?:Not|No|Never|Nothing|None)(?:(?:[ \t]|\r?\n(?!\s*\n)[ \t]*)[a-z][A-Za-z'’-]*){0,2}
+                  |[A-Z][A-Za-z'’-]{4,})\.
+                (?=[ \t]{1,2}[A-Z](?:[^.!?\n]|\r?\n(?!\s*\n)){40,})/x,
+      message: "A verbless beat of three words or fewer between two long sentences is the AI punch.",
+      suggestion: "Fold the beat into the sentence before or after it, or cut it.",
+      examples_bad: [
+        "The on-call engineer had been paged for the same cron job three nights running that week. Not anymore. The job now checks the lock file before it starts and exits quietly.",
+        "The reviewers spent the whole afternoon arguing about whether the migration should run in one pass. Never again. The first half ran on Tuesday and the second half is still waiting on a sign-off.",
+        "Every team we talked to had a wiki page describing the release process in loving detail. No exceptions. The page had not been touched since the person who wrote it left the company.",
+        "The retry loop was supposed to give up after five attempts and page someone with the error. Simple. Instead it kept going all night because the counter reset on every restart."
+      ],
+      examples_ok: [
+        # Paragraph-final: that is the closer rules' shape, not this one.
+        "The reviewers spent the whole afternoon arguing about whether the migration should run in one pass. Not anymore.",
+        # Followed by another short sentence: short-run's territory.
+        "The reviewers spent the whole afternoon arguing about whether the migration should run in one pass. Not anymore. Nobody minded. The second half is still waiting on a sign-off from the platform team.",
+        # A short clause with a pronoun subject is narrative, not a beat.
+        "The reviewers spent the whole afternoon arguing about whether the migration should run in one pass. It didn't. The first half ran on Tuesday and the second half is still waiting on a sign-off.",
+        "Every team we talked to had a wiki page describing the release process in loving detail. Nobody read it. The page had not been touched since the person who wrote it left the company.",
+        # A title or initial with its complement on the far side of the stop.
+        "The committee met for the last time on a wet Thursday in the back room of the library annex. Mr. Whitaker moved that the minutes be approved as read and the motion carried without a vote.",
+        "The only survivor of the crash on the coast road that spring was the widow of the lighthouse keeper, Mrs. Cadaver. The inquest sat for two days in the town hall and returned no verdict at all.",
+        "The freight line ran west from the river through three counties before it reached the yards. St. Louis was the end of the line for most of the crews and the start of it for the rest.",
+        "The freight line ran west from the river through three counties before it reached the yards. Cyrus M. Jarrett owned the yards and every siding on the line from the river to the state line.",
+        "The rule that a federal court sitting in diversity applies general common law was set out in Swift v. Tyson. The decision stood for nearly a century before the court overruled it in Erie.",
+        # Digits are data, and a quotation mark is dialogue.
+        "The freight line ran west from the river through three counties before it reached the yards. Fig. 2 shows the route as it stood in 1890 and the sidings that were added after the flood.",
+        "The freight line ran west from the river through three counties before it reached the yards. \"Enough.\" The foreman waved the crew back toward the sheds and nobody argued with him.",
+        # Four or more words is a sentence, not a beat.
+        "The freight line ran west from the river through three counties before it reached the yards. The crews liked it. The foreman waved the crew back toward the sheds and nobody argued with him."
+      ],
+      rationale: "The beat withholds the verb and the object the long sentence set up and " \
+                 "hands the reader a pause instead. People write one on purpose; a draft " \
+                 "that keeps doing it is the tell, which is why it ships at info."
     ),
     Rule.new(
       id: "np-fragment-and",
