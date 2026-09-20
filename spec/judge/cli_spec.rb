@@ -74,6 +74,12 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("TYPESAFE_API_KEY is not set")
   end
 
+  it "--help leads with status, the ask, and the output shape" do
+    code, out, = run(Sloplint::Judge::CLI, ["--help"])
+    expect(code).to eq(0)
+    expect(out).to include("sloplint-judge status").and include("ask the person").and include('"judge"')
+  end
+
   it "status answers from the key's presence, never its value, and exits 2 when there is none" do
     allow(Sloplint::Judge::Secret).to receive(:present?).with("TYPESAFE_API_KEY").and_return("keychain")
     expect(Sloplint::Judge::Secret).not_to receive(:fetch)

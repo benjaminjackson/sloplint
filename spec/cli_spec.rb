@@ -400,6 +400,15 @@ RSpec.describe Sloplint::CLI do
       expect(out).to include("Recommended for agents")
     end
 
+    it "--help tells an agent to run status and ask before --judge, or how to install the judge" do
+      _, out = run(["--help"])
+      expect(out).to include("sloplint-judge status").and include("ask")
+      allow($LOAD_PATH).to receive(:resolve_feature_path).and_return(nil)
+      _, out = run(["--help"])
+      expect(out).to include("not installed here").and include("gem install sloplint-judge")
+      expect(out).not_to include("sloplint-judge status")
+    end
+
     it "--help behaves the same as -h" do
       code, out = run(["--help"])
       expect(code).to eq(0)

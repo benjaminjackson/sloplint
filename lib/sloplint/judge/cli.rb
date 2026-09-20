@@ -51,7 +51,7 @@ module Sloplint
         ignore = nil
         OptionParser.new do |o|
           o.banner = "usage: sloplint-judge check [options] [paths...]  (\"-\" or no paths = stdin)"
-          o.on("-o", "--output-format FORMAT", %w[full json]) { |v| opts[:format] = v }
+          o.on("-o", "--output-format FORMAT", %w[full json], "Output format: 'full' or 'json' (default: full).") { |v| opts[:format] = v }
           o.on("--markdown", "Skip fenced/inline code spans, HTML comments, URLs and Markdown furniture.") { markdown = true }
           o.on("--select IDS", "Only run these rules (comma-separated rule ids or categories).") { |v| select = v.split(",").map(&:strip) }
           o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or categories).") { |v| ignore = v.split(",").map(&:strip) }
@@ -201,9 +201,12 @@ module Sloplint
           o.banner = <<~BANNER
             sloplint-judge — rules that ask a System One model what a regex cannot.
 
-            # Recommended for agents (both linters, one array):
+            # Recommended for agents (both linters, one document). The judge sends the text to
+            # api.typesafe.ai, so ask the person before running it. Check first, ask, then run:
+            sloplint-judge status                            # exit 0 = a key is set up (reads no key), 2 = not
             sloplint check --judge --markdown -o json FILE
-            # exit 0 = clean, 1 = notes found, 2 = usage error, 3 = the model could not be reached
+            # exit 0 = clean, 1 = notes found, 2 = usage error or not configured, 3 = the model could not be reached (nothing checked)
+            # output: {"notes": [...], "judge": {"backend","requests","input_tokens","output_tokens","cost_usd"}}
 
             usage: sloplint-judge [-o full|json] [--register TEXT] [--backend NAME] [command] [args]
 
@@ -222,8 +225,8 @@ module Sloplint
           o.on("-o", "--output-format FORMAT", %w[full json]) { |v| opts[:format] = v }
           o.on("--register TEXT", "Who the reader is (default: #{Engine::DEFAULT_REGISTER}).") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use (default: $SLOPLINT_JUDGE_BACKEND or jev).") { |v| opts[:backend] = v }
-          o.on("-h", "--help") { out.puts(o.help); opts[:help_shown] = true }
-          o.on("-v", "--version") { out.puts(VERSION); opts[:version_shown] = true }
+          o.on("-h", "--help", "Show this help, including the agent recipe above.") { out.puts(o.help); opts[:help_shown] = true }
+          o.on("-v", "--version", "Print the sloplint-judge version.") { out.puts(VERSION); opts[:version_shown] = true }
         end
       end
     end

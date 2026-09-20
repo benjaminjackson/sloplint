@@ -280,6 +280,24 @@ module Sloplint
       rules
     end
 
+    # The judge's part of the agent recipe, which depends on whether the gem
+    # is here. Looked up on the load path without loading it: help must not
+    # pull a model adapter in. The text says the one thing an agent must know
+    # before the flag: the judge sends the text to an API, so ask the person.
+    def judge_recipe
+      unless $LOAD_PATH.resolve_feature_path("sloplint/judge")
+        return "# sloplint-judge (not installed here) adds model-backed rules for what a regex cannot see: gem install sloplint-judge\n"
+      end
+
+      <<~RECIPE
+        # With the judge (sloplint-judge is installed here). It sends the text to api.typesafe.ai,
+        # so an agent asks the person before running it. Check first, ask, then run:
+        sloplint-judge status                            # exit 0 = a key is set up (reads no key), 2 = not
+        sloplint check --judge --markdown -o json FILE    # output becomes {"notes": [...], "judge": {requests, tokens, cost_usd}}
+        # exit 3 = the model could not be reached; nothing was checked, not even the regex rules
+      RECIPE
+    end
+
     def global_parser(opts, out:)
       OptionParser.new do |o|
         o.banner = <<~BANNER
@@ -291,6 +309,7 @@ module Sloplint
           # each note: {path,line,column,severity,confidence,rule,category,message,excerpt,context,rationale,suggestion,count}
           # (count is present only for the rules that tally items)
 
+          #{judge_recipe}
           usage: sloplint [-o full|json] [command] [args]
 
           commands:
