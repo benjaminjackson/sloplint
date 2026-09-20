@@ -22,7 +22,9 @@ module Sloplint
     # For the CLI's key commands it also declares KEY, the environment
     # variable and keychain account its key lives under, and answers
     # `configured!`, which checks its endpoint settings without building the
-    # backend or reading the key and returns a short description of them.
+    # backend or reading the key and returns a short description of them, and
+    # `model_name`, the string a built backend would answer `name` with, for
+    # the run that asks no question and so builds nothing.
     # See docs/JUDGE.md "Backend adapter". The table is the guard that keeps
     # `--backend` from naming an arbitrary file.
     module Backend

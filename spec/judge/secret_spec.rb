@@ -123,6 +123,15 @@ RSpec.describe Sloplint::Judge::Secret do
     expect(described_class.run("/bin/sh", "-c", "echo hi")).to eq("hi\n")
   end
 
+  # A child that writes more than the pipe holds blocks on the write until
+  # someone reads it. Waiting for the child first called that a keychain
+  # dialog, killed it and lost the output.
+  it "reads a child that writes more than the pipe holds" do
+    stub_const("Sloplint::Judge::Secret::TIMEOUT", 5)
+    out = described_class.run("/bin/sh", "-c", "yes aaaaaaaaaaaaaaaa | head -c 200000")
+    expect(out&.length).to eq(200_000)
+  end
+
   it "kills a run that outlives the timeout and says a dialog may be waiting" do
     stub_const("Sloplint::Judge::Secret::TIMEOUT", 0.2)
     expect { described_class.run("/bin/sh", "-c", "sleep 5") }.to raise_error(ArgumentError, /dialog may be waiting/)

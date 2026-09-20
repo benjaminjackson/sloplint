@@ -31,11 +31,16 @@ module Sloplint
           @key = key
         end
 
+        # The name a run would report, without building the backend or
+        # reading the key, so a run that asks nothing still names the model
+        # the way a run that asks something does.
+        def self.model_name = ENV.fetch("SYSTEMONE_MODEL", DEFAULT_MODEL)
+
         # The endpoint settings, checked without building the backend or
         # reading the key; `status` prints what this returns.
         def self.configured!
           https!(ENV.fetch("SYSTEMONE_URL", DEFAULT_URL))
-          "model #{ENV.fetch("SYSTEMONE_MODEL", DEFAULT_MODEL)}"
+          "model #{model_name}"
         end
 
         HOST = /\A(?:.+\.)?typesafe\.ai\z/
@@ -143,6 +148,8 @@ module Sloplint
           return (probs - 0.5).abs * 2 if type == "noul"
 
           sorted = (probs.is_a?(Hash) ? probs.values : probs).sort.reverse
+          malformed!("an answer with no probabilities at all") if sorted.empty?
+
           (sorted[0] - (sorted[1] || 0)).clamp(0.0, 1.0)
         end
       end

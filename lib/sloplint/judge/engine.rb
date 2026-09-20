@@ -70,7 +70,7 @@ module Sloplint
           eligible = strict ? paragraphs : paragraphs.select { |p| p.sentences.size >= MIN_SENTENCES }
           questions = questions_for(para_rules, register)
           answered = in_parallel(eligible, concurrency) do |p|
-            backend.ask({ "register" => register, "paragraph" => p.text, "sentence_count" => p.sentences.size }, questions)
+            backend.ask({ "register" => register, "paragraph" => p.asked, "sentence_count" => p.sentences.size }, questions)
           end
           eligible.zip(answered).each do |p, answers|
             add_usage(usage, answers)
@@ -94,8 +94,8 @@ module Sloplint
           jobs = targets.flat_map { |p| p.sentences.each_index.map { |i| [p, i] } }
           questions = questions_for(sent_rules, register)
           answered = in_parallel(jobs, concurrency) do |(p, i)|
-            backend.ask({ "register" => register, "paragraph" => { "sentences" => p.sentences.map(&:text) },
-                          "target_index" => i, "target" => p.sentences[i].text }, questions)
+            backend.ask({ "register" => register, "paragraph" => { "sentences" => p.sentences.map(&:asked) },
+                          "target_index" => i, "target" => p.sentences[i].asked }, questions)
           end
           jobs.zip(answered).each do |(p, i), answers|
             add_usage(usage, answers)
@@ -160,11 +160,13 @@ module Sloplint
       end
 
       # Every answer in one request carries the same usage; count it once,
-      # and count the request.
+      # and count the request. Only the counts are summed: a backend that
+      # reports something else under usage, a nested Hash or a note, is not a
+      # reason to lose a scan that has already been paid for.
       def add_usage(usage, answers)
         usage["requests"] += 1
         first = answers.values.first
-        first&.usage&.each { |k, v| usage[k] += v.to_i }
+        first&.usage&.each { |k, v| usage[k] += v.to_i if v.is_a?(Numeric) }
       end
 
       # Map items through the block on up to `concurrency` threads, keeping

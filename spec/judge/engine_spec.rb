@@ -97,6 +97,27 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(described_class.scan(text, rules: [matched], backend: unsure).notes).to be_empty
   end
 
+  # --markdown promises to skip HTML comments and fenced code. The note still
+  # quotes the file, so the excerpt keeps the comment and the model never
+  # sees it.
+  it "asks about a paragraph without the comment, and quotes the file in the note" do
+    whole = rules.find { |r| r.id == "particulars" }
+    text = "First fact here. <!-- TODO drop this --> Second fact here. In short, facts matter.\n"
+    result = described_class.scan(text, rules: [whole], backend: flag_all, markdown: true)
+    asked = flag_all.calls.first.first
+    expect(asked["paragraph"]).to eq("First fact here. Second fact here. In short, facts matter.")
+    expect(flag_all.calls.to_s).not_to include("TODO")
+    expect(text).to include(result.notes.first.excerpt)
+    expect(result.notes.first.excerpt).to include("<!-- TODO drop this -->")
+  end
+
+  it "shows a sentence rule the sentence without its comment, and keeps the excerpt as written" do
+    text = "Alpha is <!-- x --> here. Beta is here.\n"
+    result = described_class.scan(text, rules: [sent_rule], backend: flag_all, markdown: true)
+    expect(flag_all.calls.map { |s, _| s["target"] }).to eq(["Alpha is here.", "Beta is here."])
+    expect(text).to include(result.notes.first.excerpt)
+  end
+
   it "interpolates the register into every question" do
     described_class.scan(text, rules: [para_rule], backend: flag_all, register: "a home cook")
     expect(flag_all.calls.first.last["wrap-up"]["instructions"]).to include("a home cook")
@@ -106,6 +127,21 @@ RSpec.describe Sloplint::Judge::Engine do
     result = described_class.scan(text, rules: rules.select { |r| r.unit == :paragraph }, backend: flag_all)
     expect(flag_all.calls.size).to eq(1)
     expect(flag_all.calls.first.last.keys).to match_array(rules.select { |r| r.unit == :paragraph }.map(&:id))
+    expect(result.usage).to eq("requests" => 1, "input_tokens" => 100)
+  end
+
+  # The requests are already paid for by the time usage is summed, so a
+  # backend that reports something other than a count under usage must not
+  # take the whole scan down with it.
+  it "sums the counts in usage and steps over anything that is not one" do
+    odd = FakeBackend.new
+    allow(odd).to receive(:ask).and_wrap_original do |original, *args|
+      original.call(*args).transform_values do |a|
+        Sloplint::Judge::Answer.new(type: a.type, probabilities: a.probabilities, confidence: a.confidence,
+                                    usage: { "input_tokens" => 100, "cache" => { "read" => 5 }, "note" => "hi" })
+      end
+    end
+    result = described_class.scan(text, rules: [para_rule], backend: odd)
     expect(result.usage).to eq("requests" => 1, "input_tokens" => 100)
   end
 
@@ -165,6 +201,10 @@ RSpec.describe Sloplint::Judge::Engine do
       .to raise_error(Sloplint::Judge::BackendError, /not a Hash keyed by level/)
     expect { jev_answer({ "q" => nil }, q) }.to raise_error(Sloplint::Judge::BackendError, /not a Hash/)
     expect { jev_answer([], q) }.to raise_error(Sloplint::Judge::BackendError, /not a Hash keyed by question/)
+    # No probabilities and no confidence: there is nothing to take a
+    # confidence from, which is the body's fault and not a NoMethodError.
+    expect { jev_answer({ "q" => { "probabilities" => {} } }, "type" => "choice", "criteria" => { "A" => "a" }) }
+      .to raise_error(Sloplint::Judge::BackendError, /no probabilities at all/)
     # A NoMethodError from our own code is not the backend's fault, so it is
     # not dressed up as one.
     broken = Class.new(Sloplint::Judge::Backends::Jev) do

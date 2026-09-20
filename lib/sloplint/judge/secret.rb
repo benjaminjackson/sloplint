@@ -112,8 +112,12 @@ module Sloplint
       def run(*argv)
         Open3.popen2(*argv, err: File::NULL) do |stdin, stdout, waiter|
           stdin.close
+          # Drain the pipe while the child runs. A child that writes more
+          # than the pipe holds blocks on the write until someone reads, and
+          # waiting first would call that a keychain dialog and kill it.
+          reader = Thread.new { Thread.current.report_on_exception = false; stdout.read }
           wait!(waiter, argv)
-          out = stdout.read
+          out = reader.value
           waiter.value.success? ? out : nil
         end
       rescue Errno::ENOENT

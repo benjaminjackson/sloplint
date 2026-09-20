@@ -59,6 +59,7 @@ module Sloplint
       judge = false
       register = nil
       backend = nil
+      help = false
       p = OptionParser.new do |o|
         o.banner = "usage: sloplint check [options] [paths...]  (\"-\" or no paths = stdin)"
         o.on("-o", "--output-format FORMAT", %w[full json],
@@ -66,14 +67,20 @@ module Sloplint
         o.on("--markdown", "Skip fenced/inline code spans, HTML comments, and URLs before scanning.") { markdown = true }
         o.on("--select IDS", "Only run these rules (comma-separated rule ids or category names).") { |v| select = v.split(",").map(&:strip) }
         o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or category names).") { |v| ignore = v.split(",").map(&:strip) }
-        o.on("--strict", "Run every rule, including the ones that are off by default.") { strict = true }
+        o.on("--strict", "Run every rule, including the ones that are off by default;",
+             "with --judge, also ask the sentence rules about every sentence, about three times the requests.") { strict = true }
         o.on("--judge", "Also run sloplint-judge's rules, which ask a model (needs the gem and a key).") { judge = true }
         o.on("--register TEXT", "With --judge: who the reader is.") { |v| register = v }
         o.on("--backend NAME", "With --judge: which model adapter to use.") { |v| backend = v }
+        # OptionParser answers -h itself when nobody else does, and it answers
+        # it on the real stdout and ends the process. This command prints to
+        # the out it was given and returns, as every other one does.
+        o.on("-h", "--help", "Show this help.") { out.puts(o.help); help = true }
       end
       # permute!, so a flag written after the path is a flag: `sloplint check
       # draft.md --judge` reads the way anyone would write it.
       p.permute!(argv)
+      return 0 if help
 
       # The judge is a separate gem that depends on this one. The bare require
       # goes through the load path: exe/sloplint puts this checkout's lib/ at
@@ -125,12 +132,16 @@ module Sloplint
         # endpoint checked, the way `sloplint-judge status` does it, and an
         # unknown --backend is still exit 2.
         begin
-          Judge::Backend.klass(backend).configured!
+          klass = Judge::Backend.klass(backend)
+          klass.configured!
         rescue ArgumentError => e
           err.puts("sloplint: --judge: #{e.message}")
           return 2
         end
-        judge_usage = { "backend" => Judge::Backend.default_name(backend), "requests" => 0 }
+        # The same identifier a run reports, which is the model and not the
+        # adapter, so a reader of the JSON is not told two different things
+        # about one flag. The class knows it without a key.
+        judge_usage = { "backend" => klass.model_name, "requests" => 0 }
         err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
       elsif judge
         begin

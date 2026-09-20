@@ -30,11 +30,21 @@ module Sloplint
         }
         questions["drift"] = { "type" => "noul", "instructions" => DRIFT } if drift
         answers = backend.ask({ "A" => first, "B" => second }, questions)
-        keep = answers.fetch("keep")
-        p_b = keep.probabilities.fetch(swap ? "A" : "B")
+        keep = answers["keep"] or raise BackendError, "the backend answered no keep question"
+        p_b = probability(keep, swap ? "A" : "B")
         d = answers["drift"]
         Verdict.new(keep: p_b >= 0.5 ? "B" : "A", p_keep_b: p_b, keep_confidence: keep.confidence,
                     drift: d&.probabilities, drift_confidence: d&.confidence, usage: keep.usage)
+      end
+
+      # The keep answer is a choice between the options named A and B. An
+      # answer keyed any other way is a malformed body, which ends `compare`
+      # with exit 3 like any other backend failure, not with a backtrace.
+      def probability(keep, option)
+        probs = keep.probabilities
+        raise BackendError, "the keep answer is #{probs.class}, not a probability for A and one for B" unless probs.is_a?(Hash)
+
+        probs.fetch(option) { raise BackendError, "the keep answer has no probability for #{option}" }
       end
     end
   end

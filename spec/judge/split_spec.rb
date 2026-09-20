@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "benchmark"
+require_relative "../../lib/sloplint/split"
 
 RSpec.describe Sloplint::Split do
   it "splits paragraphs on blank lines and sentences on terminal punctuation" do
@@ -65,7 +66,17 @@ RSpec.describe Sloplint::Split do
     para = "The “quoted” claim held. It held again. And again.\n\n"
     small = Benchmark.realtime { described_class.paragraphs(para * 500) }
     large = Benchmark.realtime { described_class.paragraphs(para * 4000) }
-    expect(large).to be < small * 30
+    expect(large).to be < small * 16
+  end
+
+  # Cutting a sentence out of the paragraph it is in, rather than out of the
+  # whole document, is only linear while the paragraphs are short. A page of
+  # text with no blank line in it is one paragraph.
+  it "stays linear inside one paragraph that is the whole document" do
+    line = "The “quoted” claim held up. "
+    small = Benchmark.realtime { described_class.paragraphs(line * 2_000) }
+    large = Benchmark.realtime { described_class.paragraphs(line * 16_000) }
+    expect(large).to be < small * 16
   end
 
   it "keeps a wrapped line that starts with a year, as CommonMark does" do
@@ -80,6 +91,37 @@ RSpec.describe Sloplint::Split do
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Intro here.", "Prose again."])
     text = "Do this first.\n1. wash it\n2. dry it\nDone now.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Do this first.", "Done now."])
+  end
+
+  it "sees the furniture on a CRLF file, where the line still ends in a carriage return" do
+    text = "---\r\n\r\nAlpha is here.\r\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Alpha is here."])
+    text = "https://example.com/a\r\n\r\nAlpha is here.\r\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Alpha is here."])
+  end
+
+  # The placeholder used to be the letter X, so a line of real text reading
+  # "XXX" was taken for a blanked code span and never examined.
+  it "keeps a line of capital letters that only looks like a blanked code span" do
+    text = "XXX\n\nAlpha is here. Beta is here.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["XXX", "Alpha is here. Beta is here."])
+  end
+
+  it "keeps an HTML comment out of what the model is asked, and in what a note quotes" do
+    text = "Alpha is here. <!-- TODO fix --> Beta is `code` here. See https://x.y/z now.\n"
+    para = described_class.paragraphs(text, markdown: true).first
+    expect(para.asked).to eq("Alpha is here. Beta is `code` here. See https://x.y/z now.")
+    expect(para.text).to eq(text.strip)
+    expect(text[para.offset, para.length]).to eq(para.text)
+    expect(para.sentences.map(&:asked)).to eq(["Alpha is here.", "Beta is `code` here.", "See https://x.y/z now."])
+    expect(para.sentences.map { |s| text[s.offset, s.length] }).to eq(para.sentences.map(&:text))
+  end
+
+  it "asks about the file as written when there is no --markdown" do
+    text = "Alpha is here. <!-- TODO fix --> Beta is here.\n"
+    para = described_class.paragraphs(text).first
+    expect(para.asked).to eq(para.text)
+    expect(described_class.sentences("One thing. Another thing.").map(&:asked)).to eq(["One thing.", "Another thing."])
   end
 
   it "blanks code under --markdown so a fenced block is not a paragraph" do

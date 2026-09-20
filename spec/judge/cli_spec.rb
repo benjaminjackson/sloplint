@@ -44,8 +44,20 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(code).to eq(0)
     doc = JSON.parse(out)
     expect(doc["notes"]).to eq([])
-    expect(doc["judge"]).to eq("backend" => "jev", "requests" => 0)
-    expect(err).to include("judge jev, 0 requests")
+    # The same identifier a run reports, which is the model: the field does
+    # not change meaning because no question was asked.
+    expect(doc["judge"]).to eq("backend" => "jev-latest", "requests" => 0)
+    expect(err).to include("judge jev-latest, 0 requests")
+  end
+
+  it "names the model from SYSTEMONE_MODEL when no judge rule ran, as a run would" do
+    saved = ENV["SYSTEMONE_MODEL"]
+    ENV["SYSTEMONE_MODEL"] = "jev-2"
+    code, out, = run(Sloplint::CLI, ["check", "--judge", "--select", "em-dash", "-o", "json", "-"], stdin_text: text)
+    expect(code).to eq(0)
+    expect(JSON.parse(out)["judge"]).to eq("backend" => "jev-2", "requests" => 0)
+  ensure
+    ENV["SYSTEMONE_MODEL"] = saved
   end
 
   it "exits 2 on an unknown --backend even when no judge rule ran" do
@@ -115,6 +127,20 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     code, out, = run(Sloplint::Judge::CLI, ["--help"])
     expect(code).to eq(0)
     expect(out).to include("sloplint-judge status").and include("ask the person").and include('"judge"')
+  end
+
+  # --strict multiplies the paid requests. The help says so on both paths,
+  # because the person choosing the flag is the one paying. Both `check`
+  # parsers answer -h themselves, on the out they were given and with a
+  # return code; OptionParser's own -h prints on the real stdout and ends the
+  # process, which here would end the spec run.
+  it "says what --strict costs in both check parsers" do
+    code, out, = run(Sloplint::Judge::CLI, ["check", "--help"])
+    expect(code).to eq(0)
+    expect(out).to match(/--strict.*\n.*three times the requests/)
+    code, out, = run(Sloplint::CLI, ["check", "--help"])
+    expect(code).to eq(0)
+    expect(out).to match(/--strict.*\n.*with --judge.*three times the requests/)
   end
 
   it "status answers from the key's presence, never its value, and exits 2 when there is none" do
@@ -274,4 +300,12 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
       expect(v["keep"]).to eq(sent["B"] == "New." ? "B" : "A")
     end
   end
+
+  it "compare -h prints its help to the given out and returns 0" do
+    out = StringIO.new
+    code = Sloplint::Judge::CLI.run(%w[compare -h], out: out, err: StringIO.new, stdin: StringIO.new)
+    expect(code).to eq(0)
+    expect(out.string).to include("usage: sloplint-judge compare")
+  end
+
 end

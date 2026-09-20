@@ -10,7 +10,9 @@ module Sloplint
     #   false positive, as in sloplint. A "low" rule stays out of the default run.
     # question: the System One question, verbatim in the shape the adapter sends.
     #   %{register} in the instructions is filled from --register.
-    # flag: which answer makes a note. { level: 0 } for a score, { yes: true } for a noul.
+    # flag: which answer makes a note. { level: 0 } for a score. The engine reads
+    # only :level today; the noul shape in docs/JUDGE.md is what a first noul
+    # rule adds back.
     # excerpt: which sentence of a paragraph the note points at -- :first, :last or :all.
     Rule = Data.define(
       :id, :category, :unit, :severity, :confidence, :question, :flag, :excerpt,

@@ -49,18 +49,25 @@ module Sloplint
         strict = false
         select = nil
         ignore = nil
+        help = false
         OptionParser.new do |o|
           o.banner = "usage: sloplint-judge check [options] [paths...]  (\"-\" or no paths = stdin)"
           o.on("-o", "--output-format FORMAT", %w[full json], "Output format: 'full' or 'json' (default: full).") { |v| opts[:format] = v }
           o.on("--markdown", "Skip fenced/inline code spans, HTML comments, URLs and Markdown furniture.") { markdown = true }
           o.on("--select IDS", "Only run these rules (comma-separated rule ids or categories).") { |v| select = v.split(",").map(&:strip) }
           o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or categories).") { |v| ignore = v.split(",").map(&:strip) }
-          o.on("--strict", "Run sentence rules on every sentence and keep low-confidence notes.") { strict = true }
+          o.on("--strict", "Run sentence rules on every sentence and keep low-confidence notes;",
+               "about three times the requests of a default run.") { strict = true }
           o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
+          # OptionParser answers -h itself when nobody else does, and it
+          # answers it on the real stdout and ends the process. This command
+          # prints to the out it was given and returns, as every other one does.
+          o.on("-h", "--help", "Show this help.") { out.puts(o.help); help = true }
         # permute!, so a flag written after the path is a flag: `sloplint-judge
         # check draft.md --markdown` reads the way anyone would write it.
         end.permute!(argv)
+        return 0 if help
 
         unknown = Sloplint::CLI.unknown_rule_refs(select, RULES) + Sloplint::CLI.unknown_rule_refs(ignore, RULES)
         unless unknown.empty?
@@ -85,14 +92,18 @@ module Sloplint
       # ── compare A B ─────────────────────────────────────────────────────────
       def cmd_compare(argv, opts, out:, err:)
         drift = false
+        help = false
         OptionParser.new do |o|
           o.banner = "usage: sloplint-judge compare [--drift] A B  (two files)"
           o.on("--drift", "Also ask whether B changes what A says.") { drift = true }
           o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
+          o.on("-h", "--help", "Show this help.") { out.puts(o.help); help = true }
         # permute!, so `compare A B --drift` sees the flag. There is no nested
         # subcommand here whose own flags an option after the files could be.
         end.permute!(argv)
+        return 0 if help
+
         a, b = argv
         unless argv.size == 2 && File.file?(a) && File.file?(b)
           err.puts("usage: sloplint-judge compare [--drift] A B")
