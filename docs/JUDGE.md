@@ -25,7 +25,7 @@ What the model can do is judge one quality of one unit of prose, in a way that s
 
 The bar has two halves, and they do different jobs. A rule ships when a reader shown a flagged unit agrees it should go, whoever wrote it. That is the fixtures: each rule's `examples_bad` must be sentences or paragraphs where a person would agree the flag is fair, and the flag has to be fair on its face, not fair because a model wrote it. Slop is bad writing, and a habit is not excused by being common in human prose; an opening that announces the topic is dead weight to the reader whether a model or a postdoc put it there. The other half, whether the thing flagged ranks current model prose below human prose in the registers the tool is for, is measured with the calibration script below, and it sets severity, not whether the rule exists. A rule that separates in every register on the list is a tell and carries `warning`. A rule that reverses in a register on the list, flagging human prose there more often than model prose, is a bad habit humans share, and it carries `info`, with the number printed in its entry, because an agent acting on every `warning` should be fixing what marks a draft as machine-written before it starts on what marks it as ordinary.
 
-"The registers the tool is for" is a closed list, because a rule that holds in one and reverses in another is a real finding about the rule, not noise: engineering prose (design documents, incident reports, reference documentation, standards), news, and academic abstracts. Forum comments are not on the list and are not calibrated. A rule whose flag is not fair on its face, one that measures genre or a reader's taste rather than something the reader would cut, does not ship however well it separates; `commitment` and `stake` went that way. A rule that reverses and whose hits were never read for fairness does not ship either; `redundancy` and `order` are in the graveyard on those terms.
+"The registers the tool is for" is a closed list, because a rule that holds in one and reverses in another is a real finding about the rule, not noise: engineering prose (design documents, incident reports, reference documentation, standards), news, and academic abstracts. Forum comments are not on the list and are not calibrated. A rule whose flag is not fair on its face, one that measures genre or a reader's taste rather than something the reader would cut, does not ship however well it separates; `commitment` and `stake` went that way. A rule that reverses and whose hits were never read for fairness does not ship either; `order` is in the graveyard on those terms, and `redundancy` had its reading and turned out to measure a news convention.
 
 "Current model prose" means the models people are drafting with now, not the models a public corpus happened to sample. The next section says why that distinction cost us a section.
 
@@ -125,7 +125,7 @@ Identical to sloplint's, field for field. One flagged unit = one Note. JSON outp
   "confidence": "high",
   "rule": "wrap-up",
   "category": "paragraph",
-  "message": "Paragraph ends by restating itself.",
+  "message": "Paragraph ends on a summary, a moral or a hope.",
   "excerpt": "Together, these factors make the migration worth the cost.",
   "context": "…rollback took four minutes. [Together, these factors make the migration worth the cost.]",
   "rationale": "A paragraph that closes on a summary of itself tells the reader nothing they did not have one sentence earlier. Human prose in this register closes on a fact or a consequence; model prose closes on a moral.",
@@ -171,7 +171,7 @@ RULES = [
       ]
     },
     flag:     { level: 0 },                # most likely level is 0 -> note
-    message:  "Paragraph ends by restating itself.",
+    message:  "Paragraph ends on a summary, a moral or a hope.",
     suggestion: "Cut the last sentence, or end on the number.",
     examples_bad: ["..."],                 # paragraphs the rule must flag
     examples_ok:  ["..."],                 # paragraphs it must not
@@ -202,7 +202,7 @@ Eight rules, two categories. A number appears only where it decides something a 
 Run on every paragraph of three or more sentences. One request per paragraph carries all three questions.
 
 - **particulars** (`warning`, `high`). How much of the paragraph is a fact, name, number, step or quote a reader could check: none of it, some of it, most of it. Flags at none. Ranks model prose lower in every register the tool is for, against 2023 models and current ones.
-- **wrap-up** (`warning`, `high`). How the paragraph ends: restating or moralising, transition, or new fact. Flags at restating.
+- **wrap-up** (`warning`, `high`). How the paragraph ends: restating, moralising or hoping, transition, or new fact. Flags at the first. The hope is the "despite these challenges, the future looks bright" closer, which names nothing and so tells the reader nothing new.
 - **throat-clearing** (`info`, `high`). How the paragraph begins: a general announcement of the topic, a framing sentence, or a particular. Flags at announcement. Ranks model prose lower in news and engineering prose, and reverses in abstracts, where human authors open by announcing the paper: 0.59 against current models, 0.63 to 0.93 against 2023 ones. It ships because the flag is fair whoever wrote the paragraph, and it is `info` because the reversal is on the list.
 
 ### sentence

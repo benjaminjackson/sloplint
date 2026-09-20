@@ -10,9 +10,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Graveyard: `redundancy` was retried as `restatement` with the fairness
   reading it was owed, reversed in news against every model side, and stays
   out. The entry in `docs/JUDGE.md` says why.
-- `wrap-up` also names the challenges-and-prospects closer ("Despite these
-  challenges, the future looks promising") at its flagged level, and a
-  fixture pins it. Wikipedia's field guide documents the formula across
+- `wrap-up` also flags a last sentence that admits problems and then
+  promises a bright future ("Despite these challenges, the future looks
+  promising"). Its flagged level says so, its message now reads "Paragraph
+  ends on a summary, a moral or a hope", and fixtures pin both sides: the
+  hope that names nothing is flagged, the same frame closing on a dated
+  fact is not. Wikipedia's field guide documents the formula across
   unrelated topics, and the GPT family ends documents on it.
 
 ### [0.1.0] - 2026-09-20
