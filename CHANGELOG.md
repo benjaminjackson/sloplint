@@ -5,6 +5,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
+### [Unreleased]
+
+- `wrap-up` also names the challenges-and-prospects closer ("Despite these
+  challenges, the future looks promising") at its flagged level, and a
+  fixture pins it. Wikipedia's field guide documents the formula across
+  unrelated topics, and the GPT family ends documents on it.
+
 ### [0.1.0] - 2026-09-20
 
 - First release of the judge gem: eight rules, the Jev backend, `check`,

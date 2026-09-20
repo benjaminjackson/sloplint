@@ -59,7 +59,7 @@ module Sloplint
           "instructions" => "How does the paragraph end, for %{register}?",
           "criteria" => [
             { "what" => "The last sentence restates what the paragraph already said, sums it up, or draws a general moral from it; it tells the reader nothing new.",
-              "examples" => ["...Together, these factors make it a place worth visiting.", "...Ultimately, the decision reflects a broader shift in priorities."] },
+              "examples" => ["...Together, these factors make it a place worth visiting.", "...Ultimately, the decision reflects a broader shift in priorities.", "...Despite these challenges, the project's future looks promising."] },
             { "what" => "The last sentence adds a small qualification or a transition to what comes next.",
               "examples" => ["...Whether that holds in winter is another question.", "...The second problem is harder."] },
             { "what" => "The last sentence states a new fact, a particular, a number, a quote or a concrete consequence.",
@@ -71,7 +71,8 @@ module Sloplint
         suggestion: "Cut the last sentence, or end on the fact.",
         examples_bad: [
           "The migration moved 40 tables in two weekends. Two of them needed manual fixes for timezone columns. The rollback plan was tested once on staging. Overall, careful planning made the migration a success.",
-          "The parser rejects any line over 4,096 bytes. Longer lines come from the log shipper concatenating retries. We capped retries at three. In the end, understanding the root cause was what mattered most."
+          "The parser rejects any line over 4,096 bytes. Longer lines come from the log shipper concatenating retries. We capped retries at three. In the end, understanding the root cause was what mattered most.",
+          "The exporter drops any metric with more than 30 labels. Two of the billing dashboards went blank after the cardinality limit landed. The team rewrote both queries against the aggregated series. Despite these setbacks, the future of the metrics platform looks bright."
         ],
         examples_ok: [
           "The migration moved 40 tables in two weekends. Two of them needed manual fixes for timezone columns. The rollback plan was tested once on staging. Rollback took four minutes.",
