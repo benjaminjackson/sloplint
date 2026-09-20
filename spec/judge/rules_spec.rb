@@ -13,10 +13,26 @@ RSpec.describe "Sloplint::Judge::RULES" do
     expect(rules.map(&:category).uniq & taken).to be_empty
   end
 
-  it "ships the nine rules docs/JUDGE.md lists, in its two categories" do
+  # docs/JUDGE.md lists every rule and the README quotes the counts. Nothing
+  # regenerates either, so both are asserted against the catalog.
+  it "lists every rule in docs/JUDGE.md" do
     doc = File.read(File.expand_path("../../docs/JUDGE.md", __dir__), encoding: "UTF-8")
     rules.each { |r| expect(doc).to include("**#{r.id}**"), "#{r.id} missing from docs/JUDGE.md" }
-    expect(rules.group_by(&:category).transform_values(&:size)).to eq("paragraph" => 3, "sentence" => 6)
+  end
+
+  describe "the README rule counts" do
+    readme = File.read(File.expand_path("../../README.md", __dir__), encoding: "UTF-8")
+
+    it "quotes the catalog total" do
+      words = %w[Zero One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve]
+      expect(readme).to include("#{words[Sloplint::Judge::RULES.size]} rules in two categories.")
+    end
+
+    Sloplint::Judge::RULES.group_by(&:category).each do |category, rules|
+      it "quotes the #{category} count" do
+        expect(readme).to include("**#{category}** (#{rules.size})")
+      end
+    end
   end
 
   Sloplint::Judge::RULES.each do |rule|

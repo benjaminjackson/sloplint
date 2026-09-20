@@ -100,7 +100,7 @@ RSpec.describe Sloplint::Judge::Engine do
   it "batches all rules of one unit into one request and sums usage once per request" do
     result = described_class.scan(text, rules: rules.select { |r| r.unit == :paragraph }, backend: flag_all)
     expect(flag_all.calls.size).to eq(1)
-    expect(flag_all.calls.first.last.keys).to contain_exactly("particulars", "wrap-up", "throat-clearing")
+    expect(flag_all.calls.first.last.keys).to match_array(rules.select { |r| r.unit == :paragraph }.map(&:id))
     expect(result.usage).to eq("requests" => 1, "input_tokens" => 100)
   end
 

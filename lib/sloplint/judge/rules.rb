@@ -108,6 +108,33 @@ module Sloplint
         ],
         rationale: "An opening sentence that tells the reader the topic matters, before saying anything about it, is a warm-up the writer needed and the reader did not. Humans do it too, abstracts especially, which is why this is info and not warning; it is dead weight either way."
       ),
+      Rule.new(
+        id: "same-weight", category: "paragraph", unit: :paragraph, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does this paragraph mark which of its sentences are facts, which are inferences and which are the writer's opinions, for %{register}?",
+          "criteria" => [
+            { "what" => "It mixes facts, inferences and opinions and marks none of them: a guess or a judgment is stated as flatly as a measurement, with no probably, we think, likely, and no reason or evidence given for it, and every sentence is a conclusion.",
+              "examples" => ["The outage was caused by the cache. The cache had been misconfigured for months. Nobody noticed because monitoring was inadequate. This is a systemic failure. The fix is straightforward."] },
+            { "what" => "It mixes kinds of claim and marks some: one inference or opinion is flagged as such, the rest are flat.",
+              "examples" => ["The outage was probably caused by the cache. The cache had been misconfigured for months. Nobody noticed. This is a systemic failure."] },
+            { "what" => "Every inference and opinion is marked as such or comes with its reason or evidence in the paragraph, or the paragraph is only facts, steps or events with no inference or opinion in it.",
+              "examples" => ["The cache returned stale entries for 40 minutes; that is in the logs. We think the misconfiguration dates from the March deploy, though nobody has confirmed it.", "Set the flag to false. Restart the worker. Check the queue depth after five minutes."] }
+          ]
+        },
+        flag: { level: 0 }, excerpt: :all,
+        message: "Every sentence carries the same weight.",
+        suggestion: "Say which claims are measured and which are guesses, and give the judgment its evidence.",
+        examples_bad: [
+          "The deploy broke checkout. The root cause was the schema change. The schema change was not reviewed properly. Review practices need to improve. Customers were affected for an hour.",
+          "The new index made the query fast. The old plan was doing a full scan. Full scans are a sign of a missing index. The team should audit the other tables. This will prevent future incidents."
+        ],
+        examples_ok: [
+          "Checkout returned 500 for 58 minutes; that is in the load balancer logs. The schema change at 14:02 is the likely cause, since the errors start two minutes after it, but we have not reproduced it in staging. If it is the cause, the two other services on the same table are exposed too.",
+          "Create the index concurrently so the table stays writable. Watch pg_stat_progress_create_index until it finishes. Then run the dashboard query once and compare the plan."
+        ],
+        rationale: "A paragraph in which a measurement, an inference and an opinion all arrive as flat conclusions gives the reader no way to weigh any of it. Human prose in these registers marks its guesses and gives its judgments a reason; model prose delivers every sentence at the same certainty. The escape clause for paragraphs that are only facts, steps or events is the fairness narrowing: a reference page is flat by design. Low, so off by default: in news and abstracts it separates model from human text well, but a design document argues in flat sentences on purpose, and read against real READMEs and design documents about one hit in six was fair. Run it with --select or --strict."
+      ),
 
       # ── sentence ────────────────────────────────────────────────────────────
       Rule.new(

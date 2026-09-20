@@ -7,6 +7,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [Unreleased]
 
+- New paragraph rule `same-weight` (`info`, `low`, off by default): a paragraph
+  that states its inferences and opinions as flatly as its measurements, with
+  no probably, no we think, and no reason given. Separates model from human
+  text in news and abstracts; off by default because a design document argues
+  in flat sentences on purpose. `--select same-weight` or `--strict` runs it.
 - New sentence rule `trailing-gloss` (`info`, `medium`): a sentence that ends
   on a comma and an -ing clause that interprets the fact before it
   ("highlighting the value of", "underscoring the importance of") rather than

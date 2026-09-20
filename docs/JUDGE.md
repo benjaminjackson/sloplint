@@ -195,15 +195,16 @@ Fixtures are synthetic, as in sloplint. No sentence read during calibration is p
 
 ## Rule catalog (v1)
 
-Nine rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
+Ten rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
 
 ### paragraph
 
-Run on every paragraph of three or more sentences. One request per paragraph carries all three questions.
+Run on every paragraph of three or more sentences. One request per paragraph carries every paragraph question in the run, three by default.
 
 - **particulars** (`warning`, `high`). How much of the paragraph is a fact, name, number, step or quote a reader could check: none of it, some of it, most of it. Flags at none. Ranks model prose lower in every register the tool is for, against 2023 models and current ones.
 - **wrap-up** (`warning`, `high`). How the paragraph ends: restating, moralising or hoping, transition, or new fact. Flags at the first. The hope is the "despite these challenges, the future looks bright" closer, which names nothing and so tells the reader nothing new.
 - **throat-clearing** (`info`, `high`). How the paragraph begins: a general announcement of the topic, a framing sentence, or a particular. Flags at announcement. Ranks model prose lower in news and engineering prose, and reverses in abstracts, where human authors open by announcing the paper: 0.59 against current models, 0.63 to 0.93 against 2023 ones. It ships because the flag is fair whoever wrote the paragraph, and it is `info` because the reversal is on the list.
+- **same-weight** (`info`, `low`). Whether the paragraph marks which of its sentences are facts, which are inferences and which are the writer's opinions: none marked, some marked, or all marked (or nothing to mark, because the paragraph is only facts, steps or events). Flags at none. Ranks model prose lower in news (0.26 to 0.38) and, against 2023 models, in abstracts (0.16 to 0.38); against Claude Sonnet 5 abstracts sit at 0.52. Off by default: a design document states its decisions in flat sentences on purpose and gives the reason a paragraph later, and read against READMEs and design documents about one hit in six was fair. `--select same-weight` or `--strict` runs it.
 
 ### sentence
 
@@ -225,7 +226,7 @@ Tested, not shipped, kept here so nobody tests them again without new evidence. 
 - **claim-count**: one claim, two yoked, or none. No separation in any register.
 - **commitment**, **stake**: measure whether the writer has a stake. Measure genre, not quality: an abstract has no stake and should not.
 - **redundancy**, **order**: rank model prose lower in one register on the list and higher in another, and the spike never read their hits for fairness. `order` comes back only with that reading, at `info`. `redundancy` had it, as `restatement` ("before its last sentence, does this paragraph say anything twice"), and is back here: it reverses in news against every side, 2023 models and current, because a news paragraph leads with the fact and then gives the quote that says it, and the model reads that as saying it twice; abstracts are a coin flip; and 34,000 words of READMEs and design documents gave no hit at all. It measures a news convention, not padding.
-- **glue**, **hedge**, **fat**, **owned-claim**, **unresolved**, **paragraph-role**: below the gating bar in the six-register test or never reached it.
+- **glue**, **fat**, **owned-claim**, **unresolved**, **paragraph-role**: below the gating bar in the six-register test or never reached it. **hedge** was on this line, and came back reframed: not "does the paragraph hedge" but "does it say which sentences are guesses", which is `same-weight` above.
 - **machine-written**: the guard. Measures abstraction, not authorship, and gets it backwards.
 
 ## Splitting

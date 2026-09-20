@@ -213,16 +213,16 @@ version       print the sloplint-judge version
 
 ### The rules
 
-Nine rules in two categories. `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question the model is asked, the answer that flags, and the fixtures. The bar is a little different from the regex catalog's: a judge rule ships when a reader shown the flagged unit agrees it should go, whoever wrote it, and how sharply it separates model prose from human prose sets its severity. So `throat-clearing` is `info`, not gone: human abstracts open by announcing the paper, and it is dead weight either way.
+Ten rules in two categories. `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question the model is asked, the answer that flags, and the fixtures. The bar is a little different from the regex catalog's: a judge rule ships when a reader shown the flagged unit agrees it should go, whoever wrote it, and how sharply it separates model prose from human prose sets its severity. So `throat-clearing` is `info`, not gone: human abstracts open by announcing the paper, and it is dead weight either way.
 
-- **paragraph** (3): `particulars`, a paragraph that names nothing a reader could check; `wrap-up`, a paragraph that ends on a summary, a moral or a hope; `throat-clearing`, a paragraph that opens by announcing its topic.
+- **paragraph** (4): `particulars`, a paragraph that names nothing a reader could check; `wrap-up`, a paragraph that ends on a summary, a moral or a hope; `throat-clearing`, a paragraph that opens by announcing its topic; `same-weight`, a paragraph that states its guesses and opinions as flatly as its measurements. `same-weight` is off by default; name it in `--select` or pass `--strict`.
 - **sentence** (6): `stock-figure`, a stock figure of speech; `no-news`, a sentence that explains what the stated reader already knows; `names-nothing`, a sentence with no specific noun in it; `ends-on-verdict`, a sentence that ends by grading the fact it just stated; `trailing-gloss`, a sentence that ends on an -ing clause drawing its own moral; `matched-shape`, a pair or triple built to a rhythm rather than to the content. `matched-shape` is off by default; name it in `--select` or pass `--strict`.
 
 Each note's `confidence` is the lower of the rule's own ceiling and how sure the model was of that answer. A note the model was unsure about is dropped unless you pass `--strict`, the same way sloplint drops its low-confidence rules.
 
 ### Cost and configuration
 
-One request per paragraph carries all three paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds. Every run reports requests, tokens and cost, in the JSON under `judge` and on stderr. Jev returns token counts and no price, so the dollar figure is computed from TypeSafe's public price: $42 per billion input tokens, and output tokens are free. At that rate a 2,000-word document costs well under a cent.
+One request per paragraph carries the paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds. Every run reports requests, tokens and cost, in the JSON under `judge` and on stderr. Jev returns token counts and no price, so the dollar figure is computed from TypeSafe's public price: $42 per billion input tokens, and output tokens are free. At that rate a 2,000-word document costs well under a cent.
 
 Configuration is from the environment, plus the OS keychain for the key:
 
