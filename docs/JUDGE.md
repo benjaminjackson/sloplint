@@ -223,7 +223,7 @@ Tested, not shipped, kept here so nobody tests them again without new evidence. 
 
 - **claim-count**: one claim, two yoked, or none. No separation in any register.
 - **commitment**, **stake**: measure whether the writer has a stake. Measure genre, not quality: an abstract has no stake and should not.
-- **redundancy**, **order**: rank model prose lower in one register on the list and higher in another, and the spike never read their hits for fairness. They come back only with that reading, at `info`.
+- **redundancy**, **order**: rank model prose lower in one register on the list and higher in another, and the spike never read their hits for fairness. `order` comes back only with that reading, at `info`. `redundancy` had it, as `restatement` ("before its last sentence, does this paragraph say anything twice"), and is back here: it reverses in news against every side, 2023 models and current, because a news paragraph leads with the fact and then gives the quote that says it, and the model reads that as saying it twice; abstracts are a coin flip; and 34,000 words of READMEs and design documents gave no hit at all. It measures a news convention, not padding.
 - **glue**, **hedge**, **fat**, **owned-claim**, **unresolved**, **paragraph-role**: below the gating bar in the six-register test or never reached it.
 - **machine-written**: the guard. Measures abstraction, not authorship, and gets it backwards.
 

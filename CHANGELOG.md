@@ -7,6 +7,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [Unreleased]
 
+- Graveyard: `redundancy` was retried as `restatement` with the fairness
+  reading it was owed, reversed in news against every model side, and stays
+  out. The entry in `docs/JUDGE.md` says why.
 - `wrap-up` also names the challenges-and-prospects closer ("Despite these
   challenges, the future looks promising") at its flagged level, and a
   fixture pins it. Wikipedia's field guide documents the formula across
