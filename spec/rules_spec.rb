@@ -32,8 +32,8 @@ RSpec.describe "Sloplint::RULES" do
   # drifts into the wrong category shows up here rather than in the docs.
   it "puts each rule in the category its move belongs to" do
     expect(Sloplint::RULES.group_by(&:category).transform_values(&:size)).to eq(
-      "self-rating" => 15,
-      "cadence" => 17,
+      "self-rating" => 16,
+      "cadence" => 18,
       "closer" => 12,
       "puffery" => 8,
       "false-correction" => 8,
