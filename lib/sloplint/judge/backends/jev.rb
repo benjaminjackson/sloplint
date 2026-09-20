@@ -38,6 +38,7 @@ module Sloplint
           uri = URI(url)
           raise ArgumentError, "SYSTEMONE_URL must be https, got #{uri.scheme.inspect}" unless uri.scheme == "https"
           raise ArgumentError, "SYSTEMONE_URL must be a typesafe.ai host, got #{uri.host.inspect}" unless uri.host.to_s.match?(HOST)
+          raise ArgumentError, "SYSTEMONE_URL needs a path, for example #{DEFAULT_URL}" if uri.path.empty?
 
           uri
         end

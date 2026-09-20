@@ -25,6 +25,17 @@ RSpec.describe Sloplint::Split do
     expect(described_class.sentences("The answer was no. We moved on. Then it broke.").size).to eq(3)
   end
 
+  it "keeps an inline code span as a word of its sentence under --markdown" do
+    text = "`sloplint check` scans the file. Then it prints notes. `x` runs next. Done here.\n"
+    sents = described_class.paragraphs(text, markdown: true).first.sentences
+    expect(sents.map(&:text)).to eq(["`sloplint check` scans the file.", "Then it prints notes.", "`x` runs next.", "Done here."])
+    expect(sents.first.offset).to eq(0)
+    # A URL is a word too, and a line that is only a command or a bare link is furniture.
+    text = "`make test`\n\nhttps://example.com/a\n\nSee https://example.com for more. Fine.\n"
+    expect(described_class.paragraphs(text, markdown: true).map { |p| p.sentences.map(&:text) })
+      .to eq([["See https://example.com for more.", "Fine."]])
+  end
+
   it "drops furniture under --markdown and keeps it otherwise" do
     text = "- a bullet line.\n\n| a | table |\n\n> quoted.\n\nProse here. More prose.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])

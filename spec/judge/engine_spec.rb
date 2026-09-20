@@ -116,6 +116,7 @@ RSpec.describe Sloplint::Judge::Engine do
     # host is accepted: an injected SYSTEMONE_URL is not a way to run the command.
     expect { Sloplint::Judge::Backends::Jev.new(url: "https://attacker.example/v1", key: "k") }.to raise_error(ArgumentError, /typesafe\.ai host/)
     expect { Sloplint::Judge::Backends::Jev.new(url: "https://typesafe.ai.attacker.example/v1", key: "k") }.to raise_error(ArgumentError, /typesafe\.ai host/)
+    expect { Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai", key: "k") }.to raise_error(ArgumentError, /needs a path/)
     jev = Sloplint::Judge::Backends::Jev.new(url: "https://staging.typesafe.ai/v1", key: "k")
     expect(jev.name).to eq("jev-latest")
     expect(jev.cost_usd("input_tokens" => 1_000_000_000, "output_tokens" => 5)).to eq(42.0)

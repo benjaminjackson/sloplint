@@ -36,7 +36,7 @@ module Sloplint
     # so an excerpt is always a string that is in the file. Blanking is
     # character for character, so the offsets agree.
     def paragraphs(text, markdown: false)
-      scan = markdown ? blank_furniture(Engine.blank_markdown(text)) : text
+      scan = markdown ? blank_furniture(blank(text)) : text
       out = []
       at = 0
       # Split keeping the separators, and walk the offsets arithmetically:
@@ -86,13 +86,31 @@ module Sloplint
 
     def squash(s) = s.gsub(/\s+/, " ").strip
 
+    # The judge's view of Markdown differs from the regex engine's in one
+    # way. Fenced code and comments become spaces, as there, but an inline
+    # code span or a URL becomes a run of this letter, same length: it is a
+    # word in its sentence, so "`x` runs fast." starts at the backtick and
+    # "Done. `x` runs." is two sentences. Blanked to spaces, the first lost
+    # its head and the second merged. The letter never reaches a note, since
+    # every text is cut from the original at the same offsets.
+    INLINE = "X"
+
+    def blank(text)
+      text.gsub(Engine::MARKDOWN_NOISE) do |s|
+        Regexp.last_match[:inline] ? INLINE * s.length : s.gsub(/[^\n]/, " ")
+      end
+    end
+
     # Blank furniture lines to same-length spaces, and the indented lines that
     # continue a blanked one: a wrapped bullet is one bullet, and its second
-    # line is not a sentence of its own.
+    # line is not a sentence of its own. A line that is only code spans or
+    # URLs (a command on a line of its own, a bare link) is furniture too.
+    LONE_INLINE = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*\z/
+
     def blank_furniture(scan)
       dropped = false
       scan.gsub(/^.*$/) do |l|
-        dropped = l.match?(FURNITURE) || (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
+        dropped = l.match?(FURNITURE) || l.match?(LONE_INLINE) || (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
         dropped ? " " * l.length : l
       end
     end

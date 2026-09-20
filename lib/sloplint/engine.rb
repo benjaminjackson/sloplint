@@ -108,8 +108,10 @@ module Sloplint
     # with one alternation, so whichever construct opens first is the one that
     # gets consumed: a `<!--` quoted inside backticks is inline code, and a
     # backtick inside a comment is part of the comment.
+    MARKDOWN_NOISE = /(?<block>```.*?```|<!--.*?-->)|(?<inline>`[^`\n]*`|https?:\/\/\S+)/m
+
     def blank_markdown(text)
-      text.gsub(/```.*?```|<!--.*?-->|`[^`\n]*`|https?:\/\/\S+/m) { |s| s.gsub(/[^\n]/, " ") }
+      text.gsub(MARKDOWN_NOISE) { |s| s.gsub(/[^\n]/, " ") }
     end
   end
 end

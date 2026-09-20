@@ -5,11 +5,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
-### [Unreleased]
+### [0.1.0] - 2026-09-20
 
-- First cut of the judge gem: eight rules, the Jev backend, `check`,
-  `compare`, `rules`, `explain`, and `script/calibrate`. Not yet published to
-  rubygems.org; see "Phase two" in `docs/JUDGE.md`.
+- First release of the judge gem: eight rules, the Jev backend, `check`,
+  `compare`, `rules`, `explain`, and `script/calibrate`. Requires sloplint
+  0.9; see "Phase two" in `docs/JUDGE.md` for what is next.
 - `check` reports what the judge spent: JSON output is `{"notes", "judge"}`
   with the backend, request count, token counts and cost in dollars under
   `judge`, and the same line goes to stderr. Jev returns no price, so the
@@ -27,7 +27,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint
 
-## [Unreleased]
+## [0.9.0] - 2026-09-20
 
 ### Added
 
