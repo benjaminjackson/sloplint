@@ -7,6 +7,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [0.1.0] - unreleased
 
+- New paragraph rule `promotional` (`warning`, `medium`): a paragraph in
+  which every judgment is favorable, none comes with a measure and no
+  drawback appears. The paragraph-level reading behind `puffery-words`,
+  which catches the register after the watch words have aged out.
 - New paragraph rule `self-narration` (`info`, `medium`): a paragraph whose
   sentences signpost the document, what comes first, what a section covers,
   what the reader should take away, instead of saying something about the

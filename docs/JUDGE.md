@@ -195,16 +195,17 @@ Fixtures are synthetic, as in sloplint. No sentence read during calibration is p
 
 ## Rule catalog (v1)
 
-Eleven rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
+Twelve rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
 
 ### paragraph
 
-Run on every paragraph of three or more sentences. One request per paragraph carries every paragraph question in the run, four by default.
+Run on every paragraph of three or more sentences. One request per paragraph carries every paragraph question in the run, five by default.
 
 - **particulars** (`warning`, `high`). How much of the paragraph is a fact, name, number, step or quote a reader could check: none of it, some of it, most of it. Flags at none. Ranks model prose lower in every register the tool is for, against 2023 models and current ones.
 - **wrap-up** (`warning`, `high`). How the paragraph ends: restating, moralising or hoping, transition, or new fact. Flags at the first. The hope is the "despite these challenges, the future looks bright" closer, which names nothing and so tells the reader nothing new.
 - **throat-clearing** (`info`, `high`). How the paragraph begins: a general announcement of the topic, a framing sentence, or a particular. Flags at announcement. Ranks model prose lower in news and engineering prose, and reverses in abstracts, where human authors open by announcing the paper: 0.59 against current models, 0.63 to 0.93 against 2023 ones. It ships because the flag is fair whoever wrote the paragraph, and it is `info` because the reversal is on the list.
 - **self-narration** (`info`, `medium`). Whether the paragraph says something about its subject or signposts the document: most sentences tell the reader what the text will do, is doing or has done, or the paragraph carries facts, decisions, rules or events with at most one signpost. Two levels. Flags at signposting. `throat-clearing` is the first sentence only; this is the paragraph that is a table of contents in prose. The flag is rare, so the counts are the number: in 30 abstracts, 1 human paragraph against 32 for llama-chat, 4 for GPT-4 and 49 for Claude Sonnet 5; in news nothing on either side; in 34,000 words of READMEs and design documents nothing. The rank statistic sits at 0.45 to 0.78 in abstracts because human abstracts carry the one-sentence "in this paper we" signpost that does not flag, and `info` because abstracts and the introductions to standards signpost by convention.
+- **promotional** (`warning`, `medium`). How the paragraph evaluates its subject: every evaluative word favorable with nothing measured and no drawback, or evaluation absent, measured, or with a cost in the same paragraph. Two levels. Flags at the first. The regex catalog's `puffery-words` sees the watch words, which age out with each model release; this is the paragraph that is positive without any of them. Ranks model prose lower in news (0.12 to 0.27) and abstracts (0.09 to 0.45); no human paragraph flagged in either register, against 7 to 17 of about 30 model paragraphs in news and 1 to 9 in abstracts. One hit in 34,000 words of READMEs and design documents, on a paragraph that was selling.
 - **same-weight** (`info`, `low`). Whether the paragraph marks which of its sentences are facts, which are inferences and which are the writer's opinions: none marked, some marked, or all marked (or nothing to mark, because the paragraph is only facts, steps or events). Flags at none. Ranks model prose lower in news (0.26 to 0.38) and, against 2023 models, in abstracts (0.16 to 0.38); against Claude Sonnet 5 abstracts sit at 0.52. Off by default: a design document states its decisions in flat sentences on purpose and gives the reason a paragraph later, and read against READMEs and design documents about one hit in six was fair. `--select same-weight` or `--strict` runs it.
 
 ### sentence
@@ -342,12 +343,12 @@ Measured against Jev. Other backends report their own numbers through `script/ca
 
 | request | input tokens | wall time |
 |---|---|---|
-| four paragraph rules, one paragraph | ~1,400 | ~500 ms |
+| five paragraph rules, one paragraph | ~1,600 | ~500 ms |
 | five sentence rules, one sentence | ~1,660 | ~500 ms |
 | compare, sentence pair with paragraph context | ~590 | ~500 ms |
 | compare, paragraph pair | ~800 | ~500 ms |
 
-A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 140,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.006, and `check` writes the figure into the `judge` block and onto stderr.
+A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 150,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.006, and `check` writes the figure into the `judge` block and onto stderr.
 
 ## Agent-first help text
 

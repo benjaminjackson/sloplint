@@ -164,6 +164,33 @@ module Sloplint
         rationale: "A paragraph whose sentences are about the document, what comes first, what a section covers, what the reader should take away, tells the reader nothing about the subject; it is a table of contents in prose. throat-clearing sees only the first sentence; this rule is for the paragraph whose bulk is signposting. Two levels, so the score is the probability of the flag and nothing else, and the one-sentence signpost every section opens with sits on the clean side by name. Abstracts and the introductions to standards signpost by convention, so it starts at info."
       ),
 
+      Rule.new(
+        id: "promotional", category: "paragraph", unit: :paragraph, severity: "warning", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "How does this paragraph evaluate its subject, for %{register}?",
+          "criteria" => [
+            { "what" => "Every evaluative word is favorable, nothing is measured against anything, and no drawback, cost or failure appears.",
+              "examples" => ["The platform offers a robust and flexible foundation. Teams benefit from its intuitive design and strong community. It continues to evolve to meet modern needs."] },
+            { "what" => "Evaluation is absent, or a judgment comes with the measure behind it, or a drawback, cost or failure is in the paragraph.",
+              "examples" => ["The platform is robust and flexible. Cold starts are slow, around two seconds, but teams find the design intuitive.", "p99 latency is 120 ms on the benchmark in the repo. Cold starts are two seconds, which rules it out for the webhook path. The maintainers closed 40 of 52 issues filed this year."] }
+          ]
+        },
+        flag: { level: 0 },
+        excerpt: :all,
+        message: "Paragraph praises its subject and measures nothing.",
+        suggestion: "Give the number behind one claim and name one drawback.",
+        examples_bad: [
+          "The new scheduler is a powerful and elegant addition to the platform. It delivers excellent throughput while remaining simple to operate. Teams across the organisation are already seeing the benefits.",
+          "The library provides a clean, modern interface for working with queues. Its thoughtful design makes common tasks effortless. It is a great fit for projects of any size."
+        ],
+        examples_ok: [
+          "The new scheduler moves 12,000 jobs a minute on the staging cluster, up from 4,000. It needs a Redis 7 instance of its own, which is a new cost. Two teams have moved to it; the billing team is waiting on the retry fix.",
+          "The library wraps the queue API in about 400 lines. Enqueue, dequeue and ack are one call each. It does not do scheduling or priorities; if you need those, use the vendor's client."
+        ],
+        rationale: "A paragraph in which every judgment is favorable, none is measured and no cost appears is copy, whatever it is attached to. The regex catalog's puffery-words sees the watch words; this rule sees the paragraph that is positive without any of them. Two levels, so the score is the probability of the flag. A README is allowed to like its project, so the clean side is wide: one measure or one drawback anywhere in the paragraph is enough. Warning because no human paragraph in news or abstracts flagged and model paragraphs did in both; medium because the question has two parts."
+      ),
+
       # ── sentence ────────────────────────────────────────────────────────────
       Rule.new(
         id: "stock-figure", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",

@@ -118,36 +118,30 @@ def run(opts)
     end
   end
 
-  puts "\nP(model unit scores higher than human unit)   (score = expected level, higher is better prose; <0.5 = the rule ranks model prose below human)"
   sides = scored.map { |s| s[:side] }.uniq - ["human"]
-  opts[:registers].each do |reg|
-    puts "\n#{reg}"
-    puts format("  %-16s %s", "rule", sides.map { |s| format("%18s", s) }.join)
-    rules.each do |r|
-      cells = sides.map do |s|
-        pos = scored.select { |x| x[:register] == reg && x[:side] == s && x[:rule] == r.id }.map { |x| x[:score] }
-        neg = scored.select { |x| x[:register] == reg && x[:side] == "human" && x[:rule] == r.id }.map { |x| x[:score] }
-        v = auc(pos, neg)
-        format("%18s", v ? format("%.2f", v) : "-")
+  table = lambda do |columns, &cell|
+    opts[:registers].each do |reg|
+      puts "\n#{reg}"
+      puts format("  %-16s %s", "rule", columns.map { |s| format("%18s", s) }.join)
+      rules.each do |r|
+        of = ->(side) { scored.select { |x| x[:register] == reg && x[:side] == side && x[:rule] == r.id } }
+        puts format("  %-16s %s", r.id, columns.map { |s| format("%18s", cell.call(of.(s), of.("human"))) }.join)
       end
-      puts format("  %-16s %s", r.id, cells.join)
     end
+  end
+
+  puts "\nP(model unit scores higher than human unit)   (score = expected level, higher is better prose; <0.5 = the rule ranks model prose below human)"
+  table.(sides) do |rows, human|
+    v = auc(rows.map { |x| x[:score] }, human.map { |x| x[:score] })
+    v ? format("%.2f", v) : "-"
   end
 
   # A rare flag barely moves the rank statistic above: most units sit at the clean level on
   # both sides, and small differences in how surely they sit there decide the order. The
   # count of units `check` would report is the other half of the picture.
   puts "\nflagged units at confidence >= 0.5 (what check reports without --strict), per side"
-  opts[:registers].each do |reg|
-    puts "\n#{reg}"
-    puts format("  %-16s %s", "rule", (["human"] + sides).map { |s| format("%18s", s) }.join)
-    rules.each do |r|
-      cells = (["human"] + sides).map do |s|
-        rows = scored.select { |x| x[:register] == reg && x[:side] == s && x[:rule] == r.id }
-        format("%18s", rows.empty? ? "-" : "#{rows.count { |x| x[:flagged] && x[:confidence] >= 0.5 }} / #{rows.size}")
-      end
-      puts format("  %-16s %s", r.id, cells.join)
-    end
+  table.(["human"] + sides) do |rows, _|
+    rows.empty? ? "-" : "#{rows.count { |x| x[:flagged] && x[:confidence] >= 0.5 }} / #{rows.size}"
   end
 
   puts "\ncheck agreement between two runs, by confidence band"
