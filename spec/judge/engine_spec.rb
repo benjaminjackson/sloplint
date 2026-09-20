@@ -85,11 +85,16 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(described_class.scan(text, rules: [para_rule], backend: low, strict: true).notes.first.confidence).to eq("low")
   end
 
-  it "caps a note's confidence at the rule's" do
+  it "caps a note's confidence at the rule's, and still reports it without strict" do
     matched = rules.find { |r| r.id == "matched-shape" }
-    expect(described_class.scan(text, rules: [matched], backend: flag_all).notes).to be_empty
+    # The rule only runs when the user names it, so its low ceiling caps what
+    # the note says and does not drop the note.
+    expect(described_class.scan(text, rules: [matched], backend: flag_all).notes.map(&:confidence).uniq).to eq(["low"])
     result = described_class.scan(text, rules: [matched], backend: flag_all, strict: true)
     expect(result.notes.map(&:confidence).uniq).to eq(["low"])
+    # A low-confidence answer is still dropped outside strict, ceiling or no.
+    unsure = FakeBackend.new { |_s, _n, _q| level(0, confidence: 0.4) }
+    expect(described_class.scan(text, rules: [matched], backend: unsure).notes).to be_empty
   end
 
   it "interpolates the register into every question" do
@@ -122,6 +127,23 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(jev.cost_usd("input_tokens" => 1_000_000_000, "output_tokens" => 5)).to eq(42.0)
     allow(Sloplint::Judge::Secret).to receive(:fetch).and_return(nil)
     expect { Sloplint::Judge::Backends::Jev.new }.to raise_error(ArgumentError, /run `sloplint-judge key set`/)
+  end
+
+  # The URL is checked but not rewritten, so a SYSTEMONE_URL with a query
+  # string must reach the server with that query string on it.
+  it "posts to the whole request-URI, query string and all" do
+    require "sloplint/judge/backends/jev"
+    jev = Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai/v1/systemone?deployment=eu", key: "k")
+    http = instance_double(Net::HTTP)
+    allow(http).to receive(:use_ssl=)
+    allow(http).to receive(:read_timeout=)
+    allow(Net::HTTP).to receive(:new).and_return(http)
+    body = JSON.generate("usage" => { "input_tokens" => 7 },
+                         "answers" => { "q" => { "probabilities" => { "0" => 0.9, "1" => 0.1 }, "confidence" => 0.8 } })
+    sent = nil
+    allow(http).to receive(:request) { |req| sent = req; instance_double(Net::HTTPResponse, code: "200", body: body) }
+    jev.ask({ "x" => 1 }, { "q" => { "type" => "score" } })
+    expect(sent.path).to eq("/v1/systemone?deployment=eu")
   end
 
   it "raises BackendError out of the parallel map" do

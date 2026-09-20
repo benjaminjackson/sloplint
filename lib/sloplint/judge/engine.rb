@@ -136,8 +136,13 @@ module Sloplint
       def note_for(rule, answer, unit, text, path, line_starts, strict)
         return nil unless flagged?(rule, answer)
 
-        conf = [rule.confidence, band(answer.confidence)].max_by { |c| RANK[c] }
-        return nil if conf == "low" && !strict
+        # The rule's confidence is a ceiling on what gets reported, not a
+        # reason to drop the note: a low-ceiling rule only runs when the user
+        # named it. What a default run drops is a low-confidence answer.
+        model = band(answer.confidence)
+        return nil if model == "low" && !strict
+
+        conf = [rule.confidence, model].max_by { |c| RANK[c] }
 
         line, column = Sloplint::Engine.line_col(text, unit.offset, line_starts:)
         Note.new(

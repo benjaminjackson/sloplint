@@ -110,7 +110,11 @@ module Sloplint
       end
 
       judge_usage = nil
-      if judge && !judge_rules.empty?
+      # Under --judge the output is the {"notes", "judge"} object whether or
+      # not a judge rule survived selection: a caller that asked for the judge
+      # reads the wrapper, and an empty selection is 0 requests, not a
+      # different output shape.
+      if judge
         begin
           judge_backend = Judge::Backend.load(backend)
         rescue ArgumentError => e
@@ -285,7 +289,9 @@ module Sloplint
     # pull a model adapter in. The text says the one thing an agent must know
     # before the flag: the judge sends the text to an API, so ask the person.
     def judge_recipe
-      unless $LOAD_PATH.resolve_feature_path("sloplint/judge")
+      # Installed as a gem, the judge is not on the load path until RubyGems
+      # activates it, so the load path alone reports a missing gem.
+      unless $LOAD_PATH.resolve_feature_path("sloplint/judge") || Gem::Specification.find_all_by_name("sloplint-judge").any?
         return "# sloplint-judge (not installed here) adds model-backed rules for what a regex cannot see: gem install sloplint-judge\n"
       end
 

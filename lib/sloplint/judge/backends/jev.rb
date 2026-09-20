@@ -69,7 +69,7 @@ module Sloplint
           http = Net::HTTP.new(@url.host, @url.port)
           http.use_ssl = true
           http.read_timeout = 90
-          req = Net::HTTP::Post.new(@url.path, "Content-Type" => "application/json", "Authorization" => "Bearer #{@key}")
+          req = Net::HTTP::Post.new(@url.request_uri, "Content-Type" => "application/json", "Authorization" => "Bearer #{@key}")
           req.body = JSON.generate({ "state" => state, "model" => @model, "questions" => questions })
           res = http.request(req)
           raise BackendError, "#{@url.host} returned #{res.code}: #{res.body.to_s[0, 200]}" unless res.code == "200"

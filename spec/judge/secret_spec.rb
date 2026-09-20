@@ -92,6 +92,12 @@ RSpec.describe Sloplint::Judge::Secret do
       expect(e.message).to include("control character")
       expect(e.message).not_to include("abc")
     }
+    # present? answers `status`, so it must refuse the same key `check
+    # --judge` refuses; a key that cannot be sent is not a key that is set up.
+    expect { described_class.present?(name) }.to raise_error(ArgumentError) { |e|
+      expect(e.message).to include("control character")
+      expect(e.message).not_to include("abc")
+    }
   end
 
   it "returns nil from run for a missing binary or a non-zero exit" do

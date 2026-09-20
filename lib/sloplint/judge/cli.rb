@@ -88,9 +88,11 @@ module Sloplint
           o.on("--drift", "Also ask whether B changes what A says.") { drift = true }
           o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
-        end.order!(argv)
+        # permute!, so `compare A B --drift` sees the flag. There is no nested
+        # subcommand here whose own flags an option after the files could be.
+        end.permute!(argv)
         a, b = argv
-        unless a && b && File.file?(a) && File.file?(b)
+        unless argv.size == 2 && File.file?(a) && File.file?(b)
           err.puts("usage: sloplint-judge compare [--drift] A B")
           return 2
         end

@@ -59,7 +59,10 @@ RSpec.describe "Sloplint::Judge::RULES" do
   # The fixtures are pins against the live backend. Without a key, in the
   # environment or the keychain, this block skips itself and says so; it is
   # not a pass. See docs/JUDGE.md "Fixtures are live".
-  KEY_PRESENT = !Sloplint::Judge::Secret.present?("TYPESAFE_API_KEY").nil?
+  # The backend's own constant, not a copy of the name: a rename there must
+  # not turn the fixtures off silently.
+  JEV_KEY = Sloplint::Judge::Backend.klass("jev")::KEY
+  KEY_PRESENT = !Sloplint::Judge::Secret.present?(JEV_KEY).nil?
   describe "live fixtures", if: KEY_PRESENT do
     let(:backend) { Sloplint::Judge::Backend.load("jev") }
 
@@ -80,6 +83,6 @@ RSpec.describe "Sloplint::Judge::RULES" do
   end
 
   it "says when the live fixtures were skipped" do
-    skip "no TYPESAFE_API_KEY in the environment or the keychain: the judge's fixtures were not run against the model" unless KEY_PRESENT
+    skip "no #{JEV_KEY} in the environment or the keychain: the judge's fixtures were not run against the model" unless KEY_PRESENT
   end
 end

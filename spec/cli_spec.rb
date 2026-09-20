@@ -404,6 +404,13 @@ RSpec.describe Sloplint::CLI do
       _, out = run(["--help"])
       expect(out).to include("sloplint-judge status").and include("ask")
       allow($LOAD_PATH).to receive(:resolve_feature_path).and_return(nil)
+      allow(Gem::Specification).to receive(:find_all_by_name).and_call_original
+      # Installed as a gem, the judge is off the load path until RubyGems
+      # activates it. That is installed, and the recipe must say so.
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([:a_spec])
+      _, out = run(["--help"])
+      expect(out).to include("sloplint-judge status")
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([])
       _, out = run(["--help"])
       expect(out).to include("not installed here").and include("gem install sloplint-judge")
       expect(out).not_to include("sloplint-judge status")

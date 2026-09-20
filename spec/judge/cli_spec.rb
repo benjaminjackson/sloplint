@@ -37,6 +37,15 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("judge fake")
   end
 
+  it "writes the judge wrapper under --judge even when no judge rule ran" do
+    code, out, err = run(Sloplint::CLI, ["check", "--judge", "--select", "em-dash", "-o", "json", "-"], stdin_text: text)
+    expect(code).to eq(0)
+    doc = JSON.parse(out)
+    expect(doc["notes"]).to eq([])
+    expect(doc["judge"]).to eq("backend" => "fake", "requests" => 0)
+    expect(err).to include("judge fake, 0 requests")
+  end
+
   it "accepts judge ids in --select and --ignore only with --judge" do
     code, out, = run(Sloplint::CLI, ["check", "--judge", "--select", "wrap-up", "-o", "json", "-"], stdin_text: text)
     expect(code).to eq(1)
@@ -208,6 +217,19 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
       end.new
       allow(Sloplint::Judge::Backend).to receive(:load).and_return(broken)
       expect(run(Sloplint::Judge::CLI, ["check", "-"], stdin_text: text).first).to eq(3)
+    end
+
+    it "reads a flag written after the two files, and refuses a third file" do
+      a = Tempfile.new("a"); a.write("Old."); a.close
+      b = Tempfile.new("b"); b.write("New."); b.close
+      backend = FakeBackend.new { |_s, _n, q| q["type"] == "choice" ? [{ "A" => 0.2, "B" => 0.8 }, 0.9] : [0.1, 0.9] }
+      allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
+      code, out, = run(Sloplint::Judge::CLI, ["compare", a.path, b.path, "--drift"])
+      expect(code).to eq(0)
+      expect(JSON.parse(out)["drift"]).not_to be_nil
+      code, _, err = run(Sloplint::Judge::CLI, ["compare", a.path, b.path, a.path])
+      expect(code).to eq(2)
+      expect(err).to include("usage: sloplint-judge compare")
     end
 
     it "compares two files, mapping the answer back through the random swap" do

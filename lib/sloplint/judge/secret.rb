@@ -33,8 +33,7 @@ module Sloplint
         # that quotes the whole header value, and the CLIs print ArgumentError
         # messages. Refuse here, without the value, so a wrapped paste stored
         # once is never printed on every run after.
-        raise ArgumentError, "#{name} contains a control character; store it again" if value.match?(/[[:cntrl:]]/)
-
+        refuse_control!(name, value)
         [value, source]
       end
 
@@ -42,9 +41,22 @@ module Sloplint
       # skill's probe runs this in every conversation, before anyone has
       # agreed to send anything, so it must not pull the secret into a process.
       def present?(name)
-        return "environment" unless ENV[name].to_s.empty?
+        env = ENV[name].to_s
+        unless env.empty?
+          refuse_control!(name, env)
+          return "environment"
+        end
 
         stored?(name) ? "keychain" : nil
+      end
+
+      # Net::HTTP refuses a header with CR or LF by raising an ArgumentError
+      # that quotes the whole header value, and the CLIs print ArgumentError
+      # messages. Refuse here, without the value, so a wrapped paste stored
+      # once is never printed on every run after. `status` applies it too:
+      # a key `check --judge` would refuse is not a key that is set up.
+      def refuse_control!(name, value)
+        raise ArgumentError, "#{name} contains a control character; store it again" if value.match?(/[[:cntrl:]]/)
       end
 
       # Is there a keychain item, whatever the environment says. Attribute
