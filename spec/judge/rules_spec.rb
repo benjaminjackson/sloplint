@@ -13,10 +13,10 @@ RSpec.describe "Sloplint::Judge::RULES" do
     expect(rules.map(&:category).uniq & taken).to be_empty
   end
 
-  it "ships the eight rules docs/JUDGE.md lists, in its two categories" do
+  it "ships the nine rules docs/JUDGE.md lists, in its two categories" do
     doc = File.read(File.expand_path("../../docs/JUDGE.md", __dir__), encoding: "UTF-8")
     rules.each { |r| expect(doc).to include("**#{r.id}**"), "#{r.id} missing from docs/JUDGE.md" }
-    expect(rules.group_by(&:category).transform_values(&:size)).to eq("paragraph" => 3, "sentence" => 5)
+    expect(rules.group_by(&:category).transform_values(&:size)).to eq("paragraph" => 3, "sentence" => 6)
   end
 
   Sloplint::Judge::RULES.each do |rule|

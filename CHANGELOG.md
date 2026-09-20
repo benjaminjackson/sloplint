@@ -7,6 +7,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [Unreleased]
 
+- New sentence rule `trailing-gloss` (`info`, `medium`): a sentence that ends
+  on a comma and an -ing clause that interprets the fact before it
+  ("highlighting the value of", "underscoring the importance of") rather than
+  adding a fact or a consequence. The reading the regex
+  `trailing-significance-participle` could not do.
 - Graveyard: `redundancy` was retried as `restatement` with the fairness
   reading it was owed, reversed in news against every model side, and stays
   out. The entry in `docs/JUDGE.md` says why.

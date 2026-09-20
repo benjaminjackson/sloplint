@@ -195,6 +195,33 @@ module Sloplint
         rationale: "A tail that tells the reader what to think of the fact just stated is the writer grading their own sentence. Human prose in these registers ends on the fact."
       ),
       Rule.new(
+        id: "trailing-gloss", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` end on a participial clause, and if so what does the clause do, for %{register}?",
+          "criteria" => [
+            { "what" => "The sentence ends on a comma and an -ing clause that interprets what came before it, with the event or fact as its subject: something highlights, reflects, underscores, signals or demonstrates a broader point the sentence did not establish.",
+              "examples" => ["Latency fell by half after the change, demonstrating the team's commitment to performance.", "The library gained 2,000 stars in a month, reflecting growing interest in local-first tools."] },
+            { "what" => "The trailing clause adds a fact or a consequence, or its subject is a person or thing doing something.",
+              "examples" => ["Latency fell by half after the change, freeing enough budget to drop the second replica.", "She left at noon, taking the only key with her."] },
+            { "what" => "No trailing participial clause.",
+              "examples" => ["Latency fell by half after the change. The second replica went with it.", "The library gained 2,000 stars in a month."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence ends on an -ing clause that draws its own moral.",
+        suggestion: "Cut the clause, or make the point its own sentence with a fact in it.",
+        examples_bad: [
+          "The queue drained in six minutes, highlighting the value of the new architecture.",
+          "Adoption doubled in the second quarter, underscoring the growing importance of developer experience."
+        ],
+        examples_ok: [
+          "The queue drained in six minutes, leaving the consumers idle until the next batch.",
+          "Adoption doubled in the second quarter, driving the support backlog past 400 tickets."
+        ],
+        rationale: "A sentence that ends on a comma and an -ing clause whose subject is the fact just stated, and whose verb interprets it (highlighting, reflecting, underscoring), is the writer tacking a moral onto a fact. The regex catalog's trailing-significance-participle sees only a short list of verbs; the construction turns on what the clause does, which is a reading. Medium because the question has two parts, and info because the trailing clause that adds a consequence is fine and the model has to tell the two apart."
+      ),
+      Rule.new(
         id: "matched-shape", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
         question: {
           "type" => "score",
