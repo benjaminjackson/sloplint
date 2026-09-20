@@ -5,8 +5,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
-### [Unreleased]
+### [0.1.0] - unreleased
 
+- New paragraph rule `self-narration` (`info`, `medium`): a paragraph whose
+  sentences signpost the document, what comes first, what a section covers,
+  what the reader should take away, instead of saying something about the
+  subject. `throat-clearing` sees the first sentence; this is the paragraph.
+- `script/calibrate run` also prints how many units each side would have
+  flagged at the confidence `check` reports. A rare flag barely moves the
+  rank statistic, so for such a rule the count is the number to quote.
 - New paragraph rule `same-weight` (`info`, `low`, off by default): a paragraph
   that states its inferences and opinions as flatly as its measurements, with
   no probably, no we think, and no reason given. Separates model from human
@@ -28,11 +35,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   fact is not. Wikipedia's field guide documents the formula across
   unrelated topics, and the GPT family ends documents on it.
 
-### [0.1.0] - 2026-09-20
-
-- First release of the judge gem: eight rules, the Jev backend, `check`,
-  `compare`, `rules`, `explain`, and `script/calibrate`. Requires sloplint
-  0.9; see "Phase two" in `docs/JUDGE.md` for what is next.
+- First release of the judge gem: the rule catalog in `docs/JUDGE.md`, the
+  Jev backend, `check`, `compare`, `rules`, `explain`, and `script/calibrate`.
+  Requires sloplint 0.9; see "Phase two" in `docs/JUDGE.md` for what is next.
 - `check` reports what the judge spent: JSON output is `{"notes", "judge"}`
   with the backend, request count, token counts and cost in dollars under
   `judge`, and the same line goes to stderr. Jev returns no price, so the

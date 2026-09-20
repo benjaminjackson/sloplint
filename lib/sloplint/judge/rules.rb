@@ -136,6 +136,34 @@ module Sloplint
         rationale: "A paragraph in which a measurement, an inference and an opinion all arrive as flat conclusions gives the reader no way to weigh any of it. Human prose in these registers marks its guesses and gives its judgments a reason; model prose delivers every sentence at the same certainty. The escape clause for paragraphs that are only facts, steps or events is the fairness narrowing: a reference page is flat by design. Low, so off by default: in news and abstracts it separates model from human text well, but a design document argues in flat sentences on purpose, and read against real READMEs and design documents about one hit in six was fair. Run it with --select or --strict."
       ),
 
+      Rule.new(
+        id: "self-narration", category: "paragraph", unit: :paragraph, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Does this paragraph say something about its subject, or does it signpost the document, for %{register}?",
+          "criteria" => [
+            { "what" => "Most sentences signpost: they tell the reader what this text will do, is doing or has done, what comes first and next, what a section covers, what the reader should take from it. Not a paragraph whose subject happens to be documents or writing.",
+              "examples" => ["This section describes the approach. First we outline the constraints. Next we present the design. Finally we discuss the trade-offs, which the reader should keep in mind."] },
+            { "what" => "The paragraph says something about its subject. At most one sentence signposts; the rest carry facts, decisions, rules or events, and a style guide's rules about documents count as its subject.",
+              "examples" => ["Two constraints shaped the design. The queue had to survive a region loss, and no message could be delivered twice. The rest of this section is about the second one.", "The queue had to survive a region loss, and no message could be delivered twice. The first ruled out a single Redis. The second ruled out at-least-once delivery without an idempotency key."] }
+          ]
+        },
+        flag: { level: 0 },
+        excerpt: :all,
+        message: "Paragraph narrates the document instead of saying something.",
+        suggestion: "Cut the signposts and start with the first fact.",
+        examples_bad: [
+          "This document is organised as follows. The first part sets out the background. The second part walks through the proposed change. The final part covers open questions, which we return to at the end.",
+          "In this section we explain the migration plan. We begin by describing the current state. We then outline each step in order. We close with the rollback procedure, which readers should review carefully.",
+          "The users table has 40 million rows. What follows describes how it moves. The steps are given in the order they run. Each step names the check that must pass before the next one starts, and the reader should note where the rollback points are."
+        ],
+        examples_ok: [
+          "Three things have to move: the users table, the sessions cache and the cron jobs that read both. The table goes first because the cache is rebuilt from it. The cron jobs move last, after a week of both stores running side by side.",
+          "The rollback is one command. It repoints the alias at the old index and leaves the new one in place. Nothing is deleted until the alias has sat on the old index for a day."
+        ],
+        rationale: "A paragraph whose sentences are about the document, what comes first, what a section covers, what the reader should take away, tells the reader nothing about the subject; it is a table of contents in prose. throat-clearing sees only the first sentence; this rule is for the paragraph whose bulk is signposting. Two levels, so the score is the probability of the flag and nothing else, and the one-sentence signpost every section opens with sits on the clean side by name. Abstracts and the introductions to standards signpost by convention, so it starts at info."
+      ),
+
       # ── sentence ────────────────────────────────────────────────────────────
       Rule.new(
         id: "stock-figure", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",

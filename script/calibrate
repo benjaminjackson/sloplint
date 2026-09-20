@@ -134,6 +134,22 @@ def run(opts)
     end
   end
 
+  # A rare flag barely moves the rank statistic above: most units sit at the clean level on
+  # both sides, and small differences in how surely they sit there decide the order. The
+  # count of units `check` would report is the other half of the picture.
+  puts "\nflagged units at confidence >= 0.5 (what check reports without --strict), per side"
+  opts[:registers].each do |reg|
+    puts "\n#{reg}"
+    puts format("  %-16s %s", "rule", (["human"] + sides).map { |s| format("%18s", s) }.join)
+    rules.each do |r|
+      cells = (["human"] + sides).map do |s|
+        rows = scored.select { |x| x[:register] == reg && x[:side] == s && x[:rule] == r.id }
+        format("%18s", rows.empty? ? "-" : "#{rows.count { |x| x[:flagged] && x[:confidence] >= 0.5 }} / #{rows.size}")
+      end
+      puts format("  %-16s %s", r.id, cells.join)
+    end
+  end
+
   puts "\ncheck agreement between two runs, by confidence band"
   BANDS.each do |band, floor|
     rows = scored.select { |x| x[:confidence] >= floor }
