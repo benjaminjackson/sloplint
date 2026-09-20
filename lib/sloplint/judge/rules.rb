@@ -328,6 +328,33 @@ module Sloplint
         rationale: "A claim handed to experts, studies or many is a claim the reader cannot check and the writer has not owned. The regex catalog's vague-attribution sees three fixed frames; this is the reading of who is being cited, so \"studies show\" and \"research suggests\" and a bare \"many believe\" are caught and a source the register names by convention, officials, a spokesperson, the company, is not. Two levels. Info because news attributes to unnamed officials by convention, and an abstract to prior work, and the rule must let both through."
       ),
       Rule.new(
+        id: "stated-stakes", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "If `target` says something matters, does it say why, for %{register}?",
+          "criteria" => [
+            { "what" => "It asserts importance, centrality or consequence (crucial, critical, central, vital, essential, key, matters, shapes everything that follows) and gives no fact, number or consequence that shows it.",
+              "examples" => ["Getting the retry policy right is critical to the success of the whole system.", "Observability is essential for any modern platform."] },
+            { "what" => "It states the consequence and lets the reader weigh it, or points to where the reason is, or the sentence right after it in the paragraph gives the reason, or it makes no importance claim: a rule, a requirement, a fact or a signpost is not a claim of importance, and quoted speech belongs to the speaker, not the writer.",
+              "examples" => ["A retry policy without jitter took the payment service down twice in March.", "The retry policy matters more than it looks, for reasons the next section covers.", "Both pieces are required.", "The retry policy is three lines in config/queue.yml.", "\"It is an important period for the club and I am concentrating on that,\" he said."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence says this matters and not why.",
+        suggestion: "Replace the importance claim with the consequence.",
+        examples_bad: [
+          "Choosing the right serialization format is crucial for the long-term health of the platform.",
+          "Documentation plays a vital role in the success of any engineering organisation."
+        ],
+        examples_ok: [
+          "The serialization format is the one thing we cannot change after launch, because every client pins it.",
+          "Nobody could find the runbook during the March outage, so the page took 40 minutes to route.",
+          "The serialization format matters more than anything else in this design. Every client pins it, so it cannot change after launch.",
+          "\"This is a massive game for us and everyone knows what is at stake,\" the captain said."
+        ],
+        rationale: "A sentence that says a thing is crucial, vital or central and gives nothing to weigh asks the reader to take the stakes on trust. The sentence after it counts: a design document often states the stakes in one sentence and the reason in the next, and the model sees the paragraph. Human prose in these registers states the consequence and lets it carry the weight. ends-on-verdict flags a sentence that ends on a judgment of the fact it just stated; this is the importance claim, wherever it sits and whether or not a fact follows. Two levels."
+      ),
+      Rule.new(
         id: "matched-shape", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
         question: {
           "type" => "score",

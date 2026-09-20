@@ -12,6 +12,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   not find and that speaks for nobody. Officials, a spokesperson and the
   other sources news quotes by convention pass, and so does an abstract's
   prior work. The reading behind the regex `vague-attribution`.
+- New sentence rule `stated-stakes` (`info`, `low`, off by default): a sentence
+  that says something is crucial, vital or key and gives no fact, number or
+  consequence, in it or in the sentence after it. Off by default because the
+  model rarely answers it above low confidence; `--select stated-stakes` or
+  `--strict` runs it.
 - A rule at `low` confidence (`same-weight`, `matched-shape`) now reports its
   notes when `--select` names it; before, they ran and printed nothing
   without `--strict`. The rule's `low` caps the note's confidence; what a
