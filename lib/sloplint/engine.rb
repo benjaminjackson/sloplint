@@ -108,7 +108,13 @@ module Sloplint
     # with one alternation, so whichever construct opens first is the one that
     # gets consumed: a `<!--` quoted inside backticks is inline code, and a
     # backtick inside a comment is part of the comment.
-    MARKDOWN_NOISE = /(?<block>```.*?```|<!--.*?-->)|(?<inline>`[^`\n]*`|https?:\/\/\S+)/m
+    # A URL ends before the punctuation that ends the sentence it sits in:
+    # "See https://example.com. Then do X." is two sentences, and swallowing
+    # the first period would make it one. A URL that really ends in one of
+    # these, a Wikipedia link closing on a bracket, loses that character to
+    # the sentence instead; the text is only being blanked, so what it costs
+    # is one visible character, not a broken link.
+    MARKDOWN_NOISE = /(?<block>```.*?```|<!--.*?-->)|(?<inline>`[^`\n]*`|https?:\/\/\S*[^\s.,;:!?)\]])/m
 
     def blank_markdown(text)
       text.gsub(MARKDOWN_NOISE) { |s| s.gsub(/[^\n]/, " ") }

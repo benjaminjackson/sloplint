@@ -45,6 +45,14 @@ module Sloplint
     # a code span, which starts a sentence as any other word does.
     BOUNDARY = /(?<=[.!?]|[.!?]["'”’)\]])\s+(?=["'“‘(\[A-Z0-9#{INLINE}])/
 
+    # The split keeps its separators, so one of the blocks it hands back is
+    # the break itself. Both of these are written out here rather than inside
+    # the walk, where the interpolation would build the same pattern again for
+    # every block of every document.
+    BREAK_ONLY = /\A#{PARA_BREAK}\z/
+    KEEP_BREAK = /(#{PARA_BREAK})/
+    KEEP_BOUNDARY = /(#{BOUNDARY})/
+
     module_function
 
     # text: the source. markdown: blank code, HTML comments and URLs before
@@ -64,13 +72,18 @@ module Sloplint
       at = 0
       # Split keeping the separators, and walk the offsets arithmetically:
       # String#index with a start position rescans from 0 on non-ASCII text.
-      scan.split(/(#{PARA_BREAK})/).each do |block|
+      scan.split(KEEP_BREAK).each do |block|
         start = at
         at += block.length
-        next if block.match?(/\A#{PARA_BREAK}\z/)
+        next if block.match?(BREAK_ONLY)
 
-        lead = block[/\A\s*/].length
-        body = block.strip
+        # Both ends trimmed by the same measure. String#strip takes a leading
+        # NUL off as well as whitespace and /\A\s*/ does not, so a block that
+        # starts with one used to put every offset in the paragraph one
+        # character early and cut its last character off.
+        from_lead = block.lstrip
+        lead = block.length - from_lead.length
+        body = from_lead.rstrip
         next if body.empty?
 
         offset = start + lead
@@ -117,7 +130,7 @@ module Sloplint
       parts = []
       buf_start = nil
       pos = 0
-      body.split(/(#{BOUNDARY})/).each do |piece|
+      body.split(KEEP_BOUNDARY).each do |piece|
         at = pos
         pos = at + piece.length
         next if piece.match?(/\A\s+\z/)
@@ -156,7 +169,10 @@ module Sloplint
     # continue a blanked one: a wrapped bullet is one bullet, and its second
     # line is not a sentence of its own. A line that is only code spans or
     # URLs (a command on a line of its own, a bare link) is furniture too.
-    LONE_INLINE = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*\z/
+    # The punctuation at the end is the sentence's, not the link's, since a
+    # URL now stops before it: a line holding one bare link and a full stop is
+    # still a line holding one bare link.
+    LONE_INLINE = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*[.,;:!?)\]]*\z/
 
     # Both copies at once, line by line: the furniture is decided on the
     # splitter's copy, where a code span is a placeholder, and the same lines

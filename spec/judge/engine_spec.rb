@@ -158,6 +158,10 @@ RSpec.describe Sloplint::Judge::Engine do
     expect { Sloplint::Judge::Backends::Jev.new(url: "https://attacker.example/v1", key: "k") }.to raise_error(ArgumentError, /typesafe\.ai host/)
     expect { Sloplint::Judge::Backends::Jev.new(url: "https://typesafe.ai.attacker.example/v1", key: "k") }.to raise_error(ArgumentError, /typesafe\.ai host/)
     expect { Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai", key: "k") }.to raise_error(ArgumentError, /needs a path/)
+    # URI raises URI::InvalidURIError, which no command catches, so the
+    # backend turns it into the usage error the other bad settings give.
+    expect { Sloplint::Judge::Backends::Jev.new(url: "not a url", key: "k") }.to raise_error(ArgumentError, /is not a URL/)
+    expect { Sloplint::Judge::Backends::Jev.configured! }.not_to raise_error
     jev = Sloplint::Judge::Backends::Jev.new(url: "https://staging.typesafe.ai/v1", key: "k")
     expect(jev.name).to eq("jev-latest")
     expect(jev.cost_usd("input_tokens" => 1_000_000_000, "output_tokens" => 5)).to eq(42.0)
@@ -216,18 +220,49 @@ RSpec.describe Sloplint::Judge::Engine do
       .to raise_error(NoMethodError, "oops")
   end
 
-  # One Jev request with this response body, answering one question named "q".
-  def jev_answer(answers, question, klass = nil)
+  # A 200 whose body is not an object at all. Nothing can be read out of it,
+  # and reading anyway is a TypeError, which is the class a bug raises.
+  it "calls a 200 body that is not a Hash a malformed body" do
+    q = { "type" => "score", "criteria" => %w[a b] }
+    expect { jev_body("[]", q) }.to raise_error(Sloplint::Judge::BackendError, /the body is Array, not a Hash/)
+    expect { jev_body("null", q) }.to raise_error(Sloplint::Judge::BackendError, /the body is NilClass, not a Hash/)
+  end
+
+  # Both of these descend from StandardError and not from Net::ProtocolError,
+  # so they are named one by one in the rescue list. A proxy that answers
+  # with something that is not an HTTP status line raises one of them.
+  it "calls an answer that is not HTTP at all a backend failure" do
+    [Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError].each do |klass|
+      http = jev_http
+      allow(http).to receive(:request).and_raise(klass, "wrong on the wire")
+      expect { jev_ask }.to raise_error(Sloplint::Judge::BackendError, /#{klass}: wrong on the wire/)
+    end
+  end
+
+  # The doubled Net::HTTP every Jev example posts through.
+  def jev_http
     require "sloplint/judge/backends/jev"
-    klass ||= Sloplint::Judge::Backends::Jev
     http = instance_double(Net::HTTP)
     allow(http).to receive(:use_ssl=)
     allow(http).to receive(:read_timeout=)
     allow(Net::HTTP).to receive(:new).and_return(http)
-    allow(http).to receive(:request)
-      .and_return(instance_double(Net::HTTPResponse, code: "200",
-                                                     body: JSON.generate("usage" => {}, "answers" => answers)))
-    klass.new(url: "https://api.typesafe.ai/v1", key: "k").ask({}, { "q" => question }).fetch("q")
+    http
+  end
+
+  def jev_ask(question = { "type" => "score", "criteria" => %w[a b] }, klass = nil)
+    (klass || Sloplint::Judge::Backends::Jev).new(url: "https://api.typesafe.ai/v1", key: "k")
+                                             .ask({}, { "q" => question }).fetch("q")
+  end
+
+  # One Jev request answering with exactly this body.
+  def jev_body(body, question, klass = nil)
+    allow(jev_http).to receive(:request).and_return(instance_double(Net::HTTPResponse, code: "200", body: body))
+    jev_ask(question, klass)
+  end
+
+  # One Jev request with this response body, answering one question named "q".
+  def jev_answer(answers, question, klass = nil)
+    jev_body(JSON.generate("usage" => {}, "answers" => answers), question, klass)
   end
 
   it "deals work over every thread and still returns results in input order" do
@@ -235,6 +270,22 @@ RSpec.describe Sloplint::Judge::Engine do
     out = described_class.in_parallel((1..9).to_a, 8) { |i| threads << Thread.current.object_id; i * 2 }
     expect(out).to eq((1..9).map { |i| i * 2 })
     expect(Array.new(threads.size) { threads.pop }.uniq.size).to eq(8)
+  end
+
+  # Every item is a paid request, so a failure ends the run: the threads that
+  # were still working stop at their next item instead of draining their deal.
+  it "asks for nothing more once one item has failed" do
+    asked = Queue.new
+    expect do
+      described_class.in_parallel((0...20).to_a, 2) do |i|
+        asked << i
+        raise Sloplint::Judge::BackendError, "down" if i.zero?
+
+        sleep 0.05
+      end
+    end.to raise_error(Sloplint::Judge::BackendError, "down")
+    # The failing item, and the one the other thread was already on.
+    expect(asked.size).to be < 5
   end
 
   it "raises BackendError out of the parallel map" do

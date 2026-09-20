@@ -79,6 +79,37 @@ RSpec.describe Sloplint::Split do
     expect(large).to be < small * 16
   end
 
+  # The URL pattern used to take \S+, which swallowed the period that ended
+  # the sentence, and then two sentences were blanked into one unit.
+  it "leaves the sentence its closing punctuation when a URL ends it" do
+    text = "See https://example.com. Then do X. Then Y.\n"
+    sents = described_class.paragraphs(text, markdown: true).first.sentences
+    expect(sents.map(&:text)).to eq(["See https://example.com.", "Then do X.", "Then Y."])
+    sents.each { |s| expect(text[s.offset, s.length]).to eq(s.text) }
+    # And a line that is one bare link is still furniture with a full stop
+    # after it, now that the full stop is no longer part of the link.
+    expect(described_class.paragraphs("https://example.com.\n\nAlpha here. Beta here.\n", markdown: true).map(&:text))
+      .to eq(["Alpha here. Beta here."])
+  end
+
+  # String#strip takes a leading NUL off as well as whitespace, and the lead
+  # count did not, so every offset in the paragraph was one character early
+  # and its last character was cut off.
+  it "counts the same characters off both ends of a block" do
+    text = "\u0000Alpha here. Beta here.\n"
+    para = described_class.paragraphs(text).first
+    expect(para.text).to eq("Alpha here. Beta here.")
+    expect(text[para.offset, para.length]).to eq(para.text)
+    para.sentences.each { |s| expect(text[s.offset, s.length]).to eq(s.text) }
+  end
+
+  # Written out once, not built again for every block of every document.
+  it "holds its interpolated patterns as constants" do
+    expect(described_class::BREAK_ONLY).to eq(/\A#{Sloplint::PARA_BREAK}\z/)
+    expect(described_class::KEEP_BREAK).to eq(/(#{Sloplint::PARA_BREAK})/)
+    expect(described_class::KEEP_BOUNDARY).to eq(/(#{described_class::BOUNDARY})/)
+  end
+
   it "keeps a wrapped line that starts with a year, as CommonMark does" do
     text = "The library was released in\n2019. It was rewritten in\n2021. Adoption grew after that.\n"
     paras = described_class.paragraphs(text, markdown: true)

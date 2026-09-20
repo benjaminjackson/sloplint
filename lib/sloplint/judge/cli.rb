@@ -109,11 +109,16 @@ module Sloplint
           err.puts("usage: sloplint-judge compare [--drift] A B")
           return 2
         end
+        # The same read `check` does, so an unreadable or badly encoded file
+        # is an invalid input here too, before a request is paid for.
+        sources = Sloplint::CLI.read_sources([a, b], err:, name: "sloplint-judge") or return 2
+
         backend = load_backend(opts[:backend], err:) or return 2
-        verdict = Compare.run(File.read(a, encoding: Encoding::UTF_8), File.read(b, encoding: Encoding::UTF_8),
-                              place: "for #{opts[:register]}", backend:, drift:)
+        verdict = Compare.run(sources[0].last, sources[1].last, place: "for #{opts[:register]}", backend:, drift:)
         out.puts(JSON.pretty_generate(verdict.to_h.except(:usage)))
-        usage = Engine.with_cost({ "backend" => backend.name }.merge(verdict.usage), backend)
+        # Engine.numbers for the same reason a scan uses it: a count that is
+        # not a number must not take down a verdict already printed.
+        usage = Engine.with_cost({ "backend" => backend.name }.merge(Engine.numbers(verdict.usage)), backend)
         err.puts("sloplint-judge: #{Engine.usage_line(usage)}")
         0
       end

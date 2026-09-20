@@ -165,9 +165,14 @@ module Sloplint
       # reason to lose a scan that has already been paid for.
       def add_usage(usage, answers)
         usage["requests"] += 1
-        first = answers.values.first
-        first&.usage&.each { |k, v| usage[k] += v.to_i if v.is_a?(Numeric) }
+        numbers(answers.values.first&.usage).each { |k, v| usage[k] += v.to_i }
       end
+
+      # The counts out of a usage Hash, and nothing else. A backend that
+      # answers with a nested Hash or a string in there must not bring down a
+      # run whose requests are already paid for, in either of the two commands
+      # that print a usage line.
+      def numbers(usage) = usage.is_a?(Hash) ? usage.select { |_, v| v.is_a?(Numeric) } : {}
 
       # Map items through the block on up to `concurrency` threads, keeping
       # order. Items are dealt out round-robin, so 9 items over 8 threads is
@@ -181,8 +186,27 @@ module Sloplint
 
         n = [concurrency, items.size].min
         out = Array.new(items.size)
+        # Every item is a paid request. Once one of them has failed the run
+        # ends in a backend failure whatever the rest answer, so no thread
+        # starts another request after that, and the threads that were still
+        # working stop at their next item instead of draining their deal.
+        failed = false
         items.each_with_index.group_by { |_, i| i % n }
-             .map { |_, deal| Thread.new { Thread.current.report_on_exception = false; deal.each { |item, i| out[i] = yield item } } }
+             .map do |_, deal|
+               Thread.new do
+                 Thread.current.report_on_exception = false
+                 deal.each do |item, i|
+                   break if failed
+
+                   begin
+                     out[i] = yield item
+                   rescue StandardError
+                     failed = true
+                     raise
+                   end
+                 end
+               end
+             end
              .each(&:value)
         out
       end

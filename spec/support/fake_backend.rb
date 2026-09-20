@@ -8,8 +8,9 @@ require_relative "../../lib/sloplint/judge"
 class FakeBackend
   attr_reader :calls
 
-  def initialize(&answer_for)
+  def initialize(usage: { "input_tokens" => 100 }, &answer_for)
     @answer_for = answer_for || ->(_s, _n, q) { level(0, size: q["criteria"].size) }
+    @usage = usage
     @calls = []
   end
 
@@ -19,7 +20,7 @@ class FakeBackend
     @calls << [state, questions]
     questions.to_h do |qname, q|
       probs, conf = @answer_for.call(state, qname, q)
-      [qname, Sloplint::Judge::Answer.new(type: q["type"], probabilities: probs, confidence: conf, usage: { "input_tokens" => 100 })]
+      [qname, Sloplint::Judge::Answer.new(type: q["type"], probabilities: probs, confidence: conf, usage: @usage)]
     end
   end
 end

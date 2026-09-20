@@ -176,7 +176,7 @@ module Sloplint
 
     # Read every path (or stdin for "-") as UTF-8. Returns [[label, text], ...]
     # or nil after writing the error, so the caller exits 2.
-    def read_sources(paths, err:, stdin:, name: "sloplint")
+    def read_sources(paths, err:, stdin: $stdin, name: "sloplint")
       sources = []
       paths.each do |path|
         # Read as UTF-8 whatever the locale says. A sandbox with no LANG set
@@ -194,6 +194,15 @@ module Sloplint
             end
             File.read(path, encoding: Encoding::UTF_8)
           end
+        # Prose that is not valid UTF-8 is an invalid input, said here rather
+        # than left to whatever reads the text first: a scan raises on the
+        # first regex, and the judge sends the text to a backend, where it
+        # would be a JSON error after the request was paid for.
+        unless text.valid_encoding?
+          err.puts("#{name}: invalid input: #{path == "-" ? "stdin" : path} is not valid UTF-8")
+          return nil
+        end
+
         sources << [path == "-" ? "-" : path, text]
       end
 

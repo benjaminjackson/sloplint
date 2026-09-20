@@ -50,7 +50,14 @@ module Sloplint
         # `SYSTEMONE_URL=https://attacker.example sloplint check --judge` from
         # being a valid way to run the sanctioned command.
         def self.https!(url)
-          uri = URI(url)
+          # URI raises its own error class, which the commands do not catch:
+          # a misspelt SYSTEMONE_URL would end `status` with a backtrace
+          # instead of the usage error every other bad setting gets.
+          uri = begin
+            URI(url)
+          rescue URI::InvalidURIError
+            raise ArgumentError, "SYSTEMONE_URL is not a URL: #{url.inspect}"
+          end
           raise ArgumentError, "SYSTEMONE_URL must be https, got #{uri.scheme.inspect}" unless uri.scheme == "https"
           raise ArgumentError, "SYSTEMONE_URL must be a typesafe.ai host, got #{uri.host.inspect}" unless uri.host.to_s.match?(HOST)
           raise ArgumentError, "SYSTEMONE_URL needs a path, for example #{DEFAULT_URL}" if uri.path.empty?
@@ -80,6 +87,11 @@ module Sloplint
           raise BackendError, "#{@url.host} returned #{res.code}: #{res.body.to_s[0, 200]}" unless res.code == "200"
 
           body = JSON.parse(res.body)
+          # A body of [] or null reads as an answer until something is asked
+          # of it. Said here, it is a malformed body like any other; left to
+          # the reads below it would be a TypeError, which is a bug's class.
+          malformed!("the body is #{body.class}, not a Hash") unless body.is_a?(Hash)
+
           usage = body["usage"].is_a?(Hash) ? body["usage"] : {}
           answers = body.fetch("answers")
           malformed!("answers is #{answers.class}, not a Hash keyed by question") unless answers.is_a?(Hash)
@@ -95,7 +107,12 @@ module Sloplint
         # backtrace. A body of the wrong shape raises BackendError where it is
         # read, so this list stays off our own code: a bug in normalise is a
         # bug, and it gets to raise like one.
-        rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError, Net::ProtocolError, Net::OpenTimeout,
+        # Net::HTTPBadResponse and Net::HTTPHeaderSyntaxError are named one by
+        # one because they descend from StandardError and not from
+        # Net::ProtocolError: a proxy that answers with something that is not
+        # an HTTP status line raises one of them.
+        rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError, Net::ProtocolError,
+               Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::OpenTimeout,
                Net::ReadTimeout, JSON::ParserError, KeyError => e
           raise BackendError, "#{e.class}: #{e.message}"
         end

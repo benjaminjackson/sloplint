@@ -299,6 +299,40 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
       sent = backend.calls.first.first
       expect(v["keep"]).to eq(sent["B"] == "New." ? "B" : "A")
     end
+
+    # The same read `check` does. Left to the backend, a file that is not
+    # valid UTF-8 was a JSON error inside the request, after the key had
+    # already been sent.
+    it "refuses a file that is not valid UTF-8, before it pays for a request" do
+      backend = FakeBackend.new
+      allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
+      a = Tempfile.new("a"); a.binmode; a.write("Caf\xE9 is open.".b); a.close
+      b = Tempfile.new("b"); b.write("New."); b.close
+      code, _, err = run(Sloplint::Judge::CLI, ["compare", a.path, b.path])
+      expect(code).to eq(2)
+      expect(err).to include("invalid input").and include("not valid UTF-8")
+      expect(backend.calls).to be_empty
+    end
+
+    # The verdict is printed and paid for by the time the usage line is
+    # built, so a count that is not a number must not take the command down
+    # with it -- the same guard a scan applies.
+    it "steps over a usage count that is not a number" do
+      priced = Class.new(FakeBackend) do
+        def cost_usd(usage) = usage.fetch("input_tokens", 0) * 0.001
+      end
+      backend = priced.new(usage: { "input_tokens" => "3", "trace" => { "id" => "x" } }) do |_s, _n, q|
+        q["type"] == "choice" ? [{ "A" => 0.2, "B" => 0.8 }, 0.9] : [0.1, 0.9]
+      end
+      allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
+      a = Tempfile.new("a"); a.write("Old."); a.close
+      b = Tempfile.new("b"); b.write("New."); b.close
+      code, out, err = run(Sloplint::Judge::CLI, ["compare", a.path, b.path])
+      expect(code).to eq(0)
+      expect(JSON.parse(out)["keep"]).not_to be_nil
+      expect(err).to include("fake").and include("$0.000000")
+      expect(err).not_to include("trace")
+    end
   end
 
   it "compare -h prints its help to the given out and returns 0" do

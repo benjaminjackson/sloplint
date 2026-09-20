@@ -29,7 +29,7 @@ ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint-judge" status >/dev/null 2>&1 && echo j
 
 - **Unavailable.** Run the plain check. Do not ask, do not mention the judge unless they asked for it, and say in the report that only the regex rules ran. If they ask how to set the judge up, tell them to run `sloplint-judge key set` in their own terminal and paste the key when it prompts. Never run that command yourself, and never ask for the key in the conversation.
 - **Available, and they already said so.** If the request itself asks for the judge, the model, Jev, TypeSafe, or says to send it, or they said yes earlier in this conversation, run with `--judge`. Ask once per conversation, not once per file.
-- **Available, and they said to stay offline.** "Offline", "without the judge", "don't send it anywhere", `--no-judge`: run the plain check and say the judge was skipped on request.
+- **Available, and they said to stay offline.** "Offline", "without the judge", "don't send it anywhere": run the plain check and say the judge was skipped on request.
 - **Available, and nothing was said.** Ask before running anything, in one question: sloplint can also run the judge, which sends the text to TypeSafe's API (api.typesafe.ai, about a tenth of a cent per thousand words) and catches the vague, restated and already-known sentences a regex cannot. Do that, or stay offline? Use AskUserQuestion where it exists. No answer, or no way to ask, means offline.
 
 ## Run it
