@@ -19,6 +19,10 @@ module Sloplint
 
     # The one interface the engine depends on. A backend answers `ask` with a
     # Hash of question name => Answer and `name` with a short stable string.
+    # For the CLI's key commands it also declares KEY, the environment
+    # variable and keychain account its key lives under, and answers
+    # `configured!`, which checks its endpoint settings without building the
+    # backend or reading the key and returns a short description of them.
     # See docs/JUDGE.md "Backend adapter". The table is the guard that keeps
     # `--backend` from naming an arbitrary file.
     module Backend
@@ -26,11 +30,15 @@ module Sloplint
 
       module_function
 
-      def load(name = nil)
+      def load(name = nil) = klass(name).new
+
+      # The class alone, for `status` and the key commands: they must not
+      # construct a backend, because constructing one reads the key.
+      def klass(name = nil)
         name ||= ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev")
-        klass = TABLE[name] or raise ArgumentError, "unknown backend: #{name} (known: #{TABLE.keys.join(", ")})"
-        require_relative "backends/#{name}"
-        Backends.const_get(klass).new
+        const = TABLE[name] or raise ArgumentError, "unknown backend: #{name} (known: #{TABLE.keys.join(", ")})"
+        require_relative "backends/#{name}" unless Backends.const_defined?(const, false)
+        Backends.const_get(const)
       end
     end
 

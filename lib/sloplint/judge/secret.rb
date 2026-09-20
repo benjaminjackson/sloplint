@@ -19,9 +19,10 @@ module Sloplint
       # macOS open an Allow/Deny dialog and block; under an agent nobody sees
       # it, so a read gets this long and no longer.
       TIMEOUT = 15
-      MISSING = "TYPESAFE_API_KEY is not set and no #{SERVICE} item is in the keychain; run `sloplint-judge key set`"
 
       module_function
+
+      def missing(name) = "#{name} is not set and no #{SERVICE} item for it is in the keychain; run `sloplint-judge key set`"
 
       # [value, source] or nil; source is "environment" or "keychain".
       def fetch(name)

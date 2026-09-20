@@ -14,17 +14,28 @@ module Sloplint
       class Jev
         DEFAULT_URL = "https://api.typesafe.ai/v1/systemone"
         DEFAULT_MODEL = "jev-latest"
+        # The environment variable, and the keychain account, this backend's
+        # key lives under. Another backend declares its own, so two keys are
+        # two items.
+        KEY = "TYPESAFE_API_KEY"
 
         # key: nil means look it up (environment, then keychain; see Secret).
         def initialize(url: ENV.fetch("SYSTEMONE_URL", DEFAULT_URL),
                        model: ENV.fetch("SYSTEMONE_MODEL", DEFAULT_MODEL),
                        key: nil)
-          key ||= Secret.fetch("TYPESAFE_API_KEY")&.first
-          raise ArgumentError, Secret::MISSING if key.nil? || key.empty?
+          key ||= Secret.fetch(KEY)&.first
+          raise ArgumentError, Secret.missing(KEY) if key.nil? || key.empty?
 
           @url = self.class.https!(url)
           @model = model
           @key = key
+        end
+
+        # The endpoint settings, checked without building the backend or
+        # reading the key; `status` prints what this returns.
+        def self.configured!
+          https!(ENV.fetch("SYSTEMONE_URL", DEFAULT_URL))
+          "model #{ENV.fetch("SYSTEMONE_MODEL", DEFAULT_MODEL)}"
         end
 
         HOST = /\A(?:.+\.)?typesafe\.ai\z/
@@ -32,8 +43,7 @@ module Sloplint
         # The key and the whole document go to this URL, so it is https and
         # a TypeSafe host or nothing. The host pin is what keeps an injected
         # `SYSTEMONE_URL=https://attacker.example sloplint check --judge` from
-        # being a valid way to run the sanctioned command. `status` asks the
-        # same question without building a backend.
+        # being a valid way to run the sanctioned command.
         def self.https!(url)
           uri = URI(url)
           raise ArgumentError, "SYSTEMONE_URL must be https, got #{uri.scheme.inspect}" unless uri.scheme == "https"

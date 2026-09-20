@@ -93,6 +93,31 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("run `sloplint-judge key set`")
   end
 
+  it "status and the key commands follow the selected backend's KEY, so two backends are two items" do
+    other = Class.new do
+      const_set(:KEY, "OTHER_API_KEY")
+      def self.configured! = "model other-1"
+    end
+    stub_const("Sloplint::Judge::Backends::Other", other)
+    stub_const("Sloplint::Judge::Backend::TABLE", { "jev" => "Jev", "other" => "Other" })
+    expect(Sloplint::Judge::Secret).to receive(:present?).with("OTHER_API_KEY").and_return("keychain")
+    code, out, = run(Sloplint::Judge::CLI, ["--backend", "other", "status"])
+    expect([code, out]).to eq([0, "backend other (model other-1), key from keychain\n"])
+
+    expect(Sloplint::Judge::Secret).to receive(:present?).with("OTHER_API_KEY").and_return(nil)
+    code, _, err = run(Sloplint::Judge::CLI, ["--backend", "other", "status"])
+    expect([code, err]).to eq([2, "sloplint-judge: OTHER_API_KEY is not set and no sloplint-judge item for it is in the keychain; run `sloplint-judge key set`\n"])
+
+    expect(Sloplint::Judge::Secret).to receive(:delete_command).with("OTHER_API_KEY").and_return(["/bin/true"])
+    expect(Sloplint::Judge::Secret).to receive(:stored?).with("OTHER_API_KEY").and_return(false)
+    code, _, err = run(Sloplint::Judge::CLI, ["--backend", "other", "key", "unset"])
+    expect([code, err]).to eq([2, "sloplint-judge: no OTHER_API_KEY item in the keychain\n"])
+
+    code, _, err = run(Sloplint::Judge::CLI, ["--backend", "nope", "key", "set"])
+    expect(code).to eq(2)
+    expect(err).to include("unknown backend: nope")
+  end
+
   it "status exits 2 on an http endpoint, like check would" do
     allow(ENV).to receive(:fetch).and_call_original
     allow(ENV).to receive(:fetch).with("SYSTEMONE_URL", anything).and_return("http://x")
@@ -113,14 +138,14 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     allow(Sloplint::Judge::Secret).to receive(:store_command).and_return(["/usr/bin/security", "add-generic-password", "-w"])
     tty = StringIO.new
     def tty.tty? = true
-    allow(Sloplint::Judge::Secret).to receive(:present?).and_return("keychain")
+    allow(Sloplint::Judge::Secret).to receive(:stored?).and_return(true)
     expect(Process).to receive(:exec).with("/usr/bin/security", "add-generic-password", "-w")
     out = StringIO.new
     Sloplint::Judge::CLI.run(["key", "set"], out:, err: StringIO.new, stdin: tty)
     expect(out.string).to include("Replacing the item stored earlier").and include("Any process running as you can read it back")
 
     code, _, err = run(Sloplint::Judge::CLI, ["key"])
-    expect([code, err]).to eq([2, "usage: sloplint-judge key set|unset\n"])
+    expect([code, err]).to eq([2, "usage: sloplint-judge [--backend NAME] key set|unset\n"])
   end
 
   it "key unset says when there is no item, and runs nothing" do
