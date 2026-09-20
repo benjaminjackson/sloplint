@@ -132,7 +132,8 @@ module Sloplint
       # terminal, so the value is never on a command line, in a pipe, in shell
       # history or in this process. A person types this; the skill never does.
       def cmd_key(argv, out:, err:, stdin:)
-        return err.puts("usage: sloplint-judge key set") || 2 unless argv == ["set"]
+        return cmd_key_unset(out:, err:) if argv == ["unset"]
+        return err.puts("usage: sloplint-judge key set|unset") || 2 unless argv == ["set"]
 
         command = Secret.store_command("TYPESAFE_API_KEY")
         return err.puts("sloplint-judge: no supported key store on this platform; export TYPESAFE_API_KEY instead") || 2 unless command
@@ -143,6 +144,21 @@ module Sloplint
         out.puts("Any process running as you can read it back. This keeps the key out of dotfiles and out of the agent's environment, not out of your account.")
         out.flush
         Process.exec(*command)
+      end
+
+      # Removes the keychain item. Says so when there was none, and says when a
+      # key in the environment is still there, because that one it cannot touch.
+      def cmd_key_unset(out:, err:)
+        command = Secret.delete_command("TYPESAFE_API_KEY")
+        return err.puts("sloplint-judge: no supported key store on this platform") || 2 unless command
+        return err.puts("sloplint-judge: no TYPESAFE_API_KEY item in the keychain") || 2 unless Secret.stored?("TYPESAFE_API_KEY")
+
+        removed = system(*command, out: File::NULL, err: File::NULL)
+        return err.puts("sloplint-judge: the keychain tool could not remove the item") || 2 unless removed
+
+        out.puts("Removed TYPESAFE_API_KEY from the OS keychain (#{Secret::SERVICE}).")
+        out.puts("It is still set in this shell's environment; unset it there too.") unless ENV["TYPESAFE_API_KEY"].to_s.empty?
+        0
       end
 
       # ── rules / explain ─────────────────────────────────────────────────────
@@ -198,6 +214,7 @@ module Sloplint
               explain ID    print one rule's question, levels, rationale and fixtures
               status        say whether a run could happen here, and where the key is, without reading it
               key set       store the key in the OS keychain (the keychain tool prompts for it)
+              key unset     remove it from the OS keychain
               version       print the sloplint-judge version
 
             global options:

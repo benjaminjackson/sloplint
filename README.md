@@ -174,7 +174,7 @@ gem install sloplint sloplint-judge
 sloplint-judge key set        # stores your TypeSafe API key in the OS keychain; it prompts for it
 ```
 
-`key set` hands your terminal to the keychain tool (`security` on macOS, `secret-tool` from libsecret on Linux), which asks for the key with echo off, so the key is never on a command line, in shell history or in a dotfile. Setting `TYPESAFE_API_KEY` in the environment works too and takes precedence. One thing the keychain does not do: it keeps the key out of the agent's environment, not out of your account, since any process running as you can read the item back. `sloplint-judge status` says whether a key was found and where, without printing it.
+`key set` hands your terminal to the keychain tool (`security` on macOS, `secret-tool` from libsecret on Linux), which asks for the key with echo off, so the key is never on a command line, in shell history or in a dotfile. Setting `TYPESAFE_API_KEY` in the environment works too and takes precedence. One thing the keychain does not do: it keeps the key out of the agent's environment, not out of your account, since any process running as you can read the item back. `sloplint-judge status` says whether a key was found and where, without printing it, and `sloplint-judge key unset` removes the item.
 
 Requires Ruby 3.3+ and sloplint 0.9 or later. The judge is not a plugin of its own: the Claude Code plugin at the root of this repository already carries it, and the `/sloplint:check` skill asks before it runs the judge. A key in the environment makes the judge possible; it does not make it run. The skill puts the question once per conversation, says what leaves the machine and what it costs, and stays offline unless the answer is yes or the request already asked for the judge.
 
@@ -230,7 +230,7 @@ Configuration is from the environment, plus the OS keychain for the key:
 |---|---|---|
 | `TYPESAFE_API_KEY` | none, required | bearer key sent with every request; from the environment, else the keychain item `key set` wrote |
 | `SYSTEMONE_MODEL` | `jev-latest` | model name |
-| `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint; must be `https` |
+| `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint; must be `https` on a `typesafe.ai` host |
 | `SLOPLINT_JUDGE_BACKEND` | `jev` | which adapter to use |
 | `SLOPLINT_JUDGE_CONCURRENCY` | `8` | parallel requests |
 

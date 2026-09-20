@@ -43,11 +43,17 @@ module Sloplint
       def present?(name)
         return "environment" unless ENV[name].to_s.empty?
 
-        found = case platform
-                when :darwin then !run(SECURITY, "find-generic-password", "-s", SERVICE, "-a", name).nil?
-                when :linux then (tool = secret_tool) && !run(tool, "search", "service", SERVICE, "account", name).to_s.empty?
-                end
-        found ? "keychain" : nil
+        stored?(name) ? "keychain" : nil
+      end
+
+      # Is there a keychain item, whatever the environment says. Attribute
+      # lookups do not open the access dialog and do not return the value.
+      def stored?(name)
+        case platform
+        when :darwin then !run(SECURITY, "find-generic-password", "-s", SERVICE, "-a", name).nil?
+        when :linux then !!(tool = secret_tool) && !run(tool, "search", "service", SERVICE, "account", name).to_s.empty?
+        else false
+        end
       end
 
       # The stored value, or nil when there is no store, no tool or no item.
@@ -67,6 +73,14 @@ module Sloplint
         case platform
         when :darwin then [SECURITY, "add-generic-password", "-U", "-s", SERVICE, "-a", name, "-w"]
         when :linux then (tool = secret_tool) && [tool, "store", "--label=#{SERVICE}", "service", SERVICE, "account", name]
+        end
+      end
+
+      # The argv `key unset` runs. No prompt, no value, so no terminal needed.
+      def delete_command(name)
+        case platform
+        when :darwin then [SECURITY, "delete-generic-password", "-s", SERVICE, "-a", name]
+        when :linux then (tool = secret_tool) && [tool, "clear", "service", SERVICE, "account", name]
         end
       end
 

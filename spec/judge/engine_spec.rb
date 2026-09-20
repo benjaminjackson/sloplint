@@ -111,8 +111,12 @@ RSpec.describe Sloplint::Judge::Engine do
   it "refuses a backend name that is not in the table" do
     expect { Sloplint::Judge::Backend.load("nope") }.to raise_error(ArgumentError, /unknown backend: nope/)
     require "sloplint/judge/backends/jev"
-    expect { Sloplint::Judge::Backends::Jev.new(url: "http://api.example.com/v1", key: "k") }.to raise_error(ArgumentError, /must be https/)
-    jev = Sloplint::Judge::Backends::Jev.new(url: "https://api.example.com/v1", key: "k")
+    expect { Sloplint::Judge::Backends::Jev.new(url: "http://api.typesafe.ai/v1", key: "k") }.to raise_error(ArgumentError, /must be https/)
+    # The key and the document go wherever this points, so only a TypeSafe
+    # host is accepted: an injected SYSTEMONE_URL is not a way to run the command.
+    expect { Sloplint::Judge::Backends::Jev.new(url: "https://attacker.example/v1", key: "k") }.to raise_error(ArgumentError, /typesafe\.ai host/)
+    expect { Sloplint::Judge::Backends::Jev.new(url: "https://typesafe.ai.attacker.example/v1", key: "k") }.to raise_error(ArgumentError, /typesafe\.ai host/)
+    jev = Sloplint::Judge::Backends::Jev.new(url: "https://staging.typesafe.ai/v1", key: "k")
     expect(jev.name).to eq("jev-latest")
     expect(jev.cost_usd("input_tokens" => 1_000_000_000, "output_tokens" => 5)).to eq(42.0)
     allow(Sloplint::Judge::Secret).to receive(:fetch).and_return(nil)

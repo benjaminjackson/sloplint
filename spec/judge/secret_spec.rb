@@ -71,6 +71,19 @@ RSpec.describe Sloplint::Judge::Secret do
     darwin!
     expect(described_class.store_command(name))
       .to eq(["/usr/bin/security", "add-generic-password", "-U", "-s", "sloplint-judge", "-a", name, "-w"])
+    expect(described_class.delete_command(name))
+      .to eq(["/usr/bin/security", "delete-generic-password", "-s", "sloplint-judge", "-a", name])
+    linux!
+    expect(described_class.delete_command(name))
+      .to eq(["/usr/bin/secret-tool", "clear", "service", "sloplint-judge", "account", name])
+  end
+
+  it "stored? looks at the keychain even when the environment has a key" do
+    darwin!
+    ENV[name] = "from-env"
+    expect(described_class).to receive(:run).and_return(nil)
+    expect(described_class.stored?(name)).to be(false)
+    expect(described_class.present?(name)).to eq("environment")
   end
 
   it "refuses a value with a control character, without printing the value" do

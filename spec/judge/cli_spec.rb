@@ -114,7 +114,24 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(out.string).to include("Replacing the item stored earlier").and include("Any process running as you can read it back")
 
     code, _, err = run(Sloplint::Judge::CLI, ["key"])
-    expect([code, err]).to eq([2, "usage: sloplint-judge key set\n"])
+    expect([code, err]).to eq([2, "usage: sloplint-judge key set|unset\n"])
+  end
+
+  it "key unset says when there is no item, and runs nothing" do
+    allow(Sloplint::Judge::Secret).to receive(:delete_command).and_return(["/usr/bin/security", "delete-generic-password"])
+    allow(Sloplint::Judge::Secret).to receive(:stored?).and_return(false)
+    expect(Sloplint::Judge::CLI).not_to receive(:system)
+    code, _, err = run(Sloplint::Judge::CLI, ["key", "unset"])
+    expect([code, err]).to eq([2, "sloplint-judge: no TYPESAFE_API_KEY item in the keychain\n"])
+  end
+
+  it "key unset removes the item" do
+    allow(Sloplint::Judge::Secret).to receive(:delete_command).and_return(["/usr/bin/security", "delete-generic-password"])
+    allow(Sloplint::Judge::Secret).to receive(:stored?).and_return(true)
+    expect(Sloplint::Judge::CLI).to receive(:system).with("/usr/bin/security", "delete-generic-password", out: File::NULL, err: File::NULL).and_return(true)
+    code, out, = run(Sloplint::Judge::CLI, ["key", "unset"])
+    expect(code).to eq(0)
+    expect(out).to include("Removed TYPESAFE_API_KEY")
   end
 
   it "keeps the files in argv order when merging judge notes" do

@@ -19,8 +19,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `sloplint-judge key set` stores it once (the keychain tool prompts, so the
   key is never on a command line), the Jev adapter reads it after
   `TYPESAFE_API_KEY`, and `sloplint-judge status` says whether a run could
-  happen and where the key is, without reading it. The check skill probes
-  with `status`.
+  happen and where the key is, without reading it. `sloplint-judge key
+  unset` removes the item. The check skill probes with `status`.
+- `SYSTEMONE_URL` must point at a `typesafe.ai` host, not only be `https`:
+  the key and the document go there, so an injected URL on the sanctioned
+  command is refused with exit 2.
 
 ## sloplint
 
