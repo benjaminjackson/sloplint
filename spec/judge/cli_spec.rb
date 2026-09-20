@@ -112,6 +112,16 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("run `sloplint rules` and `sloplint-judge rules` to list them")
   end
 
+  # A missing key is known before a word is read, and a scan of every file
+  # that is then thrown away to print that message is work nobody asked for.
+  it "does not run the regex scan when the judge cannot be built" do
+    allow(Sloplint::Judge::Backend).to receive(:load).and_raise(ArgumentError, "TYPESAFE_API_KEY is not set")
+    expect(Sloplint::Engine).not_to receive(:scan)
+    code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
+    expect([code, out]).to eq([2, ""])
+    expect(err).to include("TYPESAFE_API_KEY is not set")
+  end
+
   it "exits 3 and writes no notes when the backend fails under --judge" do
     broken = Class.new do
       def name = "broken"
@@ -194,6 +204,20 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
     expect([code, out]).to eq([2, ""])
     expect(err).to include("TYPESAFE_API_KEY is not set")
+  end
+
+  # Backend.klass requires the adapter when a command needs one, so the
+  # commands that need none must not drag an HTTP stack in behind them. In a
+  # fresh process, because this one has loaded the adapter long ago.
+  it "prints the rules without loading an HTTP stack" do
+    script = <<~RUBY
+      require "stringio"
+      require "sloplint/judge/cli"
+      Sloplint::Judge::CLI.run(["rules"], out: StringIO.new)
+      puts $LOADED_FEATURES.grep(%r{/(net/http|openssl)}).size
+    RUBY
+    out = IO.popen([RbConfig.ruby, "-I#{File.expand_path("../../lib", __dir__)}", "-e", script], &:read)
+    expect(out.strip).to eq("0")
   end
 
   it "--help leads with status, the ask, and the output shape" do

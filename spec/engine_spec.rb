@@ -44,6 +44,32 @@ RSpec.describe Sloplint::Engine do
     expect(note.column).to eq(11)
   end
 
+  describe ".blank_markdown" do
+    # A fence opens only at the start of a line. A document that explains
+    # fences quotes one inside a code span, and that used to open a block in
+    # the middle of a sentence: everything up to the next fence in the file
+    # went blank, and every fence after it paired with the wrong one.
+    it "does not open a fenced block in the middle of a sentence" do
+      text = "It blanks fenced code (```` ``` ````) and inline code first.\nA second sentence here.\n"
+      out = described_class.blank_markdown(text)
+      expect(out.length).to eq(text.length)
+      expect(out).to start_with("It blanks fenced code (")
+      expect(out).to include(" first.\nA second sentence here.\n")
+      # An odd number of backticks leaves one of them standing, which is what
+      # the inline rule has always done. What matters here is that the line
+      # after it is still there to be scanned.
+    end
+
+    it "blanks a fence indented under a list item, and one that carries an info string" do
+      text = "- A bullet:\n\n  ```ruby\n  puts 1\n  ```\n\n  After the block.\n"
+      out = described_class.blank_markdown(text)
+      expect(out.lines[2..4].map(&:strip)).to all(be_empty)
+      expect(out.lines.first).to eq("- A bullet:\n")
+      expect(out.lines.last).to eq("  After the block.\n")
+      expect(described_class.blank_markdown("```json\n{\"a\": 1}\n```\n").strip).to be_empty
+    end
+  end
+
   describe ".context_for" do
     def context(text, pattern)
       Sloplint::Engine.context_for(text, pattern.match(text))

@@ -3,7 +3,6 @@
 require "optparse"
 require "json"
 require "sloplint/judge"
-require "sloplint/judge/backends/jev"
 
 module Sloplint
   module Judge

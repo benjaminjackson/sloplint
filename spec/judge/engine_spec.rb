@@ -149,6 +149,18 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(described_class.scan(text, rules: rules, backend: flag_none).notes).to be_empty
   end
 
+  # Only a score answer has levels. A choice answer keeps its probabilities
+  # in a Hash and a noul answer in a Float, and asking either for the most
+  # likely level used to raise NoMethodError from inside a scan.
+  it "flags nothing on an answer that has no levels" do
+    choice = Sloplint::Judge::Answer.new(type: "choice", probabilities: { "a" => 0.7, "b" => 0.3 }, confidence: 0.9)
+    noul = Sloplint::Judge::Answer.new(type: "noul", probabilities: 0.8, confidence: 0.9)
+    expect(choice.top).to be_nil
+    expect(noul.top).to be_nil
+    expect(described_class.flagged?(para_rule, choice)).to be(false)
+    expect(described_class.flagged?(para_rule, noul)).to be(false)
+  end
+
   it "refuses a backend name that is not in the table" do
     expect { Sloplint::Judge::Backend.load("nope") }.to raise_error(ArgumentError, /unknown backend: nope/)
     require "sloplint/judge/backends/jev"

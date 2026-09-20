@@ -141,9 +141,6 @@ module Sloplint
       return 2 unless sources
 
       regex_rules, judge_rules = rules.partition { |r| r.is_a?(Rule) }
-      all_notes = sources.flat_map do |label, text|
-        Engine.scan(text, rules: regex_rules, markdown:, path: label)
-      end
 
       judge_usage = nil
       # Under --judge the output is the {"notes", "judge"} object whether or
@@ -151,6 +148,11 @@ module Sloplint
       # reads the wrapper, and an empty selection is 0 requests, not a
       # different output shape. 0 requests also means no key: `--judge
       # --select em-dash` must run on a machine that has none.
+      #
+      # Before the regex scan, not after it: a missing key or a bad
+      # SYSTEMONE_URL is known without asking anything, and finding it out
+      # after every file has been scanned throws that work away to print the
+      # same message.
       if judge
         # With nothing to ask, no key is read: the backend is named and never
         # built, and `sloplint-judge check` reports an empty selection through
@@ -167,6 +169,10 @@ module Sloplint
           err.puts("sloplint: --judge: #{e.message}")
           return 2
         end
+      end
+
+      all_notes = sources.flat_map do |label, text|
+        Engine.scan(text, rules: regex_rules, markdown:, path: label)
       end
 
       if judge_usage

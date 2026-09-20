@@ -98,6 +98,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   current-model side generated from RAID's own prompts, and reports the
   pass lines from `docs/JUDGE.md`.
 
+### Fixed
+
+- `--markdown` opens and closes a fenced code block only at the start of a
+  line, indented at most three spaces, as CommonMark does. A fence quoted
+  inside a sentence (```` ``` ````) used to open a block there, and every
+  fence after it paired wrong for the rest of the file.
+
 ## [0.8.1] - 2026-09-20
 
 ### Added

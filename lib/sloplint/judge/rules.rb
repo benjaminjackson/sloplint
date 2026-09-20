@@ -135,7 +135,7 @@ module Sloplint
           "Checkout returned 500 for 58 minutes; that is in the load balancer logs. The schema change at 14:02 is the likely cause, since the errors start two minutes after it, but we have not reproduced it in staging. If it is the cause, the two other services on the same table are exposed too.",
           "Create the index concurrently so the table stays writable. Watch pg_stat_progress_create_index until it finishes. Then run the dashboard query once and compare the plan."
         ],
-        rationale: "A paragraph in which a measurement, an inference and an opinion all arrive as flat conclusions gives the reader no way to weigh any of it. Human prose in these registers marks its guesses and gives its judgments a reason; model prose delivers every sentence at the same certainty. The escape clause for paragraphs that are only facts, steps or events is the fairness narrowing: a reference page is flat by design. Low, so off by default: a design document argues in flat sentences on purpose. Run it with --select or --strict."
+        rationale: "A paragraph in which a measurement, an inference and an opinion all arrive as flat conclusions gives the reader no way to weigh any of it. Human prose in these registers marks its guesses and gives its judgments a reason; model prose delivers every sentence at the same certainty. The escape clause for paragraphs that are only facts, steps or events is the fairness narrowing: a reference page is flat by design. Low, so off by default: a design document argues in flat sentences on purpose."
       ),
 
       Rule.new(
@@ -375,7 +375,7 @@ module Sloplint
         suggestion: "Keep the items the content needs and drop the one that completes the pattern.",
         examples_bad: ["The new pipeline is faster, simpler, and cleaner.", "It's not about the tooling, it's about the culture."],
         examples_ok: ["The new pipeline runs in four minutes instead of eleven.", "The migration dropped the column in production but not in staging."],
-        rationale: "A pair or triple whose items are interchangeable was built to a rhythm, not to the content. Off by default: it separates strongly against current Claude models and barely against 2023 models, and in READMEs most of what it flags is a caption or a parallel the writer built on purpose. Run it by name or under --strict."
+        rationale: "A pair or triple whose items are interchangeable was built to a rhythm, not to the content. Off by default: it separates strongly against current Claude models and barely against 2023 models, which is a tell of one model family, and much of what it flags in documentation is a parallel the writer built on purpose."
       )
     ].freeze
   end

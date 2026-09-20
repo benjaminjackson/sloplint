@@ -15,6 +15,12 @@ module Sloplint
       # answer that says nothing would read as a finding.
       # See docs/JUDGE.md "Rule model".
       def top
+        # A noul is a Float and a choice is a Hash keyed by option: neither
+        # has a level, so neither has a most likely one. No rule flags on
+        # either today, and asking for the top of one is a question with no
+        # answer rather than a finding.
+        return nil unless probabilities.is_a?(Array)
+
         best = probabilities.max
         probabilities.count(best) == 1 ? probabilities.index(best) : nil
       end

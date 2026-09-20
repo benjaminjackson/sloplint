@@ -150,6 +150,62 @@ RSpec.describe Sloplint::Split do
     expect(described_class::KEEP_BOUNDARY).to eq(/(#{described_class::BOUNDARY})/)
   end
 
+  # The document this tool is pointed at explains Markdown, so it quotes a
+  # fence inside a code span. That used to open a block mid-sentence, and
+  # from there every fence in the file paired with the wrong one: real prose
+  # went blank and a code block came back as prose.
+  it "does not lose a paragraph to a fence quoted inside a sentence" do
+    text = "It blanks fenced code (```` ``` ````) and inline code first. A second sentence here.\n\n" \
+           "A paragraph after it. It has three sentences. Here is the third.\n\n" \
+           "```\ncode(). More code. Third call.\n```\n"
+    paras = described_class.paragraphs(text, markdown: true)
+    expect(paras.size).to eq(2)
+    expect(paras.first.text).to end_with("A second sentence here.")
+    expect(paras.last.text).to eq("A paragraph after it. It has three sentences. Here is the third.")
+  end
+
+  # The file that found this, read as the judge reads it.
+  it "keeps the code block of docs/SPEC.md out of what the judge is asked" do
+    spec = File.read(File.expand_path("../../docs/SPEC.md", __dir__))
+    paras = described_class.paragraphs(spec, markdown: true)
+    expect(paras.map(&:text)).to all(satisfy { |t| !t.include?("cat FILE") && !t.include?("Recommended for agents") })
+    expect(paras.map(&:text)).to include(a_string_starting_with("This is a first-class requirement"))
+  end
+
+  # Only a list item runs on to an indented second line. Chaining from every
+  # furniture line took an indented paragraph under a heading with it, and
+  # the judge was then asked nothing about that paragraph.
+  it "keeps an indented paragraph under a heading, a table or a rule" do
+    %W[#\ A\ heading |\ a\ |\ b\ | ---].each do |furniture|
+      text = "#{furniture}\n  Indented prose here. Second one. Third one here.\n"
+      expect(described_class.paragraphs(text, markdown: true).map(&:text))
+        .to eq(["Indented prose here. Second one. Third one here."])
+    end
+    # And on a CRLF file, where the line still ends in a carriage return.
+    text = "# A heading\r\n  Indented prose here. Second one. Third one here.\r\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["Indented prose here. Second one. Third one here."])
+  end
+
+  it "still drops a bullet or an ordered item that wraps onto a second line" do
+    text = "- A bullet that wraps\n  onto a second line. And a third.\n\nPlain prose here. More of it.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Plain prose here. More of it."])
+    text = "1. First item here. More of it.\n   A wrapped line of the item.\n\nPlain prose after. More.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Plain prose after. More."])
+  end
+
+  # CommonMark keeps this line in the paragraph above it, because an ordered
+  # list may interrupt a paragraph only when it starts at 1. The number is
+  # then furniture inside the prose, not a sentence of its own.
+  it "does not read an enumerator as a sentence" do
+    text = "Here is the list that follows.\n2. Second item after prose. Another one here.\n"
+    expect(described_class.paragraphs(text).first.sentences.map(&:text))
+      .to eq(["Here is the list that follows.", "2. Second item after prose.", "Another one here."])
+    # A year is not an enumerator: it ends the sentence it is the last word of.
+    expect(described_class.sentences("It was rewritten in\n2021. Then it shipped.").map(&:text))
+      .to eq(["It was rewritten in 2021.", "Then it shipped."])
+  end
+
   it "keeps a wrapped line that starts with a year, as CommonMark does" do
     text = "The library was released in\n2019. It was rewritten in\n2021. Adoption grew after that.\n"
     paras = described_class.paragraphs(text, markdown: true)

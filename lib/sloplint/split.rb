@@ -48,6 +48,14 @@ module Sloplint
     # one sentence.
     INITIALS = /(?<![[:alpha:]])(?:[[:alpha:]]\.){2,6}\z/
 
+    # A number and a period with nothing else between two boundaries is an
+    # enumerator, not a sentence: the "2." of a list item that CommonMark
+    # keeps inside the paragraph above it, because a list may interrupt a
+    # paragraph only when it starts at 1. The whole piece has to be the
+    # number, so a year still closes the sentence it sits in -- "It was
+    # rewritten in\n2021. Then it shipped." is two sentences.
+    ENUMERATOR = /\A\d+\.\z/
+
     # The judge's view of Markdown differs from the regex engine's in one
     # way. Fenced code and comments become spaces, as there, but an inline
     # code span or a URL becomes a run of this character, same length: it is
@@ -157,7 +165,7 @@ module Sloplint
         # The abbreviation ends where the piece does, and a piece ends at a
         # .!? that a boundary follows, so it is always inside this piece: the
         # whole buffer never has to be cut out of the body to see it.
-        next if piece.match?(ABBREV) || piece.match?(INITIALS)
+        next if piece.match?(ABBREV) || piece.match?(INITIALS) || piece.match?(ENUMERATOR)
 
         parts << cut.call(buf_start, pos - buf_start)
         buf_start = nil
@@ -201,14 +209,26 @@ module Sloplint
     # tests run: on a CRLF file it would otherwise sit between the line and
     # the \z that a horizontal rule or a bare link ends at, and neither would
     # be recognised as furniture.
+    # A bullet. FURNITURE matches one too, among everything else it matches;
+    # this is here because a bullet and an ordered item are the only two
+    # kinds of furniture a continuation line can belong to.
+    BULLET = /\A[ \t]*[-*+][ \t]/
+    # The second line of a list item, indented under the first.
+    CONTINUED = /\A(?:[ ]{2,}|\t)\S/
+
     def blank_furniture(scan, shown)
-      dropped = false
+      item = false
       prose = false
       pairs = scan.each_line.zip(shown.each_line).map do |whole, also|
         l = whole.chomp
         ending = whole[l.length..]
-        dropped = l.match?(FURNITURE) || ordered_item?(l, prose) || lone_inline?(l, prose) ||
-                  (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
+        # Only a list item runs on to the next line. An indented line under a
+        # heading, a table row, a horizontal rule or a link definition is an
+        # indented paragraph, and chaining from those dropped the prose along
+        # with the furniture above it.
+        listed = l.match?(BULLET) || ordered_item?(l, prose)
+        dropped = listed || l.match?(FURNITURE) || lone_inline?(l, prose) || (item && l.match?(CONTINUED))
+        item = listed || (item && l.match?(CONTINUED))
         prose = !dropped && !l.strip.empty?
         dropped ? ["#{" " * l.length}#{ending}"] * 2 : [whole, also]
       end

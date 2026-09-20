@@ -114,7 +114,13 @@ module Sloplint
     # these, a Wikipedia link closing on a bracket, loses that character to
     # the sentence instead; the text is only being blanked, so what it costs
     # is one visible character, not a broken link.
-    MARKDOWN_NOISE = /(?<block>```.*?```|<!--.*?-->)|(?<inline>`[^`\n]*`|https?:\/\/\S*[^\s.,;:!?)\]])/m
+    # A fence opens and closes at the start of a line, indented no more than
+    # three spaces, with three or more backticks; the opener may carry an
+    # info string and the closer nothing but whitespace. CommonMark says so,
+    # and the shape matters: a fence quoted inside a code span, which is how
+    # a document explains fences, opened a block in the middle of a sentence
+    # and every fence after it in the file paired with the wrong one.
+    MARKDOWN_NOISE = /(?<block>^[ ]{0,3}`{3,}[^\n]*\n.*?^[ ]{0,3}`{3,}[ \t]*$|<!--.*?-->)|(?<inline>`[^`\n]*`|https?:\/\/\S*[^\s.,;:!?)\]])/m
 
     def blank_markdown(text)
       text.gsub(MARKDOWN_NOISE) { |s| s.gsub(/[^\n]/, " ") }
