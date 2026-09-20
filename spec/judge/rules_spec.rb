@@ -24,8 +24,9 @@ RSpec.describe "Sloplint::Judge::RULES" do
     readme = File.read(File.expand_path("../../README.md", __dir__), encoding: "UTF-8")
 
     it "quotes the catalog total" do
-      words = %w[Zero One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve]
-      expect(readme).to include("#{words[Sloplint::Judge::RULES.size]} rules in two categories.")
+      words = %w[Zero One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen Sixteen]
+      # fetch, not []: past the end of the list this must fail, not match " rules in two categories." against any count.
+      expect(readme).to include("#{words.fetch(Sloplint::Judge::RULES.size)} rules in two categories.")
     end
 
     Sloplint::Judge::RULES.group_by(&:category).each do |category, rules|

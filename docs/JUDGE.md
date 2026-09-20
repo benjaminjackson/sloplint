@@ -195,7 +195,7 @@ Fixtures are synthetic, as in sloplint. No sentence read during calibration is p
 
 ## Rule catalog (v1)
 
-Twelve rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
+Thirteen rules, two categories. A number appears only where it decides something a reader can see in the rule: its severity, its confidence ceiling, or a caveat. It is the probability that a model unit scores higher than a human one in the same register; below 0.5 means the rule ranks model prose lower, which is what a rule is for. The full runs, with corpus sizes and the models on each side, are in the commit that added or last changed the rule.
 
 ### paragraph
 
@@ -210,13 +210,14 @@ Run on every paragraph of three or more sentences. One request per paragraph car
 
 ### sentence
 
-Run on every sentence of the paragraphs a paragraph rule flagged, and on the sentences of the short paragraphs no paragraph rule looked at, so the expensive questions are asked where the cheap ones found something and no paragraph goes unexamined. Two details keep that shortcut honest. A paragraph is "flagged" only by a note that survives the confidence bands; a paragraph answer that fell to `low` and was dropped opens nothing. And when the run contains no paragraph rule at all, because `--select` named only sentence rules or `--ignore paragraph` removed them, the sentence rules run on every sentence, since there is nothing to triage by and a silent clean exit would be a lie. `--strict` runs them on every sentence regardless. One request per sentence carries every sentence question in the run, five by default, with the sentence's paragraph and its index in the state so the model sees the neighbours.
+Run on every sentence of the paragraphs a paragraph rule flagged, and on the sentences of the short paragraphs no paragraph rule looked at, so the expensive questions are asked where the cheap ones found something and no paragraph goes unexamined. Two details keep that shortcut honest. A paragraph is "flagged" only by a note that survives the confidence bands; a paragraph answer that fell to `low` and was dropped opens nothing. And when the run contains no paragraph rule at all, because `--select` named only sentence rules or `--ignore paragraph` removed them, the sentence rules run on every sentence, since there is nothing to triage by and a silent clean exit would be a lie. `--strict` runs them on every sentence regardless. One request per sentence carries every sentence question in the run, six by default, with the sentence's paragraph and its index in the state so the model sees the neighbours.
 
 - **stock-figure** (`warning`, `high`). The sentence uses a figure of speech that is stock, a figure that is the writer's own, or no figure. Flags at stock.
 - **no-news** (`warning`, `high`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known.
 - **names-nothing** (`warning`, `high`). The sentence names nothing, names a kind of thing, or names a thing a reader could look up. Flags at names-nothing. This is the concreteness dimension from the spike, renamed to say what the flag means.
 - **ends-on-verdict** (`info`, `high`). The sentence ends on a verdict or moral, trails off on a qualifier, or ends on the fact that carries it. Flags at verdict.
 - **trailing-gloss** (`info`, `medium`). The sentence ends on a comma and an -ing clause that interprets the fact before it (highlighting, reflecting, underscoring), or it does not: no such clause, or one that adds a fact or a consequence. Two levels, so the score is the probability of the gloss and nothing else. Flags at the first. The regex catalog's `trailing-significance-participle` sees a short list of verbs; this is the reading of what the clause does. Ranks model prose lower in abstracts (0.32 against Claude Sonnet 5, 0.42 to 0.47 against 2023 models) and higher in news (0.60 to 0.73), where human sentences carry more trailing clauses of every kind and so a little more gloss probability across the bulk that never flags; the flags themselves run the other way, 4 human sentences in 30 articles against 18 for GPT-4 and 8 for Claude Sonnet 5. `info` because of that reversal, `medium` because the question has two parts.
+- **unnamed-authority** (`info`, `medium`). Who the sentence attributes its claim to: an authority the reader could not find and that speaks for nobody in particular (experts, studies, research, critics, pundits, many, some, it is widely believed), or a named person, body, document or dataset, a source that speaks for a body and the register quotes by convention (officials, a spokesperson, the company, a court), prior work in an abstract, or the sentence's own voice. Two levels. Flags at the first. The regex catalog's `vague-attribution` sees three fixed frames; this is the reading of who is being cited. In news, at the confidence `check` reports, human sentences flag at 1 in 200 and model sentences at 4 to 5 in 100, most of them in the one- and two-sentence paragraphs model news is made of, which `script/calibrate` does not score; in abstracts neither side reaches 2 in 100, because prior work is let through. `info` because the human hits it does find ("it was widely believed", "as had been widely expected") are the convention at its loosest, not a fabrication.
 - **matched-shape** (`info`, `low`). A matched pair or triple shaped the content, a list the content needed, or no matched structure. Flags at shaped-the-content. Off by default: near 0.5 against 2023 models and strong against current Claude models, so a tell of one model family, and read against real READMEs most hits were captions and parallels the writer built on purpose. `--select matched-shape` or `--strict` runs it.
 
 Each sentence rule reports on its own. There is no combined score and no threshold that combines them.
@@ -346,11 +347,11 @@ Measured against Jev. Other backends report their own numbers through `script/ca
 | request | input tokens | wall time |
 |---|---|---|
 | five paragraph rules, one paragraph | ~1,600 | ~500 ms |
-| five sentence rules, one sentence | ~1,660 | ~500 ms |
+| six sentence rules, one sentence | ~1,960 | ~500 ms |
 | compare, sentence pair with paragraph context | ~590 | ~500 ms |
 | compare, paragraph pair | ~800 | ~500 ms |
 
-A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 150,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.006, and `check` writes the figure into the `judge` block and onto stderr.
+A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 160,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.007, and `check` writes the figure into the `judge` block and onto stderr.
 
 ## Agent-first help text
 

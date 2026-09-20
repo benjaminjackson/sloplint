@@ -7,6 +7,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [0.1.0] - unreleased
 
+- New sentence rule `unnamed-authority` (`info`, `medium`): a claim handed to
+  experts, studies, research, critics or many, an authority the reader could
+  not find and that speaks for nobody. Officials, a spokesperson and the
+  other sources news quotes by convention pass, and so does an abstract's
+  prior work. The reading behind the regex `vague-attribution`.
 - A rule at `low` confidence (`same-weight`, `matched-shape`) now reports its
   notes when `--select` names it; before, they ran and printed nothing
   without `--strict`. The rule's `low` caps the note's confidence; what a

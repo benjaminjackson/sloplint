@@ -302,6 +302,32 @@ module Sloplint
         rationale: "A sentence that ends on a comma and an -ing clause whose subject is the fact just stated, and whose verb interprets it (highlighting, reflecting, underscoring), is the writer tacking a moral onto a fact. The regex catalog's trailing-significance-participle sees only a short list of verbs; the construction turns on what the clause does, which is a reading. Two levels, gloss or not, so the score is the probability of the gloss and nothing else. Medium because the question has two parts, and info because the trailing clause that adds a consequence is fine and the model has to tell the two apart."
       ),
       Rule.new(
+        id: "unnamed-authority", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "If `target` attributes a claim to someone, who, for %{register}?",
+          "criteria" => [
+            { "what" => "To an authority the reader could not find and that speaks for nobody in particular: experts, studies, research, observers, analysts, critics, fans, pundits, many, some, it is widely believed.",
+              "examples" => ["Experts agree that the migration reduced operational risk.", "Studies show that smaller pull requests get better reviews.", "Many believe the old scheduler was the real bottleneck."] },
+            { "what" => "To a named person, body, document or dataset the reader could go to, or to a source that speaks for a body and the register quotes by convention (officials, a spokesperson, the company, a court, police), or to prior work in a register that keeps its citations elsewhere (an abstract's existing methods, previous studies), or the sentence makes the claim in its own voice.",
+              "examples" => ["The April postmortem counts three fewer pages a week since the migration.", "A spokesperson for the airline said the flight was cancelled because of crew hours.", "The migration reduced pages from nine a week to six."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Claim attributed to someone the reader cannot find.",
+        suggestion: "Name the source, or say it yourself.",
+        examples_bad: [
+          "Research suggests that teams with a single on-call rotation recover faster.",
+          "Many in the industry expect event-driven designs to dominate within a few years."
+        ],
+        examples_ok: [
+          "The 2024 DORA report puts the median recovery time for teams with one rotation at under an hour.",
+          "Officials said the bridge would stay closed until the inspection was complete.",
+          "Existing methods segment the vessel tree slice by slice and lose the branching structure between slices."
+        ],
+        rationale: "A claim handed to experts, studies or many is a claim the reader cannot check and the writer has not owned. The regex catalog's vague-attribution sees three fixed frames; this is the reading of who is being cited, so \"studies show\" and \"research suggests\" and a bare \"many believe\" are caught and a source the register names by convention, officials, a spokesperson, the company, is not. Two levels. Info because news attributes to unnamed officials by convention, and an abstract to prior work, and the rule must let both through."
+      ),
+      Rule.new(
         id: "matched-shape", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
         question: {
           "type" => "score",
