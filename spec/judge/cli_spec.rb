@@ -74,6 +74,49 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("TYPESAFE_API_KEY is not set")
   end
 
+  it "status answers from the key's presence, never its value, and exits 2 when there is none" do
+    allow(Sloplint::Judge::Secret).to receive(:present?).with("TYPESAFE_API_KEY").and_return("keychain")
+    expect(Sloplint::Judge::Secret).not_to receive(:fetch)
+    code, out, err = run(Sloplint::Judge::CLI, ["status"])
+    expect([code, err]).to eq([0, ""])
+    expect(out).to match(/\Abackend jev \(model .+\), key from keychain\n\z/)
+
+    allow(Sloplint::Judge::Secret).to receive(:present?).and_return(nil)
+    code, out, err = run(Sloplint::Judge::CLI, ["status"])
+    expect([code, out]).to eq([2, ""])
+    expect(err).to include("run `sloplint-judge key set`")
+  end
+
+  it "status exits 2 on an http endpoint, like check would" do
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("SYSTEMONE_URL", anything).and_return("http://x")
+    code, _, err = run(Sloplint::Judge::CLI, ["status"])
+    expect(code).to eq(2)
+    expect(err).to include("must be https")
+  end
+
+  it "key set refuses without a terminal, before touching the keychain tool" do
+    allow(Sloplint::Judge::Secret).to receive(:store_command).and_return(["/usr/bin/security", "add-generic-password", "-w"])
+    expect(Process).not_to receive(:exec)
+    code, _, err = run(Sloplint::Judge::CLI, ["key", "set"])
+    expect(code).to eq(2)
+    expect(err).to include("needs a terminal")
+  end
+
+  it "key set hands the terminal to the keychain tool, which prompts for the value itself" do
+    allow(Sloplint::Judge::Secret).to receive(:store_command).and_return(["/usr/bin/security", "add-generic-password", "-w"])
+    tty = StringIO.new
+    def tty.tty? = true
+    allow(Sloplint::Judge::Secret).to receive(:present?).and_return("keychain")
+    expect(Process).to receive(:exec).with("/usr/bin/security", "add-generic-password", "-w")
+    out = StringIO.new
+    Sloplint::Judge::CLI.run(["key", "set"], out:, err: StringIO.new, stdin: tty)
+    expect(out.string).to include("Replacing the item stored earlier").and include("Any process running as you can read it back")
+
+    code, _, err = run(Sloplint::Judge::CLI, ["key"])
+    expect([code, err]).to eq([2, "usage: sloplint-judge key set\n"])
+  end
+
   it "keeps the files in argv order when merging judge notes" do
     a = Tempfile.new("a"); a.write(text); a.close
     b = Tempfile.new("b"); b.write(text); b.close

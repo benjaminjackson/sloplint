@@ -15,6 +15,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `judge`, and the same line goes to stderr. Jev returns no price, so the
   cost is computed from TypeSafe's public price: $42 per billion input
   tokens, output tokens free.
+- The key can live in the OS keychain instead of the environment.
+  `sloplint-judge key set` stores it once (the keychain tool prompts, so the
+  key is never on a command line), the Jev adapter reads it after
+  `TYPESAFE_API_KEY`, and `sloplint-judge status` says whether a run could
+  happen and where the key is, without reading it. The check skill probes
+  with `status`.
 
 ## sloplint
 

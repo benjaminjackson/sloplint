@@ -4,6 +4,7 @@ require "net/http"
 require "openssl"
 require "uri"
 require "json"
+require_relative "../secret"
 
 module Sloplint
   module Judge
@@ -11,17 +12,28 @@ module Sloplint
       # Jev, TypeSafe's System One model. The rule's question shape is Jev's,
       # so questions pass through verbatim.
       class Jev
-        def initialize(url: ENV.fetch("SYSTEMONE_URL", "https://api.typesafe.ai/v1/systemone"),
-                       model: ENV.fetch("SYSTEMONE_MODEL", "jev-latest"),
-                       key: ENV["TYPESAFE_API_KEY"])
-          raise ArgumentError, "TYPESAFE_API_KEY is not set" if key.nil? || key.empty?
+        DEFAULT_URL = "https://api.typesafe.ai/v1/systemone"
+        DEFAULT_MODEL = "jev-latest"
 
-          @url = URI(url)
-          # The key goes in a header, so the endpoint is https or nothing.
-          raise ArgumentError, "SYSTEMONE_URL must be https, got #{@url.scheme.inspect}" unless @url.scheme == "https"
+        # key: nil means look it up (environment, then keychain; see Secret).
+        def initialize(url: ENV.fetch("SYSTEMONE_URL", DEFAULT_URL),
+                       model: ENV.fetch("SYSTEMONE_MODEL", DEFAULT_MODEL),
+                       key: nil)
+          key ||= Secret.fetch("TYPESAFE_API_KEY")&.first
+          raise ArgumentError, Secret::MISSING if key.nil? || key.empty?
 
+          @url = self.class.https!(url)
           @model = model
           @key = key
+        end
+
+        # The key goes in a header, so the endpoint is https or nothing.
+        # `status` asks the same question without building a backend.
+        def self.https!(url)
+          uri = URI(url)
+          raise ArgumentError, "SYSTEMONE_URL must be https, got #{uri.scheme.inspect}" unless uri.scheme == "https"
+
+          uri
         end
 
         # Jev's response carries token counts and no price. TypeSafe's public

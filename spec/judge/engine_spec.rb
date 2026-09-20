@@ -115,6 +115,8 @@ RSpec.describe Sloplint::Judge::Engine do
     jev = Sloplint::Judge::Backends::Jev.new(url: "https://api.example.com/v1", key: "k")
     expect(jev.name).to eq("jev-latest")
     expect(jev.cost_usd("input_tokens" => 1_000_000_000, "output_tokens" => 5)).to eq(42.0)
+    allow(Sloplint::Judge::Secret).to receive(:fetch).and_return(nil)
+    expect { Sloplint::Judge::Backends::Jev.new }.to raise_error(ArgumentError, /run `sloplint-judge key set`/)
   end
 
   it "raises BackendError out of the parallel map" do

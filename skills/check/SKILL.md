@@ -21,13 +21,13 @@ Ask which file only when there is no prose anywhere to work from.
 
 The regex scanner runs on this machine and nothing leaves it. The judge is the exception: it asks a model the questions a regex cannot, and to do that it sends the text, paragraph by paragraph, to TypeSafe's API at api.typesafe.ai. It costs about a tenth of a cent per thousand words. The person decides whether that happens, not the presence of a key.
 
-First find out whether the judge is even possible here, without reading the key or its value:
+First find out whether the judge is even possible here. This command reads no key and prints none; it only says whether one exists, in the environment or the OS keychain:
 
 ```bash
-test -n "$TYPESAFE_API_KEY" && echo judge-available || echo judge-unavailable
+ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint-judge" status >/dev/null 2>&1 && echo judge-available || echo judge-unavailable
 ```
 
-- **Unavailable.** Run the plain check. Do not ask, do not mention the judge unless they asked for it, and say in the report that only the regex rules ran.
+- **Unavailable.** Run the plain check. Do not ask, do not mention the judge unless they asked for it, and say in the report that only the regex rules ran. If they ask how to set the judge up, tell them to run `sloplint-judge key set` in their own terminal and paste the key when it prompts. Never run that command yourself, and never ask for the key in the conversation.
 - **Available, and they already said so.** If the request itself asks for the judge, the model, Jev, TypeSafe, or says to send it, or they said yes earlier in this conversation, run with `--judge`. Ask once per conversation, not once per file.
 - **Available, and they said to stay offline.** "Offline", "without the judge", "don't send it anywhere", `--no-judge`: run the plain check and say the judge was skipped on request.
 - **Available, and nothing was said.** Ask before running anything, in one question: sloplint can also run the judge, which sends the text to TypeSafe's API (api.typesafe.ai, about a tenth of a cent per thousand words) and catches the vague, restated and already-known sentences a regex cannot. Do that, or stay offline? Use AskUserQuestion where it exists. No answer, or no way to ask, means offline.

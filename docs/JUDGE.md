@@ -271,15 +271,33 @@ The engine never reads a backend's raw response. It calls `ask`, receives `Answe
 
 Default backend. `POST https://api.typesafe.ai/v1/systemone` with body `{state, model, questions}`. Questions pass through verbatim, because the rule's question shape is Jev's. Response `answers.<name>.{probabilities, confidence}` and `usage.input_tokens` map onto `Answer` directly.
 
-Configuration is from the environment. There is no configuration file.
+Configuration is from the environment, plus the OS keychain for the key. There is no configuration file.
 
 | variable | default | meaning |
 |---|---|---|
 | `SLOPLINT_JUDGE_BACKEND` | `jev` | which adapter class to load |
 | `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint; must be `https`, anything else is a usage error (exit 2) |
 | `SYSTEMONE_MODEL` | `jev-latest` | model name sent in the body |
-| `TYPESAFE_API_KEY` | none, required | bearer key |
+| `TYPESAFE_API_KEY` | none, required | bearer key; from the environment, else the keychain item `key set` wrote |
 | `SLOPLINT_JUDGE_CONCURRENCY` | `8` | parallel requests |
+
+### Where the key lives
+
+The adapter looks for the key in the environment first and then in the OS store: the login keychain on macOS, read with `/usr/bin/security`, or libsecret on Linux, read with `secret-tool` from `/usr/bin` or `/usr/local/bin` (a fixed list, not `PATH`). The item is service `sloplint-judge`, account `TYPESAFE_API_KEY`. `sloplint-judge key set` writes it by handing the terminal to the platform tool, which prompts for the value itself, so the key is never in any process's argument list, in shell history or in Ruby; it refuses to run without a terminal, which is also why the check skill can never run it. A read that gets no answer in 15 seconds is killed and reported as a usage error, because on macOS an item whose access list does not trust `security` opens an Allow/Deny dialog that nobody sees under an agent. A value with a control character in it is refused without being printed: Ruby's HTTP library rejects such a header with an error message that quotes the whole value.
+
+The raw commands, for anyone who would rather not use `key set`:
+
+```bash
+security add-generic-password -U -s sloplint-judge -a TYPESAFE_API_KEY -w   # macOS; prompts. Never add -A.
+security find-generic-password -s sloplint-judge -a TYPESAFE_API_KEY        # is it there? (no -w, no value shown)
+security delete-generic-password -s sloplint-judge -a TYPESAFE_API_KEY
+secret-tool store --label=sloplint-judge service sloplint-judge account TYPESAFE_API_KEY < keyfile   # Linux
+secret-tool clear service sloplint-judge account TYPESAFE_API_KEY
+```
+
+What this protects: the key is not in a dotfile, not in the environment the agent's shell commands inherit, and not in the transcript unless a process asks the keychain for it on purpose. What it does not: the item is created by `security`, so its default access list trusts `security`, and any process running as you reads it with one command and no prompt; on Linux the same holds while the session keyring is unlocked. Two ways to tighten that, neither the default: create the item with `-T ""` and macOS asks Allow/Deny on every read, a per-run consent prompt the agent cannot answer, at the cost of a dialog per `--judge` run that "Always Allow" undoes; or keep the key in a secret manager and run under `op run` or the like. Never use `-A`, which marks the item readable by every application without warning. An item that keeps prompting after `key set` was created by another application and kept its access list through `-U`; delete it and run `key set` again. None of this reaches a Cowork cloud session, whose sandbox cannot connect to `api.typesafe.ai` at all.
+
+`sloplint-judge status` answers whether a run could happen here: `https` endpoint, and a key in the environment or the keychain. It checks that the item exists without reading its value, so the probe pulls no secret into any process, and it exits 2 with the same message `check` would give when nothing is configured.
 
 ### Adding a backend
 
@@ -322,7 +340,7 @@ A 2,000-word design document with forty paragraphs and a quarter of them flagged
 
 ## Agent-first help text
 
-As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill decides whether the judge runs, and it is the person's decision, not the key's. A key set for some other tool must not send a draft to TypeSafe on its own. The skill tests whether `TYPESAFE_API_KEY` is set, without reading its value; if it is, and the request did not already ask for the judge or refuse it, the skill asks once per conversation, naming where the text goes and what it costs, and stays offline without a yes. If the command then exits 2 because the judge is not installed after all, it runs plain `check` and says so. The report always says when text left the machine. On the command line `--judge` is the consent: a person typed the flag.
+As in sloplint, `--help` leads with the copy-paste recipe. The `check` skill decides whether the judge runs, and it is the person's decision, not the key's. A key set for some other tool must not send a draft to TypeSafe on its own. The skill runs `sloplint-judge status`, which says whether a key exists in the environment or the keychain without reading it; if one does, and the request did not already ask for the judge or refuse it, the skill asks once per conversation, naming where the text goes and what it costs, and stays offline without a yes. If the command then exits 2 because the judge is not installed after all, it runs plain `check` and says so. The report always says when text left the machine. On the command line `--judge` is the consent: a person typed the flag.
 
 ```
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH

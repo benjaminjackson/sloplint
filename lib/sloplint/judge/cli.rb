@@ -3,6 +3,7 @@
 require "optparse"
 require "json"
 require "sloplint/judge"
+require "sloplint/judge/backends/jev"
 
 module Sloplint
   module Judge
@@ -28,6 +29,8 @@ module Sloplint
         when "compare" then cmd_compare(argv, opts, out:, err:)
         when "rules"   then cmd_rules(argv, out:)
         when "explain" then cmd_explain(argv, out:, err:)
+        when "status"  then cmd_status(out:, err:)
+        when "key"     then cmd_key(argv, out:, err:, stdin:)
         when "version" then out.puts(VERSION); 0
         when "help"    then out.puts(parser.help); 0
         else cmd_check(argv.unshift(command), opts, out:, err:, stdin:)
@@ -110,6 +113,38 @@ module Sloplint
         nil
       end
 
+      # ── status / key set ────────────────────────────────────────────────────
+      # Could a run happen here? Answered without reading the key: this is the
+      # check skill's probe and it runs before anyone has agreed to send text.
+      # Exit 0 configured, 2 not, with the message `check` would give.
+      def cmd_status(out:, err:)
+        Backends::Jev.https!(ENV.fetch("SYSTEMONE_URL", Backends::Jev::DEFAULT_URL))
+        source = Secret.present?("TYPESAFE_API_KEY") or raise ArgumentError, Secret::MISSING
+        backend = ENV.fetch("SLOPLINT_JUDGE_BACKEND", "jev")
+        out.puts("backend #{backend} (model #{ENV.fetch("SYSTEMONE_MODEL", Backends::Jev::DEFAULT_MODEL)}), key from #{source}")
+        0
+      rescue ArgumentError => e
+        err.puts("sloplint-judge: #{e.message}")
+        2
+      end
+
+      # Stores the key once. The platform tool owns the prompt and the
+      # terminal, so the value is never on a command line, in a pipe, in shell
+      # history or in this process. A person types this; the skill never does.
+      def cmd_key(argv, out:, err:, stdin:)
+        return err.puts("usage: sloplint-judge key set") || 2 unless argv == ["set"]
+
+        command = Secret.store_command("TYPESAFE_API_KEY")
+        return err.puts("sloplint-judge: no supported key store on this platform; export TYPESAFE_API_KEY instead") || 2 unless command
+        return err.puts("sloplint-judge: key set needs a terminal: the keychain tool prompts for the key itself") || 2 unless stdin.tty?
+
+        out.puts("Storing TYPESAFE_API_KEY in the OS keychain under #{Secret::SERVICE}; the keychain tool will prompt for it.")
+        out.puts("Replacing the item stored earlier.") if Secret.present?("TYPESAFE_API_KEY") == "keychain"
+        out.puts("Any process running as you can read it back. This keeps the key out of dotfiles and out of the agent's environment, not out of your account.")
+        out.flush
+        Process.exec(*command)
+      end
+
       # ── rules / explain ─────────────────────────────────────────────────────
       def cmd_rules(argv, out:)
         as_json = false
@@ -161,6 +196,8 @@ module Sloplint
               compare A B   which of two passages a plain-prose editor keeps (--drift for rewrites)
               rules         list the judge's rule catalog (add --json)
               explain ID    print one rule's question, levels, rationale and fixtures
+              status        say whether a run could happen here, and where the key is, without reading it
+              key set       store the key in the OS keychain (the keychain tool prompts for it)
               version       print the sloplint-judge version
 
             global options:
