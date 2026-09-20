@@ -229,10 +229,8 @@ module Sloplint
           "criteria" => [
             { "what" => "The sentence ends on a comma and an -ing clause that interprets what came before it, with the event or fact as its subject: something highlights, reflects, underscores, signals or demonstrates a broader point the sentence did not establish.",
               "examples" => ["Latency fell by half after the change, demonstrating the team's commitment to performance.", "The library gained 2,000 stars in a month, reflecting growing interest in local-first tools."] },
-            { "what" => "The trailing clause adds a fact or a consequence, or its subject is a person or thing doing something.",
-              "examples" => ["Latency fell by half after the change, freeing enough budget to drop the second replica.", "She left at noon, taking the only key with her."] },
-            { "what" => "No trailing participial clause.",
-              "examples" => ["Latency fell by half after the change. The second replica went with it.", "The library gained 2,000 stars in a month."] }
+            { "what" => "No such clause: the sentence ends on no participial clause, or its trailing clause adds a fact or a consequence, or its subject is a person or thing doing something.",
+              "examples" => ["Latency fell by half after the change, freeing enough budget to drop the second replica.", "She left at noon, taking the only key with her.", "The library gained 2,000 stars in a month."] }
           ]
         },
         flag: { level: 0 },
@@ -246,7 +244,7 @@ module Sloplint
           "The queue drained in six minutes, leaving the consumers idle until the next batch.",
           "Adoption doubled in the second quarter, driving the support backlog past 400 tickets."
         ],
-        rationale: "A sentence that ends on a comma and an -ing clause whose subject is the fact just stated, and whose verb interprets it (highlighting, reflecting, underscoring), is the writer tacking a moral onto a fact. The regex catalog's trailing-significance-participle sees only a short list of verbs; the construction turns on what the clause does, which is a reading. Medium because the question has two parts, and info because the trailing clause that adds a consequence is fine and the model has to tell the two apart."
+        rationale: "A sentence that ends on a comma and an -ing clause whose subject is the fact just stated, and whose verb interprets it (highlighting, reflecting, underscoring), is the writer tacking a moral onto a fact. The regex catalog's trailing-significance-participle sees only a short list of verbs; the construction turns on what the clause does, which is a reading. Two levels, gloss or not, so the score is the probability of the gloss and nothing else. Medium because the question has two parts, and info because the trailing clause that adds a consequence is fine and the model has to tell the two apart."
       ),
       Rule.new(
         id: "matched-shape", category: "sentence", unit: :sentence, severity: "info", confidence: "low",

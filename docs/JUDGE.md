@@ -1,6 +1,6 @@
 # sloplint-judge — spec
 
-A second gem in this repository, with sloplint's shape and a different kind of rule. sloplint's rules are regexes: offline, milliseconds, every note traceable to a pattern. sloplint-judge's rules are questions put to a System One model, one that answers typed questions about a piece of text with calibrated probabilities and never writes prose. A rule here is still data. What changes is that the "pattern" is a question the model can answer and a regex cannot: does this paragraph end by restating itself, does this sentence tell the stated reader anything new, does it name a thing a reader could look up.
+A second gem in this repository, with sloplint's shape and a different kind of rule. sloplint's rules are regexes: offline, milliseconds, every note traceable to a pattern. sloplint-judge's rules are questions put to a System One model, one that answers typed questions about a piece of text with calibrated probabilities and never writes prose. A rule here is still data. What changes is that the "pattern" is a question the model can answer and a regex cannot: does this paragraph end on a summary, a moral or a hope, does this sentence tell the stated reader anything new, does it name a thing a reader could look up.
 
 Everything else is sloplint's, used directly rather than copied: the note object, the paragraph break, the markdown blanker, the exit codes, the fixture discipline, the provenance rules. The judge depends on the sloplint gem. sloplint knows the judge by name and nothing more: `sloplint check --judge` tries to load it and says how to install it if that fails. The dependency points one way. This is the shape dspy.rb uses for its provider gems, and it is the whole plugin system: a lazy `require` behind one flag.
 
@@ -214,7 +214,7 @@ Run on every sentence of the paragraphs a paragraph rule flagged, and on the sen
 - **no-news** (`warning`, `high`). For the stated reader, the sentence explains what they already know, states what they could have guessed, or tells them something new. Flags at explains-known.
 - **names-nothing** (`warning`, `high`). The sentence names nothing, names a kind of thing, or names a thing a reader could look up. Flags at names-nothing. This is the concreteness dimension from the spike, renamed to say what the flag means.
 - **ends-on-verdict** (`info`, `high`). The sentence ends on a verdict or moral, trails off on a qualifier, or ends on the fact that carries it. Flags at verdict.
-- **trailing-gloss** (`info`, `medium`). The sentence ends on a comma and an -ing clause that interprets the fact before it (highlighting, reflecting, underscoring), on one that adds a fact or a consequence, or on no such clause. Flags at the first. The regex catalog's `trailing-significance-participle` sees a short list of verbs; this is the reading of what the clause does. Ranks model prose lower in abstracts (0.28 against Claude Sonnet 5, 0.42 to 0.47 against 2023 models) and higher in news, where human sentences carry more trailing clauses of the kind that add a fact, so the expected level runs low for humans while the flags run the other way. `info` because of that reversal, `medium` because the question has two parts.
+- **trailing-gloss** (`info`, `medium`). The sentence ends on a comma and an -ing clause that interprets the fact before it (highlighting, reflecting, underscoring), or it does not: no such clause, or one that adds a fact or a consequence. Two levels, so the score is the probability of the gloss and nothing else. Flags at the first. The regex catalog's `trailing-significance-participle` sees a short list of verbs; this is the reading of what the clause does. Ranks model prose lower in abstracts (0.32 against Claude Sonnet 5, 0.42 to 0.47 against 2023 models) and higher in news (0.60 to 0.73), where human sentences carry more trailing clauses of every kind and so a little more gloss probability across the bulk that never flags; the flags themselves run the other way, 4 human sentences in 30 articles against 18 for GPT-4 and 8 for Claude Sonnet 5. `info` because of that reversal, `medium` because the question has two parts.
 - **matched-shape** (`info`, `low`). A matched pair or triple shaped the content, a list the content needed, or no matched structure. Flags at shaped-the-content. Off by default: near 0.5 against 2023 models and strong against current Claude models, so a tell of one model family, and read against real READMEs most hits were captions and parallels the writer built on purpose. `--select matched-shape` or `--strict` runs it.
 
 Each sentence rule reports on its own. There is no combined score and no threshold that combines them.
@@ -341,12 +341,12 @@ Measured against Jev. Other backends report their own numbers through `script/ca
 
 | request | input tokens | wall time |
 |---|---|---|
-| three paragraph rules, one paragraph | ~1,500 | ~500 ms |
-| four sentence rules, one sentence | ~1,700 | ~500 ms |
+| three paragraph rules, one paragraph | ~1,400 | ~500 ms |
+| five sentence rules, one sentence | ~1,660 | ~500 ms |
 | compare, sentence pair with paragraph context | ~590 | ~500 ms |
 | compare, paragraph pair | ~800 | ~500 ms |
 
-A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 160,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.007, and `check` writes the figure into the `judge` block and onto stderr.
+A 2,000-word design document with forty paragraphs and a quarter of them flagged runs about 40 paragraph requests and 50 sentence requests: roughly 140,000 input tokens and 6 seconds at eight in parallel. With `--strict` the sentence side runs everywhere and the cost roughly triples. At TypeSafe's public price, $42 per billion input tokens with output tokens free, that document is about $0.006, and `check` writes the figure into the `judge` block and onto stderr.
 
 ## Agent-first help text
 

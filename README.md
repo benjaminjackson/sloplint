@@ -163,7 +163,7 @@ An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, nam
 
 ## sloplint-judge
 
-A second gem in this repository, for the tells a regex cannot see. Its rules are questions put to a System One model (Jev, from TypeSafe) about one paragraph or one sentence at a time: does this paragraph end by restating itself, does this sentence tell the stated reader anything they did not know, does it name anything a reader could check. The answers come back as sloplint notes, same fields, same JSON, same exit codes, so anything that already reads sloplint's output reads the judge's without change.
+A second gem in this repository, for the tells a regex cannot see. Its rules are questions put to a System One model (Jev, from TypeSafe) about one paragraph or one sentence at a time: does this paragraph end on a summary, a moral or a hope, does this sentence tell the stated reader anything they did not know, does it name anything a reader could check. The answers come back as sloplint notes, same fields, same JSON, same exit codes, so anything that already reads sloplint's output reads the judge's without change.
 
 One thing is different from the rest of sloplint: the judge sends your text to an API. sloplint on its own never leaves the machine. Every paragraph the judge examines goes to `api.typesafe.ai` over HTTPS, and nothing goes anywhere until you set a key, so the plain `sloplint check` stays offline whether or not the judge is installed.
 
