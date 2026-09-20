@@ -107,7 +107,7 @@ sloplint's three, plus one.
 |------|---------|
 | 0    | ran, **no notes** |
 | 1    | ran, **notes found** |
-| 2    | bad arguments / usage error, empty input, judge gem not installed, or judge not configured (no key, unknown backend name) |
+| 2    | bad arguments / usage error, empty input, judge gem not installed, judge not configured (no key, unknown backend name), or, for `sloplint-judge check` alone, a document with no prose for the judge to examine |
 | 3    | backend failure: network down, non-200, malformed answer |
 
 Exit 3 writes nothing to stdout, from either executable. Under `sloplint check --judge` that means the regex notes are withheld too: a caller that asked for both and got one would read it as a clean judge run, which is the one lie the exit codes exist to prevent. A caller that wants sloplint's notes regardless runs plain `sloplint check` and `sloplint-judge check` as two commands.
@@ -181,7 +181,7 @@ RULES = [
 ]
 ```
 
-`question` is the System One question, verbatim in the shape the adapter sends. `%{register}` is interpolated from `--register`. `flag` says which answer makes a note: `{ level: 0 }` for a score, which is the only question type a rule flags on today; a first noul rule adds `{ yes: true }` and the branch that reads it. There is no threshold on the probability itself, only on the most likely answer and the model's confidence, because a threshold is a number nobody can defend and the confidence gate already does the job.
+`question` is the System One question, verbatim in the shape the adapter sends. `%{register}` is interpolated from `--register`. `flag` says which answer makes a note: `{ level: 0 }` for a score, which is the only question type a rule flags on today; a first noul rule adds `{ yes: true }` and the branch that reads it. There is no threshold on the probability itself, only on the most likely answer and the model's confidence, because a threshold is a number nobody can defend and the confidence gate already does the job. A tie between levels has no most likely answer and flags nothing.
 
 `confidence` on the rule means what it means in sloplint, how likely a flag is a false positive, and it is a ceiling: a note's confidence is the lower of the rule's and the model's band for that answer. A rule at `medium` never produces a `high` note however sure the model is. A rule at `low` stays out of the default run, so `--select`, `--ignore` and `--strict` work on judge rules exactly as they do on sloplint's; `same-weight`, `stated-stakes` and `matched-shape` sit there.
 

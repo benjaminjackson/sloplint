@@ -9,8 +9,15 @@ module Sloplint
       def initialize(usage: {}, **rest) = super
 
       # Index of the most likely level of a score answer, which is the only
-      # kind a rule flags on today. See docs/JUDGE.md "Rule model".
-      def top = probabilities.each_with_index.max_by { |p, _| p }.last
+      # kind a rule flags on today, and nil when two levels share the top.
+      # A tie has no most likely level: evenly split, the answer would go to
+      # the lowest index, which is the level every rule flags on, so an
+      # answer that says nothing would read as a finding.
+      # See docs/JUDGE.md "Rule model".
+      def top
+        best = probabilities.max
+        probabilities.count(best) == 1 ? probabilities.index(best) : nil
+      end
     end
 
     # Raised for anything that stops the backend answering: no key, network,

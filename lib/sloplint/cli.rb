@@ -90,13 +90,25 @@ module Sloplint
       if judge
         begin
           require "sloplint/judge"
-        # A Gem::ConflictError is an installed sloplint-judge that asks for a
-        # different sloplint: it carries no path, and to the reader it is the
-        # same thing as no judge at all.
+        # A Gem::LoadError is an installed sloplint-judge that RubyGems will
+        # not activate beside this sloplint: a conflict, or no version that
+        # fits. It carries no path, and to the reader it is the same thing as
+        # no judge at all, which is how `--help` already reports it.
         rescue LoadError => e
-          raise unless e.path == "sloplint/judge" || e.is_a?(Gem::ConflictError)
+          raise unless e.path == "sloplint/judge" || e.is_a?(Gem::LoadError)
 
           err.puts("sloplint: --judge needs the sloplint-judge gem: gem install sloplint-judge")
+          return 2
+        end
+      end
+      # Accepted and then dropped, these two read as a judge run that was
+      # never asked for: `sloplint check --register "a lawyer" brief.md` runs
+      # the regex rules and says nothing about the reader it was given.
+      unless judge
+        { "--register" => register, "--backend" => backend }.each do |flag, value|
+          next if value.nil?
+
+          err.puts("sloplint: #{flag} needs --judge: without it no model is asked anything.")
           return 2
         end
       end
@@ -113,7 +125,15 @@ module Sloplint
       paths = argv.empty? ? ["-"] : argv
       by_path = paths.reject { |x| x == "-" }.size > 1
 
-      sources = read_sources(paths, err:, stdin:)
+      # Only the read is invalid input. An ArgumentError out of a scan or a
+      # judge run is a bug in this code, and it raises like one instead of
+      # sending the reader to look for bad bytes in a file that has none.
+      sources = begin
+        read_sources(paths, err:, stdin:)
+      rescue ArgumentError, Encoding::CompatibilityError => e
+        err.puts("sloplint: invalid input: #{e.message}")
+        return 2
+      end
       return 2 unless sources
 
       regex_rules, judge_rules = rules.partition { |r| r.is_a?(Rule) }
@@ -168,12 +188,6 @@ module Sloplint
 
       emit(all_notes, opts[:format], out:, by_path:, judge: judge_usage)
       all_notes.empty? ? 0 : 1
-    # Invalid UTF-8 reaches this two ways: String#strip in the empty check
-    # raises Encoding::CompatibilityError, the engine's regexes raise
-    # ArgumentError. Both are the same thing to the reader.
-    rescue ArgumentError, Encoding::CompatibilityError => e
-      err.puts("sloplint: invalid input: #{e.message}")
-      2
     end
 
     # Read every path (or stdin for "-") as UTF-8. Returns [[label, text], ...]

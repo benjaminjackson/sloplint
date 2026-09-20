@@ -26,6 +26,17 @@ RSpec.describe Sloplint::CLI do
       expect(code).to eq(1)
     end
 
+    # Taken and dropped, these two read as a judge run nobody asked for: the
+    # regex rules run, the reader named on the command line is never used,
+    # and the output says nothing about either.
+    it "returns 2 for a flag that only means something with --judge" do
+      [["--register", "a lawyer"], ["--backend", "jev"]].each do |flag, value|
+        code, out, err = run(["check", flag, value, "-"], stdin_text: "The meeting is at noon.")
+        expect([code, out]).to eq([2, ""])
+        expect(err).to include("#{flag} needs --judge")
+      end
+    end
+
     it "returns 2 on an unknown command, which reads as a missing file" do
       code, _out, err = run(["frobnicate"])
       expect(code).to eq(2)

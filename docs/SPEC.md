@@ -161,7 +161,7 @@ Deliberately left out of v1 (add when a real need shows up, not before):
 
 ## Exit codes
 
-Three codes carry the contract. A crash just exits nonzero on its own.
+Four codes carry the contract. A crash just exits nonzero on its own.
 
 | code | meaning |
 |------|---------|

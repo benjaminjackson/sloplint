@@ -118,6 +118,52 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(err).to include("gem install sloplint-judge")
   end
 
+  # No version of the installed judge fits this sloplint. RubyGems raises a
+  # Gem::LoadError with no path, like the conflict above, and the reader gets
+  # the same hint `--help` gives: the judge is not installed here.
+  it "exits 2 with the same hint when no installed judge fits this sloplint" do
+    [Gem::MissingSpecVersionError.new("sloplint-judge", Gem::Requirement.new("~> 0.9"), [Gem::Specification.new("sloplint-judge", "9.9.9")]),
+     Gem::MissingSpecError.new("sloplint-judge", Gem::Requirement.new("~> 0.9"))].each do |error|
+      allow(Sloplint::CLI).to receive(:require).and_raise(error)
+      code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
+      expect([code, out]).to eq([2, ""])
+      expect(err).to include("gem install sloplint-judge")
+    end
+  end
+
+  # An ArgumentError raised while the run is under way is a bug in this code,
+  # not a file with bad bytes in it. Reported as invalid input, the reader
+  # goes looking through a file that is fine, and the requests are paid for
+  # either way.
+  it "does not call a failure during the run invalid input" do
+    backend = Class.new do
+      def name = "fake"
+      def ask(*) = raise(ArgumentError, "a stray % in an instruction")
+    end.new
+    allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
+    expect { run(Sloplint::Judge::CLI, ["check", "-"], stdin_text: text) }
+      .to raise_error(ArgumentError, /stray %/)
+    expect { run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text) }
+      .to raise_error(ArgumentError, /stray %/)
+  end
+
+  # A document the judge never asked a question about is not a clean
+  # document. Exit 0 would say the judge read it and found nothing.
+  it "exits 2 when no prose reached the judge" do
+    backend = FakeBackend.new
+    allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
+    furniture = "# A heading\n\n- A bullet\n- Another bullet\n\n| a | b |\n| - | - |\n\n```\ncode()\n```\n"
+    code, out, err = run(Sloplint::Judge::CLI, ["check", "--markdown", "-"], stdin_text: furniture)
+    expect(code).to eq(2)
+    expect(out).to eq("")
+    expect(err).to include("nothing examined in stdin").and include("Markdown furniture")
+    expect(backend.calls).to be_empty
+    # The same document without --markdown is prose, and the judge reads it.
+    code, = run(Sloplint::Judge::CLI, ["check", "-"], stdin_text: furniture)
+    expect(code).not_to eq(2)
+    expect(backend.calls).not_to be_empty
+  end
+
   it "exits 2, not 3, when the backend is not configured or not known" do
     allow(Sloplint::Judge::Backend).to receive(:load).and_raise(ArgumentError, "TYPESAFE_API_KEY is not set")
     code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)

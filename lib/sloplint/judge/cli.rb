@@ -77,16 +77,31 @@ module Sloplint
         end
         rules = Sloplint::CLI.select_rules(select, ignore, strict, RULES)
 
-        sources = Sloplint::CLI.read_sources(argv.empty? ? ["-"] : argv, err:, stdin:, name: "sloplint-judge")
+        # Only the read is invalid input. An ArgumentError out of the run is
+        # a bug in this code, and it raises like one instead of sending the
+        # reader to look for bad bytes in a file that has none.
+        sources = begin
+          Sloplint::CLI.read_sources(argv.empty? ? ["-"] : argv, err:, stdin:, name: "sloplint-judge")
+        rescue ArgumentError, Encoding::CompatibilityError => e
+          err.puts("sloplint-judge: invalid input: #{e.message}")
+          return 2
+        end
         return 2 unless sources
 
         backend = load_backend(opts[:backend], err:) or return 2
         result = Engine.scan_sources(sources, name: "sloplint-judge", err:, rules:, backend:, markdown:, register: opts[:register], strict:)
+        # Nothing asked is nothing examined, and exit 0 would report that the
+        # judge read the document and found nothing in it. The same reason
+        # empty input is a usage error, and the same exit code.
+        if result.usage["requests"].to_i.zero? && !rules.empty?
+          names = sources.map { |label, _| label == "-" ? "stdin" : label }
+          err.puts("sloplint-judge: nothing examined in #{names.join(", ")}: no prose reached the judge.")
+          err.puts("a document that is all Markdown furniture, or whose paragraphs are too short for the rules selected, leaves nothing to ask about.")
+          return 2
+        end
+
         Sloplint::CLI.emit(result.notes, opts[:format], out:, by_path: sources.count { |label, _| label != "-" } > 1, judge: result.usage)
         result.notes.empty? ? 0 : 1
-      rescue ArgumentError, Encoding::CompatibilityError => e
-        err.puts("sloplint-judge: invalid input: #{e.message}")
-        2
       end
 
       # ── compare A B ─────────────────────────────────────────────────────────

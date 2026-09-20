@@ -197,6 +197,21 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(a.probabilities).to eq([0.0, 0.1, 0.9])
   end
 
+  # An evenly split answer names no level. Read as the lowest index it would
+  # be level 0, which is the level every rule flags on, so the answer that
+  # says least would say the most.
+  it "does not flag a score answer whose top level is tied" do
+    tied = FakeBackend.new { |_s, _n, _q| [[0.5, 0.5, 0.0], 0.9] }
+    expect(described_class.scan(text, rules: [para_rule], backend: tied, strict: true).notes).to eq([])
+    # A hair above the other two is still a winner, and still a flag.
+    nearly = FakeBackend.new { |_s, _n, _q| [[0.34, 0.33, 0.33], 0.9] }
+    expect(described_class.scan(text, rules: [para_rule], backend: nearly, strict: true).notes).not_to be_empty
+    all_tied = FakeBackend.new { |_s, _n, _q| [[0.33, 0.33, 0.33], 0.9] }
+    expect(described_class.scan(text, rules: [para_rule], backend: all_tied, strict: true).notes).to eq([])
+    expect(Sloplint::Judge::Answer.new(type: "score", probabilities: [0.5, 0.5], confidence: 0.9).top).to be_nil
+    expect(Sloplint::Judge::Answer.new(type: "score", probabilities: [0.1, 0.9], confidence: 0.9).top).to eq(1)
+  end
+
   it "calls a body Jev could not have sent a backend failure, and a bug in our code a bug" do
     q = { "type" => "score", "criteria" => %w[a b c] }
     expect { jev_answer({ "q" => { "probabilities" => { "3" => 1.0 } } }, q) }

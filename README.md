@@ -150,7 +150,7 @@ One match is one note. JSON output is an array of these, or an object keyed by p
 
 ## Exit codes
 
-Three codes carry the contract. A crash exits nonzero on its own.
+Four codes carry the contract. A crash exits nonzero on its own.
 
 | code | meaning |
 |------|---------|
@@ -206,6 +206,9 @@ check         scan paths (or stdin) with the judge's rules only [default]
 compare A B   which of two passages a plain-prose editor keeps (--drift for rewrites)
 rules         list the judge's rule catalog (add --json)
 explain ID    print one rule's question, levels, rationale and fixtures
+status        say whether a run could happen here, and where the key is, without reading it
+key set       store the backend's key in the OS keychain (the keychain tool prompts for it)
+key unset     remove it from the OS keychain
 version       print the sloplint-judge version
 ```
 
