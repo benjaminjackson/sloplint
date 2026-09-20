@@ -45,9 +45,11 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     doc = JSON.parse(out)
     expect(doc["notes"]).to eq([])
     # The same identifier a run reports, which is the model: the field does
-    # not change meaning because no question was asked.
-    expect(doc["judge"]).to eq("backend" => "jev-latest", "requests" => 0)
-    expect(err).to include("judge jev-latest, 0 requests")
+    # not change meaning because no question was asked. The same keys too,
+    # cost_usd among them, so a reader of the JSON finds the price where a
+    # real run puts it and does not have to tell the two shapes apart.
+    expect(doc["judge"]).to eq("backend" => "jev-latest", "requests" => 0, "cost_usd" => 0.0)
+    expect(err).to include("judge jev-latest, 0 requests, $0.000000")
   end
 
   it "names the model from SYSTEMONE_MODEL when no judge rule ran, as a run would" do
@@ -55,7 +57,7 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     ENV["SYSTEMONE_MODEL"] = "jev-2"
     code, out, = run(Sloplint::CLI, ["check", "--judge", "--select", "em-dash", "-o", "json", "-"], stdin_text: text)
     expect(code).to eq(0)
-    expect(JSON.parse(out)["judge"]).to eq("backend" => "jev-2", "requests" => 0)
+    expect(JSON.parse(out)["judge"]).to eq("backend" => "jev-2", "requests" => 0, "cost_usd" => 0.0)
   ensure
     ENV["SYSTEMONE_MODEL"] = saved
   end

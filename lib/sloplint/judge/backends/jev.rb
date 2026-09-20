@@ -74,8 +74,11 @@ module Sloplint
 
         def name = @model
 
-        # Dollars for a summed usage Hash. Output tokens cost nothing.
-        def cost_usd(usage) = usage.fetch("input_tokens", 0) * USD_PER_INPUT_TOKEN
+        # Dollars for a summed usage Hash. Output tokens cost nothing. On the
+        # class as well, because the run that asks nothing has no built
+        # backend to ask and still prints a price.
+        def self.cost_usd(usage) = usage.fetch("input_tokens", 0) * USD_PER_INPUT_TOKEN
+        def cost_usd(usage) = self.class.cost_usd(usage)
 
         def ask(state, questions)
           http = Net::HTTP.new(@url.host, @url.port)
@@ -113,7 +116,7 @@ module Sloplint
         # an HTTP status line raises one of them.
         rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError, Net::ProtocolError,
                Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::OpenTimeout,
-               Net::ReadTimeout, JSON::ParserError, KeyError => e
+               Net::ReadTimeout, Net::WriteTimeout, JSON::ParserError, KeyError => e
           raise BackendError, "#{e.class}: #{e.message}"
         end
 
@@ -143,6 +146,10 @@ module Sloplint
         # every level down one and Answer#top would name the wrong criterion.
         def scores(probs, levels)
           malformed!("score probabilities are #{probs.class}, not a Hash keyed by level") unless probs.is_a?(Hash)
+          # No level at all is not a level of zero. Filled with zeros the
+          # levels would tie, the tie would go to level 0, and level 0 is the
+          # one every score rule flags on.
+          malformed!("score probabilities for none of the #{levels} levels") if probs.empty?
 
           out = Array.new(levels, 0.0)
           probs.each do |k, p|
@@ -161,7 +168,9 @@ module Sloplint
         # gets the one thing its answer can defend: distance from the fence,
         # scaled so 0.5 is 0 and 0 or 1 is 1.
         def confidence_for(answer, type, probs)
-          return answer["confidence"].to_f if answer["confidence"]
+          # Read like any other number Jev sends: a confidence of {} or [] or
+          # true is a malformed body, not a NoMethodError on our own side.
+          return number(answer["confidence"]) if answer["confidence"]
           return (probs - 0.5).abs * 2 if type == "noul"
 
           sorted = (probs.is_a?(Hash) ? probs.values : probs).sort.reverse

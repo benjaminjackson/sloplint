@@ -92,6 +92,20 @@ RSpec.describe Sloplint::Split do
       .to eq(["Alpha here. Beta here."])
   end
 
+  # A code span on a line of its own is a command, and furniture. The same
+  # line under a line of prose is the wrapped tail of that sentence, and
+  # dropping it takes the sentence's object with it.
+  it "gives a wrapped code span back to the sentence it ends" do
+    text = "Run it with\n`make test`.\nThen commit the result. And push it.\n"
+    paras = described_class.paragraphs(text, markdown: true)
+    expect(paras.map(&:text)).to eq(["Run it with `make test`. Then commit the result. And push it."])
+    expect(paras.first.sentences.map(&:text))
+      .to eq(["Run it with `make test`.", "Then commit the result.", "And push it."])
+    # With no prose above it, the same line is a command again.
+    expect(described_class.paragraphs("`make test`.\n\nAlpha here. Beta here.\n", markdown: true).map(&:text))
+      .to eq(["Alpha here. Beta here."])
+  end
+
   # String#strip takes a leading NUL off as well as whitespace, and the lead
   # count did not, so every offset in the paragraph was one character early
   # and its last character was cut off.

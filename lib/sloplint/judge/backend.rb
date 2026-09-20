@@ -24,7 +24,9 @@ module Sloplint
     # `configured!`, which checks its endpoint settings without building the
     # backend or reading the key and returns a short description of them, and
     # `model_name`, the string a built backend would answer `name` with, for
-    # the run that asks no question and so builds nothing.
+    # the run that asks no question and so builds nothing. A backend that
+    # prices its own tokens answers `cost_usd` on the class as well as on the
+    # instance, so that run can print a price too.
     # See docs/JUDGE.md "Backend adapter". The table is the guard that keeps
     # `--backend` from naming an arbitrary file.
     module Backend

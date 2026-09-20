@@ -141,7 +141,9 @@ module Sloplint
         # The same identifier a run reports, which is the model and not the
         # adapter, so a reader of the JSON is not told two different things
         # about one flag. The class knows it without a key.
-        judge_usage = { "backend" => klass.model_name, "requests" => 0 }
+        # Through the same builder a real run's line goes through, so the
+        # JSON carries the same keys either way, cost_usd among them.
+        judge_usage = Judge::Engine.with_cost({ "backend" => klass.model_name, "requests" => 0 }, klass)
         err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
       elsif judge
         begin

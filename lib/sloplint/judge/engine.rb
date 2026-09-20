@@ -191,23 +191,32 @@ module Sloplint
         # starts another request after that, and the threads that were still
         # working stop at their next item instead of draining their deal.
         failed = false
-        items.each_with_index.group_by { |_, i| i % n }
-             .map do |_, deal|
-               Thread.new do
-                 Thread.current.report_on_exception = false
-                 deal.each do |item, i|
-                   break if failed
+        threads = items.each_with_index.group_by { |_, i| i % n }.map do |_, deal|
+          Thread.new do
+            Thread.current.report_on_exception = false
+            deal.each do |item, i|
+              break if failed
 
-                   begin
-                     out[i] = yield item
-                   rescue StandardError
-                     failed = true
-                     raise
-                   end
-                 end
-               end
-             end
-             .each(&:value)
+              begin
+                out[i] = yield item
+              rescue StandardError
+                failed = true
+                raise
+              end
+            end
+          end
+        end
+        # Every thread is joined before this returns, failure or not. Joining
+        # only up to the first raise would leave the threads after it running
+        # in a caller that catches the error, each with a request in flight.
+        error = nil
+        threads.each do |t|
+          t.value
+        rescue StandardError => e
+          error ||= e
+        end
+        raise error if error
+
         out
       end
     end

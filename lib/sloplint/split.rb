@@ -169,10 +169,11 @@ module Sloplint
     # continue a blanked one: a wrapped bullet is one bullet, and its second
     # line is not a sentence of its own. A line that is only code spans or
     # URLs (a command on a line of its own, a bare link) is furniture too.
-    # The punctuation at the end is the sentence's, not the link's, since a
-    # URL now stops before it: a line holding one bare link and a full stop is
-    # still a line holding one bare link.
-    LONE_INLINE = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*[.,;:!?)\]]*\z/
+    LONE_INLINE = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*\z/
+    # The same line with sentence punctuation after it. A URL stops before
+    # that punctuation now, so the full stop on a bare link line is written
+    # there rather than part of the link.
+    LONE_INLINE_ENDED = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*[.,;:!?)\]]+\z/
 
     # Both copies at once, line by line: the furniture is decided on the
     # splitter's copy, where a code span is a placeholder, and the same lines
@@ -188,12 +189,23 @@ module Sloplint
       pairs = scan.each_line.zip(shown.each_line).map do |whole, also|
         l = whole.chomp
         ending = whole[l.length..]
-        dropped = l.match?(FURNITURE) || ordered_item?(l, prose) || l.match?(LONE_INLINE) ||
+        dropped = l.match?(FURNITURE) || ordered_item?(l, prose) || lone_inline?(l, prose) ||
                   (dropped && l.match?(/\A(?:[ ]{2,}|\t)\S/))
         prose = !dropped && !l.strip.empty?
         dropped ? ["#{" " * l.length}#{ending}"] * 2 : [whole, also]
       end
       [pairs.map(&:first).join, pairs.map(&:last).join]
+    end
+
+    # A line that is only code spans or URLs is furniture: a command on a
+    # line of its own, a bare link. With sentence punctuation after it, only
+    # where no sentence can have been running already -- after a line of
+    # prose it is the wrapped tail of that sentence, and "Run it with\n`make
+    # test`." is one sentence that would otherwise lose its object.
+    def lone_inline?(line, after_prose)
+      return true if line.match?(LONE_INLINE)
+
+      !after_prose && line.match?(LONE_INLINE_ENDED)
     end
 
     # CommonMark lets an ordered list interrupt a paragraph only when it

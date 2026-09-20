@@ -220,6 +220,28 @@ RSpec.describe Sloplint::Judge::Engine do
       .to raise_error(NoMethodError, "oops")
   end
 
+  # Zero-filling an empty Hash gives every level the same probability, the
+  # tie goes to level 0, and level 0 is what a score rule flags on. The
+  # empty check in confidence_for does not see this one: a confidence is
+  # there, so it never looks at the probabilities.
+  it "calls a score answer with no levels at all a malformed body" do
+    q = { "type" => "score", "criteria" => %w[a b c] }
+    expect { jev_answer({ "q" => { "probabilities" => {}, "confidence" => 0.9 } }, q) }
+      .to raise_error(Sloplint::Judge::BackendError, /probabilities for none of the 3 levels/)
+  end
+
+  # A confidence is read like any other number Jev sends, so a shape that is
+  # not one is the body's fault and not a NoMethodError on our side.
+  it "calls a confidence that is not a number a malformed body" do
+    q = { "type" => "score", "criteria" => %w[a b] }
+    [{}, [], true].each do |shape|
+      expect { jev_answer({ "q" => { "probabilities" => { "0" => 1.0 }, "confidence" => shape } }, q) }
+        .to raise_error(Sloplint::Judge::BackendError, /is not a probability/)
+    end
+    # A number written as a string is still a number.
+    expect(jev_answer({ "q" => { "probabilities" => { "0" => 1.0 }, "confidence" => "0.75" } }, q).confidence).to eq(0.75)
+  end
+
   # A 200 whose body is not an object at all. Nothing can be read out of it,
   # and reading anyway is a TypeError, which is the class a bug raises.
   it "calls a 200 body that is not a Hash a malformed body" do
@@ -232,10 +254,10 @@ RSpec.describe Sloplint::Judge::Engine do
   # so they are named one by one in the rescue list. A proxy that answers
   # with something that is not an HTTP status line raises one of them.
   it "calls an answer that is not HTTP at all a backend failure" do
-    [Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError].each do |klass|
+    [Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::WriteTimeout].each do |klass|
       http = jev_http
       allow(http).to receive(:request).and_raise(klass, "wrong on the wire")
-      expect { jev_ask }.to raise_error(Sloplint::Judge::BackendError, /#{klass}: wrong on the wire/)
+      expect { jev_ask }.to raise_error(Sloplint::Judge::BackendError, /#{klass}.*wrong on the wire/m)
     end
   end
 
@@ -286,6 +308,21 @@ RSpec.describe Sloplint::Judge::Engine do
     end.to raise_error(Sloplint::Judge::BackendError, "down")
     # The failing item, and the one the other thread was already on.
     expect(asked.size).to be < 5
+  end
+
+  # Joining only as far as the first raise leaves the threads dealt after it
+  # running, each with a paid request in flight, in a caller that catches the
+  # error and carries on.
+  it "joins every thread before it raises" do
+    before = Thread.list.size
+    expect do
+      described_class.in_parallel((0...30).to_a, 3) do |i|
+        raise Sloplint::Judge::BackendError, "down" if i == 1
+
+        sleep 0.05
+      end
+    end.to raise_error(Sloplint::Judge::BackendError, "down")
+    expect(Thread.list.size).to eq(before)
   end
 
   it "raises BackendError out of the parallel map" do
