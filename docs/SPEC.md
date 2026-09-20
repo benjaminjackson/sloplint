@@ -476,6 +476,21 @@ RSpec (dev dependency), run via `rake spec`.
 - LSP server mode, editor plugins, autofix/rewrite. sloplint *flags*; the agent
   rewrites. Autofix is a separate tool if ever.
 - Non-English. Languages other than English are a v2 conversation.
+- Grammar-frequency tells from the corpus-linguistics literature. Reinhart et
+  al. (PNAS 2025) measure GPT-4o at 2.1 times the human rate for
+  nominalizations and 2.6 times for "that" relative clauses on a subject noun
+  ("a framework that enables real-time analysis"). Both shifts are real in RAID
+  and in Claude Sonnet 5 text generated from RAID's prompts, and neither is a
+  shape a regex can flag. A single that-relative is ordinary English ("a move
+  that is likely to put a dent in its accounts", human BBC news) and human
+  news carries one every 650 words; two in one sentence separate no better,
+  and flagging either pushes a writer toward the nominalization instead.
+  Nominalization is a density, not a sentence shape: five or more suffix nouns
+  in one sentence fires on human abstracts at the 2023 model rate, and 50k
+  words of README prose gave 22 hits, every one a bullet list or feature
+  table. Both belong to a judge that reads a paragraph, not to this catalog.
+  Sentence-initial clausal subjects ("That the cache was stale is not in
+  dispute.") were also tried and are near zero on both sides everywhere.
 - ML/embedding-based detection. This is a regex linter on purpose — fast,
   explainable, zero-dependency. Statistical detection is a different product.
 - Scraped corpora. Platform terms prohibit automated collection, and finding a
