@@ -5,7 +5,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
-### [0.1.0] - unreleased
+### [0.1.0] - 2026-09-21
 
 - New sentence rule `unnamed-authority` (`info`, `medium`): a claim handed to
   experts, studies, research, critics or many, an authority the reader could
@@ -81,7 +81,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint
 
-## [0.9.0] - 2026-09-20
+## [0.9.0] - 2026-09-21
 
 ### Added
 
