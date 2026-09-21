@@ -80,17 +80,29 @@ RSpec.describe "Sloplint::Judge::RULES" do
   describe "live fixtures", if: KEY_PRESENT do
     let(:backend) { Sloplint::Judge::Backend.load("jev") }
 
+    # The model's usual answer, not one draw of it. script/calibrate puts
+    # agreement between two runs at 99 percent for low-confidence answers,
+    # so a fixture the model holds at low confidence flips about one run in
+    # a hundred, and sixty fixtures make that one suite run in several. Two
+    # draws that agree settle it; a third breaks the tie. A fixture the
+    # model has wrong still fails: this hides sampling noise, not a wrong
+    # pin.
+    def flags?(rule, ex, backend)
+      draws = Array.new(2) { Sloplint::Judge::Engine.scan(ex, rules: [rule], backend: backend, strict: true).notes.any? { _1.rule == rule.id } }
+      return draws.first if draws.uniq.size == 1
+
+      Sloplint::Judge::Engine.scan(ex, rules: [rule], backend: backend, strict: true).notes.any? { _1.rule == rule.id }
+    end
+
     Sloplint::Judge::RULES.each do |rule|
       rule.examples_bad.each do |ex|
         it "#{rule.id} flags: #{ex[0, 60].inspect}" do
-          notes = Sloplint::Judge::Engine.scan(ex, rules: [rule], backend: backend, strict: true).notes
-          expect(notes.map(&:rule)).to include(rule.id)
+          expect(flags?(rule, ex, backend)).to be(true)
         end
       end
       rule.examples_ok.each do |ex|
         it "#{rule.id} does not flag: #{ex[0, 60].inspect}" do
-          notes = Sloplint::Judge::Engine.scan(ex, rules: [rule], backend: backend, strict: true).notes
-          expect(notes.map(&:rule)).not_to include(rule.id)
+          expect(flags?(rule, ex, backend)).to be(false)
         end
       end
     end

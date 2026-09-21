@@ -189,7 +189,7 @@ The engine never grows a branch for a rule. If a rule needs logic, the question 
 
 ### Fixtures are live
 
-`examples_bad` and `examples_ok` are run against the backend by the spec, one request per fixture, and the most likely level must land on the flagged side or off it. This needs a key, so the fixture spec skips itself with a message when none is set. Everything else in the suite (splitting, note assembly, the CLI, exit codes, the adapter's serialisation) runs offline against a fake backend that returns what it is told. A rule with no fixtures does not load.
+`examples_bad` and `examples_ok` are run against the backend by the spec, and the most likely level must land on the flagged side or off it. The spec takes the model's usual answer, two draws that agree or a third to break the tie, because a fixture the model holds at low confidence flips about one draw in a hundred and the suite has sixty of them; a fixture the model has wrong still fails. This needs a key, so the fixture spec skips itself with a message when none is set. Everything else in the suite (splitting, note assembly, the CLI, exit codes, the adapter's serialisation) runs offline against a fake backend that returns what it is told. A rule with no fixtures does not load.
 
 Fixtures are synthetic, as in sloplint. No sentence read during calibration is pasted into the repository.
 
