@@ -192,6 +192,13 @@ def anthropic(model, prompt)
   req = Net::HTTP::Post.new(uri, "content-type" => "application/json", "x-api-key" => key, "anthropic-version" => "2023-06-01")
   req.body = JSON.generate(model: model, max_tokens: 1500, messages: [{ role: "user", content: prompt }])
   res = Net::HTTP.start(uri.host, uri.port, use_ssl: true, read_timeout: 120) { |h| h.request(req) }
+  # A RAID prompt can trip the API's content filter (one in sixty did, and
+  # passed on the next run). That is one title short in the side, not a
+  # reason to stop the rest; the next run asks for it again.
+  if res.code == "400" && res.body.include?("content filtering")
+    warn "generate: skipped one prompt, output blocked by the content filter"
+    return nil
+  end
   abort "generate: #{res.code} #{res.body[0, 300]}" unless res.code == "200"
   JSON.parse(res.body).fetch("content").map { |c| c["text"] }.join
 end
@@ -229,7 +236,7 @@ def generate(model, opts)
     lock = Mutex.new
     File.open(out, "a") do |f|
       Sloplint::Judge::Engine.in_parallel(jobs, 4) do |(id, title, prompt)|
-        text = anthropic(model, prompt)
+        text = anthropic(model, prompt) or next
         lock.synchronize do
           f.puts JSON.generate(model: model, source_id: id, title: title, text: text)
           f.flush
