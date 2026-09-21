@@ -79,6 +79,8 @@ news or abstracts at anything like its model rate is not done. `script/probe-rai
 about 2 s/MB is normal, and a jump means a pattern backtracks. RAID has no
 design docs or incident reports, so it is the floor, not the whole probe: a
 narrowing that clears RAID still needs a read against the engineering register.
+Its model side is 2023 text (gpt4, llama-chat, mistral-chat), so RAID is the
+floor for false positives and no evidence about what current models write.
 
 None of the reading is committed — see "Provenance" in `docs/SPEC.md`. What the
 commit message carries is the numbers and the register: how much was read, what

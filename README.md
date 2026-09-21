@@ -4,6 +4,8 @@ A dependency-free CLI that scans prose for the tells of AI-generated **slop** an
 
 The primary reader is an agent (Claude Code and friends) that runs sloplint, reads the JSON, and rewrites what it flags. Humans are the secondary reader, and everything is built to keep the false-positive rate low enough that a flag is worth trusting.
 
+For the tells a regex cannot see, there is a second gem, [sloplint-judge](#sloplint-judge), whose rules are questions put to a model and whose notes come back in the same JSON. It is optional, it needs an API key, and it is the only part of sloplint that sends your text anywhere.
+
 ## What it catches, and what it doesn't
 
 A pattern earns a place in the catalog only if it shows up constantly in AI writing and rarely in careful human writing. Passive voice, weak adverbs, wordiness, clichés a person reaches for too: those belong in `proselint` or `write-good`, not here. sloplint is not a general prose linter and never tries to be. It hunts the specific fingerprints of a language model, so an agent can act on a flag instead of second-guessing it.
@@ -118,9 +120,13 @@ Flags:    No fluff, no filler, no jargon.
 Does not: No parking on Sundays.
 ```
 
+### `--judge`
+
+`sloplint check --judge` adds the rules of [sloplint-judge](#sloplint-judge) to the run, questions put to a model rather than regexes, and merges the notes into the same array in document order. It needs the sloplint-judge gem and an API key; the section below covers both.
+
 ## The note
 
-One match is one note. JSON output is an array of these, or an object keyed by path when more than one file is scanned. The schema is the contract:
+One match is one note. JSON output is an array of these, or an object keyed by path when more than one file is scanned. Under `--judge` that array or object sits under a `notes` key next to a `judge` key with the backend name, request count and token counts (see [sloplint-judge](#sloplint-judge)). The schema is the contract:
 
 ```json
 {
@@ -144,15 +150,94 @@ One match is one note. JSON output is an array of these, or an object keyed by p
 
 ## Exit codes
 
-Three codes carry the contract. A crash exits nonzero on its own.
+Four codes carry the contract. A crash exits nonzero on its own.
 
 | code | meaning |
 |------|---------|
 | 0    | ran, no notes |
 | 1    | ran, notes found |
 | 2    | bad arguments or usage error |
+| 3    | `--judge` only: the model could not be reached, no notes written |
 
 An unknown id or category in `--select`/`--ignore` is a usage error (exit 2, naming the id) rather than a silent no-op, so a typo can't masquerade as a clean scan. Input that is empty or only whitespace is exit 2 for the same reason: a pipe that delivered nothing must not read as a clean draft. Only when every source is empty — one empty file among several named ones is taken as deliberate.
+
+## sloplint-judge
+
+A second gem in this repository, for the tells a regex cannot see. Its rules are questions put to a System One model (Jev, from TypeSafe) about one paragraph or one sentence at a time: does this paragraph end on a summary, a moral or a hope, does this sentence tell the stated reader anything they did not know, does it name anything a reader could check. The answers come back as sloplint notes, same fields, same JSON, same exit codes, so anything that already reads sloplint's output reads the judge's without change.
+
+One thing is different from the rest of sloplint: the judge sends your text to an API. sloplint on its own never leaves the machine. Every paragraph the judge examines goes to `api.typesafe.ai` over HTTPS, and nothing goes anywhere until you set a key, so the plain `sloplint check` stays offline whether or not the judge is installed.
+
+### Install
+
+```bash
+gem install sloplint sloplint-judge
+sloplint-judge key set        # stores your TypeSafe API key in the OS keychain; it prompts for it
+```
+
+`key set` hands your terminal to the keychain tool (`security` on macOS, `secret-tool` from libsecret on Linux), which asks for the key with echo off, so the key is never on a command line, in shell history or in a dotfile. Setting `TYPESAFE_API_KEY` in the environment works too and takes precedence. One thing the keychain does not do: it keeps the key out of the agent's environment, not out of your account, since any process running as you can read the item back. `sloplint-judge status` says whether a key was found and where, without printing it, and `sloplint-judge key unset` removes the item.
+
+Requires Ruby 3.3+ and sloplint 0.9 or later. The judge is not a plugin of its own: the Claude Code plugin at the root of this repository already carries it, and the `/sloplint:check` skill asks before it runs the judge. A key in the environment makes the judge possible; it does not make it run. The skill puts the question once per conversation, says what leaves the machine and what it costs, and stays offline unless the answer is yes or the request already asked for the judge.
+
+### Run
+
+The one command to know, and the one an agent should use:
+
+```bash
+sloplint check --judge --markdown -o json draft.md
+```
+
+That runs both catalogs and merges the notes in document order. Because the judge spent money, the JSON says how much: the notes sit under `notes` and a `judge` object carries the backend, the number of requests, the token counts the backend reported and the cost in dollars. The same figures go to stderr in one line for the human formats.
+
+```json
+{
+  "notes": [ ... ],
+  "judge": { "backend": "jev-latest", "requests": 9, "input_tokens": 14200, "output_tokens": 610, "cost_usd": 0.000596 }
+}
+```
+
+Without the sloplint-judge gem it exits 2 and says to install it. Without a key it exits 2 and says which variable to set. If the model cannot be reached, or answers in a shape the judge does not understand, it exits 3 and writes no notes at all, the regex ones included, so a partial run can never pass as a clean one.
+
+The gem also puts a `sloplint-judge` executable on your path for the judge on its own:
+
+```
+sloplint-judge [-o full|json] [--register TEXT] [--backend NAME] [command] [args]
+
+check         scan paths (or stdin) with the judge's rules only [default]
+compare A B   which of two passages a plain-prose editor keeps (--drift for rewrites)
+rules         list the judge's rule catalog (add --json)
+explain ID    print one rule's question, levels, rationale and fixtures
+status        say whether a run could happen here, and where the key is, without reading it
+key set       store the backend's key in the OS keychain (the keychain tool prompts for it)
+key unset     remove it from the OS keychain
+version       print the sloplint-judge version
+```
+
+`check` takes `--markdown`, `--select`, `--ignore` and `--strict` with the same meanings as sloplint's. `--strict` runs the three rules that are off by default, runs the sentence rules on every sentence, rather than only in the paragraphs a paragraph rule flagged or skipped as too short, and keeps the notes the model was not confident about. `--register TEXT` says who the reader is; the default is an engineer on the team reading a design document, and every question is asked on that reader's behalf, so a rule such as `no-news` flags a sentence that reader already knows rather than one anybody would.
+
+### The rules
+
+Fourteen rules in two categories. `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question the model is asked, the answer that flags, and the fixtures. The bar is a little different from the regex catalog's: a judge rule ships when a reader shown the flagged unit agrees it should go, whoever wrote it, and how sharply it separates model prose from human prose sets its severity. So `throat-clearing` is `info`, not gone: human abstracts open by announcing the paper, and it is dead weight either way.
+
+- **paragraph** (6): `particulars`, a paragraph that names nothing a reader could check; `wrap-up`, a paragraph that ends on a summary, a moral or a hope; `throat-clearing`, a paragraph that opens by announcing its topic; `self-narration`, a paragraph that signposts the document instead of saying something; `promotional`, a paragraph that praises its subject and measures nothing; `same-weight`, a paragraph that states its guesses and opinions as flatly as its measurements. `same-weight` is off by default; name it in `--select` or pass `--strict`.
+- **sentence** (8): `stock-figure`, a stock figure of speech; `no-news`, a sentence that explains what the stated reader already knows; `names-nothing`, a sentence with no specific noun in it; `ends-on-verdict`, a sentence that ends by grading the fact it just stated; `trailing-gloss`, a sentence that ends on an -ing clause drawing its own moral; `unnamed-authority`, a claim handed to experts, studies or many; `stated-stakes`, a sentence that says something matters and not why; `matched-shape`, a pair or triple built to a rhythm rather than to the content. `stated-stakes` and `matched-shape` are off by default; name them in `--select` or pass `--strict`.
+
+Each note's `confidence` is the lower of the rule's own ceiling and how sure the model was of that answer. A note the model was unsure about is dropped unless you pass `--strict`, the same way sloplint drops its low-confidence rules.
+
+### Cost and configuration
+
+One request per paragraph carries the paragraph questions, and one request per examined sentence carries the sentence questions, about eight in parallel. A 2,000-word document runs in a few seconds. Every run reports requests, tokens and cost, in the JSON under `judge` and on stderr. Jev returns token counts and no price, so the dollar figure is computed from TypeSafe's public price: $42 per billion input tokens, and output tokens are free. At that rate a 2,000-word document costs well under a cent.
+
+Configuration is from the environment, plus the OS keychain for the key:
+
+| variable | default | meaning |
+|---|---|---|
+| `TYPESAFE_API_KEY` | none, required | bearer key sent with every request; from the environment, else the keychain item `key set` wrote |
+| `SYSTEMONE_MODEL` | `jev-latest` | model name |
+| `SYSTEMONE_URL` | `https://api.typesafe.ai/v1/systemone` | endpoint; must be `https` on a `typesafe.ai` host |
+| `SLOPLINT_JUDGE_BACKEND` | `jev` | which adapter to use |
+| `SLOPLINT_JUDGE_CONCURRENCY` | `8` | parallel requests |
+
+The design, the calibration that decides which rules ship, and how to add a backend are in [docs/JUDGE.md](docs/JUDGE.md).
 
 ## The rule catalog
 

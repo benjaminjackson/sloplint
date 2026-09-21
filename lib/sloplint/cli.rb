@@ -56,6 +56,10 @@ module Sloplint
       strict = false
       select = nil
       ignore = nil
+      judge = false
+      register = nil
+      backend = nil
+      help = false
       p = OptionParser.new do |o|
         o.banner = "usage: sloplint check [options] [paths...]  (\"-\" or no paths = stdin)"
         o.on("-o", "--output-format FORMAT", %w[full json],
@@ -63,21 +67,143 @@ module Sloplint
         o.on("--markdown", "Skip fenced/inline code spans, HTML comments, and URLs before scanning.") { markdown = true }
         o.on("--select IDS", "Only run these rules (comma-separated rule ids or category names).") { |v| select = v.split(",").map(&:strip) }
         o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or category names).") { |v| ignore = v.split(",").map(&:strip) }
-        o.on("--strict", "Run every rule, including the ones that are off by default.") { strict = true }
+        o.on("--strict", "Run every rule, including the ones that are off by default;",
+             "with --judge, also ask the sentence rules about every sentence, about three times the requests.") { strict = true }
+        o.on("--judge", "Also run sloplint-judge's rules, which ask a model (needs the gem and a key).") { judge = true }
+        o.on("--register TEXT", "With --judge: who the reader is.") { |v| register = v }
+        o.on("--backend NAME", "With --judge: which model adapter to use.") { |v| backend = v }
+        # OptionParser answers -h itself when nobody else does, and it answers
+        # it on the real stdout and ends the process. This command prints to
+        # the out it was given and returns, as every other one does.
+        o.on("-h", "--help", "Show this help.") { out.puts(o.help); help = true }
       end
-      p.order!(argv)
+      # permute!, so a flag written after the path is a flag: `sloplint check
+      # draft.md --judge` reads the way anyone would write it.
+      p.permute!(argv)
+      return 0 if help
 
-      unknown = unknown_rule_refs(select) + unknown_rule_refs(ignore)
+      # The judge is a separate gem that depends on this one. The bare require
+      # goes through the load path: exe/sloplint puts this checkout's lib/ at
+      # the front, so from the plugin tree the judge files beside this one win,
+      # and an installed sloplint-judge gem is found otherwise. Only a missing
+      # judge is the install hint; any other LoadError is a real one.
+      if judge
+        begin
+          require "sloplint/judge"
+        # A Gem::LoadError is an installed sloplint-judge that RubyGems will
+        # not activate beside this sloplint: a conflict, or no version that
+        # fits. It carries no path, and to the reader it is the same thing as
+        # no judge at all, which is how `--help` already reports it.
+        rescue LoadError => e
+          raise unless e.path == "sloplint/judge" || e.is_a?(Gem::LoadError)
+
+          err.puts("sloplint: --judge needs the sloplint-judge gem: gem install sloplint-judge")
+          # An installed judge that RubyGems will not activate is a version
+          # conflict, and the hint above tells the reader to install what
+          # they already have. RubyGems says which versions fell out, so
+          # print that too rather than throwing it away.
+          err.puts("sloplint: #{e.message}") if e.is_a?(Gem::LoadError)
+          return 2
+        end
+      end
+      # Accepted and then dropped, these two read as a judge run that was
+      # never asked for: `sloplint check --register "a lawyer" brief.md` runs
+      # the regex rules and says nothing about the reader it was given.
+      unless judge
+        { "--register" => register, "--backend" => backend }.each do |flag, value|
+          next if value.nil?
+
+          err.puts("sloplint: #{flag} needs --judge: without it no model is asked anything.")
+          return 2
+        end
+      end
+      catalog = judge ? RULES + Judge::RULES : RULES
+
+      unknown = unknown_rule_refs(select, catalog) + unknown_rule_refs(ignore, catalog)
       unless unknown.empty?
         err.puts("sloplint: unknown rule or category: #{unknown.join(", ")}")
-        err.puts("run `sloplint rules` to list them.")
+        # Under --judge the selection is read against both catalogs, and
+        # `sloplint rules` lists only one of them: a judge rule id typed with
+        # a letter wrong is not in the list the hint would send you to.
+        lists = judge ? "`sloplint rules` and `sloplint-judge rules`" : "`sloplint rules`"
+        err.puts("run #{lists} to list them.")
         return 2
       end
 
-      rules = select_rules(select, ignore, strict)
+      rules = select_rules(select, ignore, strict, catalog)
       paths = argv.empty? ? ["-"] : argv
       by_path = paths.reject { |x| x == "-" }.size > 1
 
+      # Only the read is invalid input. An ArgumentError out of a scan or a
+      # judge run is a bug in this code, and it raises like one instead of
+      # sending the reader to look for bad bytes in a file that has none.
+      sources = begin
+        read_sources(paths, err:, stdin:)
+      rescue ArgumentError, Encoding::CompatibilityError => e
+        err.puts("sloplint: invalid input: #{e.message}")
+        return 2
+      end
+      return 2 unless sources
+
+      regex_rules, judge_rules = rules.partition { |r| r.is_a?(Rule) }
+
+      judge_usage = nil
+      # Under --judge the output is the {"notes", "judge"} object whether or
+      # not a judge rule survived selection: a caller that asked for the judge
+      # reads the wrapper, and an empty selection is 0 requests, not a
+      # different output shape. 0 requests also means no key: `--judge
+      # --select em-dash` must run on a machine that has none.
+      #
+      # Before the regex scan, not after it: a missing key or a bad
+      # SYSTEMONE_URL is known without asking anything, and finding it out
+      # after every file has been scanned throws that work away to print the
+      # same message.
+      if judge
+        # With nothing to ask, no key is read: the backend is named and never
+        # built, and `sloplint-judge check` reports an empty selection through
+        # the same helper, so the two commands print one line. Either way an
+        # unknown --backend or a key that is not there is the same usage
+        # error, so one rescue answers for both.
+        begin
+          if judge_rules.empty?
+            judge_usage = Judge::Engine.nothing_asked(backend)
+          else
+            judge_backend = Judge::Backend.load(backend)
+          end
+        rescue ArgumentError => e
+          err.puts("sloplint: --judge: #{e.message}")
+          return 2
+        end
+      end
+
+      all_notes = sources.flat_map do |label, text|
+        Engine.scan(text, rules: regex_rules, markdown:, path: label)
+      end
+
+      if judge_usage
+        err.puts("sloplint: judge #{Judge::Engine.usage_line(judge_usage)}")
+      elsif judge_backend
+        begin
+          judged = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
+                                                       markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
+        # Exit 3 withholds the regex notes too: a caller that asked for both
+        # and got one would read it as a clean judge run.
+        rescue Judge::BackendError => e
+          err.puts("sloplint: judge backend failure: #{e.message}")
+          return 3
+        end
+        order = sources.each_with_index.to_h { |(label, _), i| [label, i] }
+        all_notes = (all_notes + judged.notes).sort_by.with_index { |n, i| [order[n.path], n.line, n.column, i] }
+        judge_usage = judged.usage
+      end
+
+      emit(all_notes, opts[:format], out:, by_path:, judge: judge_usage)
+      all_notes.empty? ? 0 : 1
+    end
+
+    # Read every path (or stdin for "-") as UTF-8. Returns [[label, text], ...]
+    # or nil after writing the error, so the caller exits 2.
+    def read_sources(paths, err:, stdin: $stdin, name: "sloplint")
       sources = []
       paths.each do |path|
         # Read as UTF-8 whatever the locale says. A sandbox with no LANG set
@@ -90,11 +216,20 @@ module Sloplint
             stdin.read.force_encoding(Encoding::UTF_8)
           else
             unless File.file?(path)
-              err.puts("sloplint: no such file: #{path}")
-              return 2
+              err.puts("#{name}: no such file: #{path}")
+              return nil
             end
             File.read(path, encoding: Encoding::UTF_8)
           end
+        # Prose that is not valid UTF-8 is an invalid input, said here rather
+        # than left to whatever reads the text first: a scan raises on the
+        # first regex, and the judge sends the text to a backend, where it
+        # would be a JSON error after the request was paid for.
+        unless text.valid_encoding?
+          err.puts("#{name}: invalid input: #{path == "-" ? "stdin" : path} is not valid UTF-8")
+          return nil
+        end
+
         sources << [path == "-" ? "-" : path, text]
       end
 
@@ -104,29 +239,19 @@ module Sloplint
       # mistyped rule id sets, and it exits 2 for the same reason.
       if sources.all? { |_, text| text.strip.empty? }
         names = sources.map { |label, _| label == "-" ? "stdin" : label }
-        err.puts("sloplint: empty input: nothing to check in #{names.join(", ")}")
-        return 2
+        err.puts("#{name}: empty input: nothing to check in #{names.join(", ")}")
+        return nil
       end
+      sources
+    end
 
-      all_notes = sources.flat_map do |label, text|
-        Engine.scan(text, rules:, markdown:, path: label)
-      end
-
-      case opts[:format]
-      when "json"
-        out.puts(Output.format_json(all_notes, by_path:))
+    def emit(notes, format, out:, by_path:, judge: nil)
+      if format == "json"
+        out.puts(Output.format_json(notes, by_path:, judge:))
       else
-        text = Output.format_human(all_notes)
+        text = Output.format_human(notes)
         out.puts(text) unless text.empty?
       end
-
-      all_notes.empty? ? 0 : 1
-    # Invalid UTF-8 reaches this two ways: String#strip in the empty check
-    # raises Encoding::CompatibilityError, the engine's regexes raise
-    # ArgumentError. Both are the same thing to the reader.
-    rescue ArgumentError, Encoding::CompatibilityError => e
-      err.puts("sloplint: invalid input: #{e.message}")
-      2
     end
 
     # ── rules ───────────────────────────────────────────────────────────────
@@ -137,19 +262,26 @@ module Sloplint
         o.on("--json", "Emit the catalog as JSON for machine enumeration.") { as_json = true }
       end.order!(argv)
 
-      if as_json
-        payload = RULES.map do |r|
+      render_rules(RULES, json: as_json, out:)
+      0
+    end
+
+    # The catalog as a table or as JSON. Shared with sloplint-judge, whose
+    # rules also carry a unit.
+    def render_rules(catalog, json:, out:)
+      if json
+        payload = catalog.map do |r|
           { id: r.id, category: r.category, severity: r.severity, confidence: r.confidence,
             message: r.message, rationale: r.rationale, suggestion: r.suggestion }
+            .merge(r.respond_to?(:unit) ? { unit: r.unit } : {})
         end
         out.puts(JSON.pretty_generate(payload))
       else
-        RULES.each do |r|
+        catalog.each do |r|
           off = r.confidence == "low" ? " [off by default]" : ""
           out.puts("#{r.id.ljust(24)} #{r.category.ljust(18)} #{r.severity.ljust(8)} #{r.confidence.ljust(7)} #{r.message}#{off}")
         end
       end
-      0
     end
 
     # ── explain ID ────────────────────────────────────────────────────────
@@ -190,10 +322,10 @@ module Sloplint
     # ── helpers ─────────────────────────────────────────────────────────────
     # Ids/categories in refs that match no rule in the catalog. nil (no --select
     # or --ignore given) passes through as no unknowns.
-    def unknown_rule_refs(refs)
+    def unknown_rule_refs(refs, catalog = RULES)
       return [] unless refs
 
-      known = RULES.flat_map { |r| [r.id, r.category] }.uniq
+      known = catalog.flat_map { |r| [r.id, r.category] }.uniq
       refs - known
     end
 
@@ -201,15 +333,15 @@ module Sloplint
     # excludes low-confidence rules unless they are explicitly selected. A
     # category ref selects only that category's non-low rules unless --strict
     # is set; naming a rule by its own id still selects it whatever its
-    # confidence.
-    def select_rules(select, ignore, strict = false)
+    # confidence. catalog is RULES, or RULES plus the judge's under --judge.
+    def select_rules(select, ignore, strict = false, catalog = RULES)
       runs_by_default = ->(r) { r.confidence != "low" }
       rules = if select
-        RULES.select { |r| select.include?(r.id) || (select.include?(r.category) && (runs_by_default.call(r) || strict)) }
+        catalog.select { |r| select.include?(r.id) || (select.include?(r.category) && (runs_by_default.call(r) || strict)) }
       elsif strict
-        RULES
+        catalog
       else
-        RULES.select(&runs_by_default)
+        catalog.select(&runs_by_default)
       end
       if ignore
         rules = rules.reject { |r| ignore.include?(r.id) || ignore.include?(r.category) }
@@ -217,9 +349,37 @@ module Sloplint
       rules
     end
 
-    def global_parser(opts, out:)
-      OptionParser.new do |o|
-        o.banner = <<~BANNER
+    # The judge's part of the agent recipe, which depends on whether the gem
+    # is here. Looked up on the load path without loading it: help must not
+    # pull a model adapter in. The text says the one thing an agent must know
+    # before the flag: the judge sends the text to an API, so ask the person.
+    def judge_recipe
+      # Installed as a gem, the judge is not on the load path until RubyGems
+      # activates it, so the load path alone reports a missing gem. A gem on
+      # disk that asks for a different sloplint cannot be activated beside
+      # this one, and advertising it would send the agent into a conflict.
+      installed = $LOAD_PATH.resolve_feature_path("sloplint/judge") ||
+                  Gem::Specification.find_all_by_name("sloplint-judge").any? { |spec|
+                    spec.dependencies.find { |d| d.name == "sloplint" }&.match?("sloplint", Sloplint::VERSION)
+                  }
+      unless installed
+        return "# sloplint-judge (not installed here) adds model-backed rules for what a regex cannot see: gem install sloplint-judge\n"
+      end
+
+      <<~RECIPE
+        # With the judge (sloplint-judge is installed here). It sends the text to api.typesafe.ai,
+        # so an agent asks the person before running it. Check first, ask, then run:
+        sloplint-judge status                            # exit 0 = a key is set up (reads no key), 2 = not
+        sloplint check --judge --markdown -o json FILE    # output becomes {"notes": [...], "judge": {requests, tokens, cost_usd}}
+        # exit 3 = the model could not be reached; nothing was checked, not even the regex rules
+      RECIPE
+    end
+
+    # The banner names whether the judge gem is here, which costs a scan of
+    # the installed gems. Only --help reads it, so it is built when it is
+    # read and never on the way to a scan.
+    def global_banner
+      <<~BANNER
           sloplint — flag the rhetorical tics and puffery that mark AI-generated prose.
 
           # Recommended for agents:
@@ -228,17 +388,23 @@ module Sloplint
           # each note: {path,line,column,severity,confidence,rule,category,message,excerpt,context,rationale,suggestion,count}
           # (count is present only for the rules that tally items)
 
+          #{judge_recipe}
           usage: sloplint [-o full|json] [command] [args]
 
           commands:
             check        scan paths (or stdin) for AI-slop tells and report notes [default]
                          a first argument that is not a command name is taken as a path
+                         --judge adds sloplint-judge's model-backed rules when that gem is installed
             rules        list the rule catalog (add --json for the machine-readable form)
             explain ID   print one rule's message, rationale, and a bad/ok example
             version      print the sloplint version
 
           global options:
-        BANNER
+      BANNER
+    end
+
+    def global_parser(opts, out:)
+      parser = OptionParser.new do |o|
         o.on("-o", "--output-format FORMAT", %w[full json],
              "Output format: 'full' (human-readable text) or 'json' (default: full).") do |v|
           opts[:format] = v
@@ -254,6 +420,8 @@ module Sloplint
         o.separator ""
         o.separator "See `sloplint explain <id>` for any rule, or docs/SPEC.md for the JSON contract."
       end
+      parser.define_singleton_method(:banner) { CLI.global_banner }
+      parser
     end
   end
 end

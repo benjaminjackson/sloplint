@@ -37,6 +37,19 @@ RSpec.describe "the Claude Code plugin" do
     expect(File).to exist(File.join(ROOT, "exe/sloplint"))
   end
 
+  it "names no flag the check command does not have" do
+    # `--no-judge` was in the list of ways to decline the judge, and there is
+    # no such flag: an agent that forwarded it got "invalid option" and exit
+    # 2 on a run the person had asked for.
+    require "stringio"
+    out = StringIO.new
+    Sloplint::CLI.run(["check", "--help"], out:, err: StringIO.new, stdin: StringIO.new)
+    body = File.read(File.join(ROOT, "skills/check/SKILL.md"), encoding: "UTF-8")
+    flags = body.scan(/--[a-z][a-z0-9-]*/).uniq
+    expect(flags).not_to be_empty
+    flags.each { |flag| expect(out.string).to include(flag) }
+  end
+
   it "keeps the refusal gate in the skill" do
     # A reworded skill that drops this invites Claude to read the draft and
     # answer from its own judgment, in the format the skill asked for. The

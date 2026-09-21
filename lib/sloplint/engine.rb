@@ -59,14 +59,21 @@ module Sloplint
     # over blanked text shows code and URLs as a run of spaces. Offsets here are
     # character offsets (MatchData#begin), matching the char-based line_starts_for.
     def context_for(source, match)
-      return "[#{match[0].gsub(/\s+/, " ").strip}]" if match[0].length >= CONTEXT_CHARS
+      context_window(source, match.begin(0), match.end(0))
+    end
 
-      b, e = match.begin(0), match.end(0)
+    # The same window for any span [b, e) of source, so a tool that locates a
+    # sentence rather than a regex match (the judge) draws its context the
+    # way sloplint does.
+    def context_window(source, b, e)
+      span = source[b...e]
+      return "[#{span.gsub(/\s+/, " ").strip}]" if span.length >= CONTEXT_CHARS
+
       pre  = source[[b - CONTEXT_CHARS, 0].max...b]
       post = source[e, CONTEXT_CHARS].to_s
       pre  = "…#{pre.sub(/\A\S*\s+/, "")}" if b > CONTEXT_CHARS
       post = "#{post.sub(/\s+\S*\z/, "")}…" if e + CONTEXT_CHARS < source.length
-      "#{pre}[#{match[0]}]#{post}".gsub(/\s+/, " ").strip
+      "#{pre}[#{span}]#{post}".gsub(/\s+/, " ").strip
     end
 
     # 1-indexed line and column for a char offset into text. Binary-searches a
@@ -101,8 +108,28 @@ module Sloplint
     # with one alternation, so whichever construct opens first is the one that
     # gets consumed: a `<!--` quoted inside backticks is inline code, and a
     # backtick inside a comment is part of the comment.
+    # A URL ends before the punctuation that ends the sentence it sits in:
+    # "See https://example.com. Then do X." is two sentences, and swallowing
+    # the first period would make it one. A URL that really ends in one of
+    # these, a Wikipedia link closing on a bracket, loses that character to
+    # the sentence instead; the text is only being blanked, so what it costs
+    # is one visible character, not a broken link.
+    # A fence opens and closes at the start of a line, with three or more
+    # backticks; the opener may carry an info string and the closer nothing
+    # but whitespace. The line start is the shape that matters: a fence
+    # quoted inside a code span, which is how a document explains fences,
+    # opened a block in the middle of a sentence and every fence after it in
+    # the file paired with the wrong one.
+    #
+    # Any indent is allowed, because CommonMark measures a fence's indent
+    # from its container and a fence under "10. " or a nested bullet stands
+    # further in than three spaces. What that costs is an indented code block
+    # whose own content has a line of backticks in it, which is rare, and the
+    # only thing it costs there is more blanking.
+    MARKDOWN_NOISE = /(?<block>^[ \t]*`{3,}[^\n]*\n.*?^[ \t]*`{3,}[ \t]*$|<!--.*?-->)|(?<inline>`[^`\n]*`|https?:\/\/\S*[^\s.,;:!?)\]])/m
+
     def blank_markdown(text)
-      text.gsub(/```.*?```|<!--.*?-->|`[^`\n]*`|https?:\/\/\S+/m) { |s| s.gsub(/[^\n]/, " ") }
+      text.gsub(MARKDOWN_NOISE) { |s| s.gsub(/[^\n]/, " ") }
     end
   end
 end

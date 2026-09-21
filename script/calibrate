@@ -1,0 +1,262 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Calibrate a judge backend against RAID. See docs/JUDGE.md "Calibration corpus" and "Adding a backend".
+#
+#   script/calibrate run [--rules IDS] [--register R,R] [--sample N] [--generated MODEL]
+#       Per rule, register and model side: the probability that a model unit scores higher than a human one
+#       (AUC), the `check` agreement rate between two runs at each confidence band, and the `compare` flip
+#       rate under passage-order swap at each band. Ends with the pass/fail lines from docs/JUDGE.md.
+#   script/calibrate generate MODEL [--register R,R] [--sample N]
+#       Write a current-model side into .corpus/raid/generated/MODEL/ from RAID's own prompts, same titles
+#       as the human rows. Needs ANTHROPIC_API_KEY. Nothing generated is committed.
+#
+# Registers are RAID domains (script/probe-raid fetch first); the default is news and abstracts, the two
+# on the list in docs/JUDGE.md. Everything lives under the ignored .corpus/ directory.
+require "optparse"
+require "csv"
+require "json"
+require "net/http"
+require "fileutils"
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+require "sloplint/judge"
+
+RAID = File.expand_path("../.corpus/raid", __dir__)
+# The reader each register's questions are asked for, and the venue compare names.
+READER = Hash.new { |_, d| "a reader of #{d}" }.merge("news" => "a reader of a news article", "abstracts" => "a researcher reading the abstract of a paper").freeze
+PLACE = Hash.new { |_, d| "in #{d}" }.merge("news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper").freeze
+BANDS = { "high" => 0.7, "medium" => 0.5, "low" => 0.0 }.freeze
+PARAS_PER_TEXT = 2
+
+opts = { sample: 30, registers: %w[news abstracts], rules: Sloplint::Judge::RULES.map(&:id), backend: nil }
+OptionParser.new do |o|
+  o.on("--rules IDS") { |v| opts[:rules] = v.split(",") }
+  o.on("--register LIST") { |v| opts[:registers] = v.split(",") }
+  o.on("--sample N", Integer) { |n| opts[:sample] = n }
+  o.on("--generated MODEL") { |v| opts[:generated] = v }
+  o.on("--backend NAME") { |v| opts[:backend] = v }
+end.parse!
+
+def rows(path) = File.exist?(path) ? File.foreach(path).map { |l| JSON.parse(l) } : []
+
+# Human rows for a RAID domain, and the model rows for the same titles keyed by side name
+# ("gpt4", "claude-sonnet-5", ...).
+def load_register(reg, sample, generated)
+  base = rows(File.join(RAID, "#{reg}.jsonl"))
+  abort "no RAID rows for #{reg}; run script/probe-raid fetch" if base.empty?
+  human = base.select { |r| r["model"] == "human" }.first(sample)
+  keys = human.map { |r| r["source_id"] }
+  sides = base.reject { |r| r["model"] == "human" }.group_by { |r| r["model"] }
+  if generated
+    gen = rows(File.join(RAID, "generated", generated, "#{reg}.jsonl"))
+    sides[generated] = gen unless gen.empty?
+  end
+  [human, sides.transform_values { |rs| rs.select { |r| keys.include?(r["source_id"]) } }.reject { |_, v| v.empty? }]
+end
+
+# Units of one text: the first PARAS_PER_TEXT paragraphs of three or more sentences, and their sentences.
+def units(text)
+  paras = Sloplint::Split.paragraphs(text).select { |p| p.sentences.size >= 3 }.first(PARAS_PER_TEXT)
+  [paras, paras.flat_map { |p| p.sentences.each_index.map { |i| [p, i] } }]
+end
+
+# P(a pos value exceeds a neg value), ties at half. Equal to the Mann-Whitney AUC.
+# ponytail: O(n*m) over a few thousand units; rank it if the samples grow.
+def auc(pos, neg)
+  return nil if pos.empty? || neg.empty?
+
+  pos.sum { |p| neg.count { |n| p > n } + 0.5 * neg.count { |n| p == n } } / (pos.size * neg.size).to_f
+end
+
+# Score every unit of every text with every rule, twice for the agreement rate. The score is the
+# expected level, so higher is better prose and level 0 (the flagged level) is the bottom. Returns
+# [{rule:, side:, score:, flagged:, confidence:, flagged_again:}].
+def score(texts, side, rules, backend, reg)
+  eng = Sloplint::Judge::Engine
+  register = READER.fetch(reg)
+  para_rules, sent_rules = rules.partition { |r| r.unit == :paragraph }
+  pq = eng.questions_for(para_rules, register)
+  sq = eng.questions_for(sent_rules, register)
+  jobs = texts.flat_map do |t|
+    paras, sents = units(t["text"])
+    paras.map { |p| [pq, { "register" => register, "paragraph" => p.text, "sentence_count" => p.sentences.size }] } +
+      sents.map { |(p, i)| [sq, { "register" => register, "paragraph" => { "sentences" => p.sentences.map(&:text) }, "target_index" => i, "target" => p.sentences[i].text }] }
+  end.reject { |q, _| q.empty? }
+  twice = eng.in_parallel(jobs, 8) { |(q, state)| [backend.ask(state, q), backend.ask(state, q)] }
+  jobs.zip(twice).flat_map do |(q, _), (a, b)|
+    q.keys.map do |id|
+      rule = rules.find { |r| r.id == id }
+      { rule: id, side: side, score: a[id].probabilities.each_with_index.sum { |p, i| p * i }, flagged: eng.flagged?(rule, a[id]),
+        confidence: a[id].confidence, flagged_again: eng.flagged?(rule, b[id]) }
+    end
+  end
+end
+
+def run(opts)
+  backend = Sloplint::Judge::Backend.load(*[opts[:backend]].compact)
+  rules = Sloplint::Judge::RULES.select { |r| opts[:rules].include?(r.id) }
+  scored = []
+  flips = []
+  opts[:registers].each do |reg|
+    human, sides = load_register(reg, opts[:sample], opts[:generated])
+    warn "#{reg}: #{human.size} human texts; model sides: #{sides.map { |k, v| "#{k} (#{v.size})" }.join(", ")}"
+    scored.concat(score(human, "human", rules, backend, reg).map { |h| h.merge(register: reg) })
+    sides.each do |side, texts|
+      scored.concat(score(texts, side, rules, backend, reg).map { |h| h.merge(register: reg) })
+      # compare: the human paragraph against the model paragraph for the same title, in both orders.
+      pairs = texts.filter_map do |m|
+        h = human.find { |x| x["source_id"] == m["source_id"] }
+        hp, = units(h["text"]) if h
+        mp, = units(m["text"])
+        [hp.first.text, mp.first.text] if hp&.first && mp.first
+      end
+      Sloplint::Judge::Engine.in_parallel(pairs, 8) do |(a, b)|
+        one = Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: false)
+        two = Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: true)
+        [one, two]
+      end.each { |one, two| flips << { register: reg, side: side, flip: one.keep != two.keep, confidence: [one.keep_confidence, two.keep_confidence].min } }
+    end
+  end
+
+  sides = scored.map { |s| s[:side] }.uniq - ["human"]
+  table = lambda do |columns, &cell|
+    opts[:registers].each do |reg|
+      puts "\n#{reg}"
+      puts format("  %-16s %s", "rule", columns.map { |s| format("%18s", s) }.join)
+      rules.each do |r|
+        of = ->(side) { scored.select { |x| x[:register] == reg && x[:side] == side && x[:rule] == r.id } }
+        puts format("  %-16s %s", r.id, columns.map { |s| format("%18s", cell.call(of.(s), of.("human"))) }.join)
+      end
+    end
+  end
+
+  puts "\nP(model unit scores higher than human unit)   (score = expected level, higher is better prose; <0.5 = the rule ranks model prose below human)"
+  table.(sides) do |rows, human|
+    v = auc(rows.map { |x| x[:score] }, human.map { |x| x[:score] })
+    v ? format("%.2f", v) : "-"
+  end
+
+  # A rare flag barely moves the rank statistic above: most units sit at the clean level on
+  # both sides, and small differences in how surely they sit there decide the order. The
+  # count of units `check` would report is the other half of the picture.
+  puts "\nflagged units at confidence >= 0.5 (what check reports without --strict), per side"
+  table.(["human"] + sides) do |rows, _|
+    rows.empty? ? "-" : "#{rows.count { |x| x[:flagged] && x[:confidence] >= 0.5 }} / #{rows.size}"
+  end
+
+  puts "\ncheck agreement between two runs, by confidence band"
+  BANDS.each do |band, floor|
+    rows = scored.select { |x| x[:confidence] >= floor }
+    agree = rows.count { |x| x[:flagged] == x[:flagged_again] }
+    puts format("  >= %-7s %5d units  %5.1f%% agree", band, rows.size, rows.empty? ? 0 : 100.0 * agree / rows.size)
+  end
+
+  puts "\ncompare flip rate under order swap, by confidence band"
+  BANDS.each do |band, floor|
+    rows = flips.select { |x| x[:confidence] >= floor }
+    puts format("  >= %-7s %5d pairs  %5.1f%% flip", band, rows.size, rows.empty? ? 0 : 100.0 * rows.count { |x| x[:flip] } / rows.size)
+  end
+
+  puts "\ngate (docs/JUDGE.md \"Adding a backend\")"
+  current = opts[:generated]
+  # The pass line runs on news only. Abstracts is calibrated and reported
+  # above, but an abstract a current model writes from a RAID title is, by
+  # the judge's measure, about as concrete as the human one (0.50 to 0.54
+  # against Opus 5 and Fable 5.1), so it is not a line a backend can pass.
+  gated = opts[:registers] & %w[news]
+  if current && sides.include?(current) && !gated.empty?
+    %w[no-news names-nothing].each do |id|
+      next unless rules.any? { |r| r.id == id }
+
+      gated.each do |reg|
+        pos = scored.select { |x| x[:register] == reg && x[:side] == current && x[:rule] == id }.map { |x| x[:score] }
+        neg = scored.select { |x| x[:register] == reg && x[:side] == "human" && x[:rule] == id }.map { |x| x[:score] }
+        v = auc(pos, neg)
+        puts format("  %-4s %-14s %-9s %s", v && v < 0.5 ? "ok" : "FAIL", id, reg, v ? format("%.2f", v) : "no data")
+      end
+    end
+  elsif current && sides.include?(current)
+    puts "  skipped: the gate runs on news (pass --register news)"
+  else
+    puts "  skipped: no current-model side (pass --generated MODEL after `script/calibrate generate MODEL`)"
+  end
+  hi = flips.select { |x| x[:confidence] >= 0.7 }
+  # Under 1 percent of 48 pairs is no flip at all, so a small run fails on
+  # one unlucky pair; the line needs a hundred before it can say anything.
+  if hi.size < 100
+    puts format("  n/a  compare flip at >= 0.7: %d pairs at that confidence, 100 needed", hi.size)
+  else
+    puts format("  %-4s compare flip at >= 0.7: %.1f%% of %d", hi.count { |x| x[:flip] } < hi.size / 100.0 ? "ok" : "FAIL", 100.0 * hi.count { |x| x[:flip] } / hi.size, hi.size)
+  end
+  hc = scored.select { |x| x[:confidence] >= 0.7 }
+  ag = hc.empty? ? 0 : 100.0 * hc.count { |x| x[:flagged] == x[:flagged_again] } / hc.size
+  puts format("  %-4s check agreement at >= 0.7: %.1f%% of %d", ag >= 90 ? "ok" : "FAIL", ag, hc.size)
+end
+
+# ── generate ──────────────────────────────────────────────────────────────────
+def anthropic(model, prompt)
+  key = ENV["ANTHROPIC_API_KEY"].to_s
+  abort "generate needs ANTHROPIC_API_KEY" if key.empty?
+  uri = URI("https://api.anthropic.com/v1/messages")
+  req = Net::HTTP::Post.new(uri, "content-type" => "application/json", "x-api-key" => key, "anthropic-version" => "2023-06-01")
+  req.body = JSON.generate(model: model, max_tokens: 1500, messages: [{ role: "user", content: prompt }])
+  res = Net::HTTP.start(uri.host, uri.port, use_ssl: true, read_timeout: 120) { |h| h.request(req) }
+  # A RAID prompt can trip the API's content filter (one in sixty did, and
+  # passed on the next run). That is one title short in the side, not a
+  # reason to stop the rest; the next run asks for it again.
+  if res.code == "400" && res.body.include?("content filtering")
+    warn "generate: skipped one prompt, output blocked by the content filter"
+    return nil
+  end
+  abort "generate: #{res.code} #{res.body[0, 300]}" unless res.code == "200"
+  JSON.parse(res.body).fetch("content").map { |c| c["text"] }.join
+end
+
+# RAID's fetch keeps the generation and not the prompt, so the prompts for the sampled titles are
+# read back out of the CSV. One pass over the file, filtered to the ids wanted.
+def raid_prompts(ids)
+  csv = File.join(RAID, "train_none.csv")
+  abort "no #{csv}; run script/probe-raid fetch" unless File.exist?(csv)
+  found = {}
+  CSV.foreach(csv, headers: true) do |r|
+    next if r["model"] == "human" || found.key?(r["source_id"]) || !ids.include?(r["source_id"])
+
+    found[r["source_id"]] = r["prompt"]
+    break if found.size == ids.size
+  end
+  found
+end
+
+def generate(model, opts)
+  opts[:registers].each do |reg|
+    dir = File.join(RAID, "generated", model)
+    FileUtils.mkdir_p(dir)
+    out = File.join(dir, "#{reg}.jsonl")
+    done = rows(out).to_h { |r| [r["source_id"], true] }
+    human, = load_register(reg, opts[:sample], nil)
+    prompts = raid_prompts(human.map { |r| r["source_id"] })
+    jobs = human.filter_map { |r| (p = prompts[r["source_id"]]) && !done[r["source_id"]] && [r["source_id"], r["title"], p] }
+    warn "#{reg}: generating #{jobs.size} texts with #{model}"
+    # Each row is written as its own generation comes back, not after the
+    # last one: the generations are paid for, and a run that stops part way
+    # through -- an error, a rate limit, a keyboard interrupt -- leaves the
+    # ones already paid for on disk, where `done` above finds them and the
+    # next run asks only for the rest.
+    lock = Mutex.new
+    File.open(out, "a") do |f|
+      Sloplint::Judge::Engine.in_parallel(jobs, 4) do |(id, title, prompt)|
+        text = anthropic(model, prompt) or next
+        lock.synchronize do
+          f.puts JSON.generate(model: model, source_id: id, title: title, text: text)
+          f.flush
+        end
+      end
+    end
+  end
+end
+
+case ARGV.shift
+when "run" then run(opts)
+when "generate" then generate(ARGV.shift || abort("generate MODEL"), opts)
+else abort File.read(__FILE__).lines.grep(/^#   /).join
+end

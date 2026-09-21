@@ -26,6 +26,17 @@ RSpec.describe Sloplint::CLI do
       expect(code).to eq(1)
     end
 
+    # Taken and dropped, these two read as a judge run nobody asked for: the
+    # regex rules run, the reader named on the command line is never used,
+    # and the output says nothing about either.
+    it "returns 2 for a flag that only means something with --judge" do
+      [["--register", "a lawyer"], ["--backend", "jev"]].each do |flag, value|
+        code, out, err = run(["check", flag, value, "-"], stdin_text: "The meeting is at noon.")
+        expect([code, out]).to eq([2, ""])
+        expect(err).to include("#{flag} needs --judge")
+      end
+    end
+
     it "returns 2 on an unknown command, which reads as a missing file" do
       code, _out, err = run(["frobnicate"])
       expect(code).to eq(2)
@@ -398,6 +409,36 @@ RSpec.describe Sloplint::CLI do
       code, out = run(["-h"])
       expect(code).to eq(0)
       expect(out).to include("Recommended for agents")
+    end
+
+    it "--help tells an agent to run status and ask before --judge, or how to install the judge" do
+      _, out = run(["--help"])
+      expect(out).to include("sloplint-judge status").and include("ask")
+      allow($LOAD_PATH).to receive(:resolve_feature_path).and_return(nil)
+      allow(Gem::Specification).to receive(:find_all_by_name).and_call_original
+      # Installed as a gem, the judge is off the load path until RubyGems
+      # activates it. That is installed, and the recipe must say so.
+      judge_gem = ->(requirement) { Gem::Specification.new("sloplint-judge", "9.9.9") { |g| g.add_dependency("sloplint", requirement) } }
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([judge_gem.call(Sloplint::VERSION)])
+      _, out = run(["--help"])
+      expect(out).to include("sloplint-judge status")
+      # A gem that asks for another sloplint cannot be required beside this
+      # one, so the recipe must not send the agent to --judge.
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([judge_gem.call("= 0.0.1")])
+      _, out = run(["--help"])
+      expect(out).to include("not installed here")
+      expect(out).not_to include("sloplint-judge status")
+      allow(Gem::Specification).to receive(:find_all_by_name).with("sloplint-judge").and_return([])
+      _, out = run(["--help"])
+      expect(out).to include("not installed here").and include("gem install sloplint-judge")
+      expect(out).not_to include("sloplint-judge status")
+    end
+
+    # The recipe asks RubyGems whether the judge is installed, which scans
+    # every installed gem. A check has no use for it.
+    it "builds the help banner only when help is asked for" do
+      expect(Sloplint::CLI).not_to receive(:judge_recipe)
+      run(["check", "-"], stdin_text: "Plain prose here.\n")
     end
 
     it "--help behaves the same as -h" do

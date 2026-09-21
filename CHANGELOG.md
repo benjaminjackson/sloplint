@@ -3,7 +3,110 @@
 All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## sloplint-judge
+
+### [0.1.0] - unreleased
+
+- New sentence rule `unnamed-authority` (`info`, `medium`): a claim handed to
+  experts, studies, research, critics or many, an authority the reader could
+  not find and that speaks for nobody. Officials, a spokesperson and the
+  other sources news quotes by convention pass, and so does an abstract's
+  prior work. The reading behind the regex `vague-attribution`.
+- New sentence rule `stated-stakes` (`info`, `low`, off by default): a sentence
+  that says something is crucial, vital or key and gives no fact, number or
+  consequence, in it or in the sentence after it. Off by default because the
+  model rarely answers it above low confidence; `--select stated-stakes` or
+  `--strict` runs it.
+- A rule at `low` confidence (`same-weight`, `matched-shape`) now reports its
+  notes when `--select` names it; before, they ran and printed nothing
+  without `--strict`. The rule's `low` caps the note's confidence; what a
+  default run drops is an answer the model itself gave at low confidence.
+- `check --judge` always writes the `{"notes", "judge"}` object, with 0
+  requests when no judge rule survived selection. `compare` accepts
+  `--drift` after the two files and refuses a third. `status` refuses a key
+  with a control character the way `check --judge` does.
+- Graveyard: `owned-claim` was retried as `no-actor` and stays out, and
+  `buried-verbs`, the paragraph reading of the nominalization shift, joins
+  it; neither crossed the flag on any side. The entries in `docs/JUDGE.md`
+  say so.
+- New paragraph rule `promotional` (`warning`, `medium`): a paragraph in
+  which every judgment is favorable, none comes with a measure and no
+  drawback appears. The paragraph-level reading behind `puffery-words`,
+  which catches the register after the watch words have aged out.
+- New paragraph rule `self-narration` (`info`, `medium`): a paragraph whose
+  sentences signpost the document, what comes first, what a section covers,
+  what the reader should take away, instead of saying something about the
+  subject. `throat-clearing` sees the first sentence; this is the paragraph.
+- `script/calibrate run` also prints how many units each side would have
+  flagged at the confidence `check` reports. A rare flag barely moves the
+  rank statistic, so for such a rule the count is the number to quote.
+- New paragraph rule `same-weight` (`info`, `low`, off by default): a paragraph
+  that states its inferences and opinions as flatly as its measurements, with
+  no probably, no we think, and no reason given. Separates model from human
+  text in news and abstracts; off by default because a design document argues
+  in flat sentences on purpose. `--select same-weight` or `--strict` runs it.
+- New sentence rule `trailing-gloss` (`info`, `medium`): a sentence that ends
+  on a comma and an -ing clause that interprets the fact before it
+  ("highlighting the value of", "underscoring the importance of") rather than
+  adding a fact or a consequence. The reading the regex
+  `trailing-significance-participle` could not do.
+- Graveyard: `redundancy` was retried as `restatement` with the fairness
+  reading it was owed, reversed in news against every model side, and stays
+  out. The entry in `docs/JUDGE.md` says why.
+- `wrap-up` also flags a last sentence that admits problems and then
+  promises a bright future ("Despite these challenges, the future looks
+  promising"). Its flagged level says so, its message now reads "Paragraph
+  ends on a summary, a moral or a hope", and fixtures pin both sides: the
+  hope that names nothing is flagged, the same frame closing on a dated
+  fact is not. Wikipedia's field guide documents the formula across
+  unrelated topics, and the GPT family ends documents on it.
+
+- First release of the judge gem: the rule catalog in `docs/JUDGE.md`, the
+  Jev backend, `check`, `compare`, `rules`, `explain`, and `script/calibrate`.
+  Requires sloplint 0.9; see "Phase two" in `docs/JUDGE.md` for what is next.
+- `check` reports what the judge spent: JSON output is `{"notes", "judge"}`
+  with the backend, request count, token counts and cost in dollars under
+  `judge`, and the same line goes to stderr. Jev returns no price, so the
+  cost is computed from TypeSafe's public price: $42 per billion input
+  tokens, output tokens free.
+- The key can live in the OS keychain instead of the environment.
+  `sloplint-judge key set` stores it once (the keychain tool prompts, so the
+  key is never on a command line), the Jev adapter reads it after
+  `TYPESAFE_API_KEY`, and `sloplint-judge status` says whether a run could
+  happen and where the key is, without reading it. `sloplint-judge key
+  unset` removes the item. The check skill probes with `status`.
+- `SYSTEMONE_URL` must point at a `typesafe.ai` host, not only be `https`:
+  the key and the document go there, so an injected URL on the sanctioned
+  command is refused with exit 2.
+
+## sloplint
+
+## [0.9.0] - 2026-09-20
+
+### Added
+
+- `sloplint check --judge` runs the rules of sloplint-judge alongside the
+  regex catalog and merges the notes in document order. The judge is a second
+  gem built from this repository (`sloplint-judge.gemspec`, `exe/sloplint-judge`)
+  whose rules are questions put to a System One model. sloplint loads it by
+  name only and exits 2 with an install hint when it is missing. A backend
+  failure under `--judge` is exit 3 and writes no notes. See `docs/JUDGE.md`.
+- `Sloplint::Split`, a paragraph and sentence splitter that keeps offsets into
+  the source, and `Engine.context_window`, the note's context drawn for any
+  span rather than only a regex match. Both are used by the judge.
+- `script/calibrate`, which measures a judge backend against RAID and a
+  current-model side generated from RAID's own prompts, and reports the
+  pass lines from `docs/JUDGE.md`.
+
+### Fixed
+
+- `--markdown` opens and closes a fenced code block only at the start of a
+  line, at any indent, so a fence under `10. ` or a nested bullet still
+  pairs. A fence quoted inside a sentence (```` ``` ````) used to open a
+  block there, and every fence after it paired wrong for the rest of the file.
+- The splitter also drops indented code blocks (four spaces or a tab), lines
+  that are one HTML tag, and YAML front matter under `--markdown`, so none of
+  them reach the judge as prose.
 
 ## [0.8.1] - 2026-09-20
 

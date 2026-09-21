@@ -17,11 +17,38 @@ If the prose is in the conversation — pasted in, or drafted with you — write
 
 Ask which file only when there is no prose anywhere to work from.
 
+## Decide whether the judge runs
+
+The regex scanner runs on this machine and nothing leaves it. The judge is the exception: it asks a model the questions a regex cannot, and to do that it sends the text, paragraph by paragraph, to TypeSafe's API at api.typesafe.ai. It costs about a third of a cent per thousand words. The person decides whether that happens, not the presence of a key.
+
+First find out whether the judge is even possible here. This command reads no key and prints none; it only says whether one exists, in the environment or the OS keychain:
+
+```bash
+ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint-judge" status >/dev/null 2>&1 && echo judge-available || echo judge-unavailable
+```
+
+- **Unavailable.** Run the plain check. Do not ask, do not mention the judge unless they asked for it, and say in the report that only the regex rules ran. If they ask how to set the judge up, tell them to run `sloplint-judge key set` in their own terminal and paste the key when it prompts. Never run that command yourself, and never ask for the key in the conversation.
+- **Available, and they already said so.** If the request itself asks for the judge, the model, Jev, TypeSafe, or says to send it, or they said yes earlier in this conversation, run with `--judge`. Ask once per conversation, not once per file.
+- **Available, and they said to stay offline.** "Offline", "without the judge", "don't send it anywhere": run the plain check and say the judge was skipped on request.
+- **Available, and nothing was said.** Ask before running anything, in one question: sloplint can also run the judge, which sends the text to TypeSafe's API (api.typesafe.ai, about a third of a cent per thousand words) and catches the vague, restated and already-known sentences a regex cannot. Do that, or stay offline? Use AskUserQuestion where it exists. No answer, or no way to ask, means offline.
+
 ## Run it
+
+With the judge:
+
+```bash
+ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
+```
+
+The JSON is then an object: the notes under `notes` (the usual array, or keyed by path for several files) and what it spent under `judge` (backend, requests, token counts, cost). If it exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_KEY`, the judge is not installed or not configured after all; run the plain check and say so.
+
+Without the judge:
 
 ```bash
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
+
+When the judge did run, end the report with one line that says so: the text was sent to api.typesafe.ai, which backend answered, how many requests, how many tokens, and the cost, all from the `judge` object. If `requests` is 0, the judge examined nothing: the document was all Markdown furniture, or its paragraphs were too short for the rules that ran. Say that only the regex rules examined the text; do not say the judge found nothing.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
 
@@ -38,6 +65,7 @@ If none works, do not quote the error. Say that this needs a piece of software c
 
 - `0` — nothing flagged.
 - `1` — notes found, on stdout as JSON.
+- `3` — with `--judge`, the model could not be reached. Nothing was checked, not even the regex rules, so do not report a clean draft. Say the judge backend failed, quote its one-line reason, and offer to run the plain check.
 - `2` — a usage or argument error, on stderr. Two common causes worth translating: the input was empty, meaning nothing reached the scanner and nothing was checked; or the file is not plain text or Markdown. A `.docx` is a zip archive and will fail here — say so in plain words and offer to read the document and scan its text instead.
 
 ## Report it

@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+if (RUBY_VERSION.split(".").map(&:to_i).first(2) <=> [3, 3]) < 0
+  abort "sloplint-judge needs Ruby 3.3 or later, found #{RUBY_VERSION}.\n" \
+        "macOS ships Ruby 2.6 at /usr/bin/ruby. Install a current one with `brew install ruby`."
+end
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+require "sloplint/judge/cli"
+exit Sloplint::Judge::CLI.run(ARGV)
