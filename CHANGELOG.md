@@ -101,9 +101,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - `--markdown` opens and closes a fenced code block only at the start of a
-  line, indented at most three spaces, as CommonMark does. A fence quoted
-  inside a sentence (```` ``` ````) used to open a block there, and every
-  fence after it paired wrong for the rest of the file.
+  line, at any indent, so a fence under `10. ` or a nested bullet still
+  pairs. A fence quoted inside a sentence (```` ``` ````) used to open a
+  block there, and every fence after it paired wrong for the rest of the file.
+- The splitter also drops indented code blocks (four spaces or a tab), lines
+  that are one HTML tag, and YAML front matter under `--markdown`, so none of
+  them reach the judge as prose.
 
 ## [0.8.1] - 2026-09-20
 

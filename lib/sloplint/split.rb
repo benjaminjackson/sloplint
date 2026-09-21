@@ -201,6 +201,39 @@ module Sloplint
     # there rather than part of the link.
     LONE_INLINE_ENDED = /\A[ \t]*#{INLINE}[ \t#{INLINE}]*[.,;:!?)\]]+\z/
 
+    # A bullet. FURNITURE matches one too, among everything else it matches;
+    # this is here because a bullet and an ordered item are the only two
+    # kinds of furniture a continuation line can belong to.
+    BULLET = /\A[ \t]*[-*+][ \t]/
+    # The second line of a list item, indented under the first.
+    CONTINUED = /\A(?:[ ]{2,}|\t)\S/
+    # An indented code block: four spaces or a tab. Two spaces are still
+    # prose, so an indented paragraph under a heading is kept, which is what
+    # CommonMark says as well -- a code block starts at four.
+    CODE_INDENT = /\A(?:[ ]{4}|\t)/
+    # A line that is one HTML tag, opening or closing, matched on that shape
+    # rather than on a list of element names: <details>, <div>, <br/> and
+    # whatever else a document drops into Markdown all look the same from
+    # here. A sentence that names a tag in running text does not look like
+    # this: "<p> is the tag for a paragraph." has words after the ">".
+    HTML_LINE = %r{\A[ \t]{0,3}</?[A-Za-z][^\n]*>[ \t]*\z}
+    # The --- that opens YAML front matter. FURNITURE reads it as a
+    # horizontal rule wherever it appears; front matter is the block it
+    # opens, and only on the first line of the file.
+    FRONT = /\A---[ \t]*\z/
+
+    # How many lines of YAML front matter the document opens with: the ---
+    # on the first line, everything to the next --- line, and that line. Zero
+    # for a document that does not open with one, so a --- between two
+    # paragraphs stays the horizontal rule it is.
+    def front_matter(lines)
+      return 0 unless lines.first&.chomp&.match?(FRONT)
+
+      close = lines.drop(1).index { |l| l.chomp.match?(FRONT) } or return 0
+
+      close + 2
+    end
+
     # Both copies at once, line by line: the furniture is decided on the
     # splitter's copy, where a code span is a placeholder, and the same lines
     # are blanked in the copy the model is shown. Every line keeps its own
@@ -209,27 +242,33 @@ module Sloplint
     # tests run: on a CRLF file it would otherwise sit between the line and
     # the \z that a horizontal rule or a bare link ends at, and neither would
     # be recognised as furniture.
-    # A bullet. FURNITURE matches one too, among everything else it matches;
-    # this is here because a bullet and an ordered item are the only two
-    # kinds of furniture a continuation line can belong to.
-    BULLET = /\A[ \t]*[-*+][ \t]/
-    # The second line of a list item, indented under the first.
-    CONTINUED = /\A(?:[ ]{2,}|\t)\S/
-
     def blank_furniture(scan, shown)
+      lines = scan.each_line.to_a
+      front = front_matter(lines)
       item = false
       prose = false
-      pairs = scan.each_line.zip(shown.each_line).map do |whole, also|
+      code = false
+      opens = true
+      pairs = lines.zip(shown.each_line.to_a).each_with_index.map do |(whole, also), i|
         l = whole.chomp
         ending = whole[l.length..]
+        blank = l.strip.empty?
         # Only a list item runs on to the next line. An indented line under a
         # heading, a table row, a horizontal rule or a link definition is an
         # indented paragraph, and chaining from those dropped the prose along
         # with the furniture above it.
         listed = l.match?(BULLET) || ordered_item?(l, prose)
-        dropped = listed || l.match?(FURNITURE) || lone_inline?(l, prose) || (item && l.match?(CONTINUED))
+        indented = l.match?(CODE_INDENT)
+        # An indented code block opens where a paragraph cannot be running
+        # already -- the first line, or after a blank or furniture line --
+        # and where the indent is not a list item's second line. It then runs
+        # for as long as the indent holds.
+        code = (code && (indented || blank)) || (indented && !item && opens)
+        dropped = i < front || code || listed || l.match?(FURNITURE) || l.match?(HTML_LINE) ||
+                  lone_inline?(l, prose) || (item && l.match?(CONTINUED))
         item = listed || (item && l.match?(CONTINUED))
-        prose = !dropped && !l.strip.empty?
+        prose = !dropped && !blank
+        opens = blank || dropped
         dropped ? ["#{" " * l.length}#{ending}"] * 2 : [whole, also]
       end
       [pairs.map(&:first).join, pairs.map(&:last).join]

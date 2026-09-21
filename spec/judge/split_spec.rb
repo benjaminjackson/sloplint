@@ -255,4 +255,43 @@ RSpec.describe Sloplint::Split do
     text = "Prose.\n\n```\nnot. prose. here.\n```\n\nMore prose.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose.", "More prose."])
   end
+
+  # Under --markdown a code block, an HTML block and front matter are not
+  # prose. Reaching the judge, each one is a paid request and a possible
+  # note on a line nobody wrote as a sentence.
+  it "drops an indented code block, and keeps a two-space indent as prose" do
+    text = "Here is the intro. It runs on.\n\n    code = 1\n    more = 2\n\nAfter the block. More after.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["Here is the intro. It runs on.", "After the block. More after."])
+    # Four spaces is a code block, two is an indented paragraph, which is
+    # what CommonMark says and what the indented prose under a heading
+    # relies on.
+    text = "# Heading\n  Indented prose after heading. Second one.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["Indented prose after heading. Second one."])
+  end
+
+  it "drops a line that is one HTML tag, and keeps a sentence that names one" do
+    text = "<details>\n<summary>Click</summary>\n\nProse here. More prose.\n\n</details>\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
+    # The shape is a line that is nothing but a tag. A sentence about a tag
+    # has words after the ">", so it stays prose.
+    text = "<p> is the tag for a paragraph. It wraps running text.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["<p> is the tag for a paragraph. It wraps running text."])
+  end
+
+  it "drops YAML front matter, and keeps a horizontal rule between paragraphs" do
+    text = "---\ntitle: My Doc\nauthor: Someone\n---\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
+    # Only at the very start of the file. A --- further down is the
+    # horizontal rule it has always been, and it separates two paragraphs
+    # rather than swallowing one.
+    text = "A paragraph here. Second one.\n\n---\n\nAnother paragraph. Second one.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["A paragraph here. Second one.", "Another paragraph. Second one."])
+    # An opening --- that never closes is not front matter either.
+    text = "---\nProse here. More prose. Third one.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose. Third one."])
+  end
 end

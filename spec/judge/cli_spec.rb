@@ -163,6 +163,9 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
       code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
       expect([code, out]).to eq([2, ""])
       expect(err).to include("gem install sloplint-judge")
+      # The hint tells the reader to install what they have already got, so
+      # RubyGems says which version it wanted and which one it found.
+      expect(err).to include("Could not find 'sloplint-judge' (~> 0.9)")
     end
   end
 

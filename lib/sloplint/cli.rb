@@ -98,6 +98,11 @@ module Sloplint
           raise unless e.path == "sloplint/judge" || e.is_a?(Gem::LoadError)
 
           err.puts("sloplint: --judge needs the sloplint-judge gem: gem install sloplint-judge")
+          # An installed judge that RubyGems will not activate is a version
+          # conflict, and the hint above tells the reader to install what
+          # they already have. RubyGems says which versions fell out, so
+          # print that too rather than throwing it away.
+          err.puts("sloplint: #{e.message}") if e.is_a?(Gem::LoadError)
           return 2
         end
       end

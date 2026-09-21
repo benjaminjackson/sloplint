@@ -26,12 +26,17 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(n.count).to be_nil
   end
 
-  it "skips paragraphs under three sentences unless strict" do
+  # A paragraph rule asks how a paragraph opens or how it ends, and a
+  # paragraph of one or two sentences has no answer to give. --strict used to
+  # ask anyway; it now widens the sentence rules and leaves this gate where it
+  # is, so the short paragraphs are still read, by the rules that can read
+  # them, and the requests that had no answer are not paid for.
+  it "skips paragraphs under three sentences, under --strict as well" do
     described_class.scan(text, rules: [para_rule], backend: flag_all)
     expect(flag_all.calls.map { |s, _| s["sentence_count"] }).to eq([3])
     strict = FakeBackend.new
     described_class.scan(text, rules: [para_rule], backend: strict, strict: true)
-    expect(strict.calls.map { |s, _| s["sentence_count"] }).to eq([1, 3, 2])
+    expect(strict.calls.map { |s, _| s["sentence_count"] }).to eq([3])
   end
 
   it "runs sentence rules in flagged paragraphs and in the short ones no paragraph rule saw" do
@@ -179,6 +184,16 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(jev.cost_usd("input_tokens" => 1_000_000_000, "output_tokens" => 5)).to eq(42.0)
     allow(Sloplint::Judge::Secret).to receive(:fetch).and_return(nil)
     expect { Sloplint::Judge::Backends::Jev.new }.to raise_error(ArgumentError, /run `sloplint-judge key set`/)
+  end
+
+  # Reading the key means the environment and then a keychain subprocess,
+  # which can sit on a dialog nobody can see. A run that is about to be
+  # refused for its URL must not pull the secret out of the keychain first.
+  it "refuses a bad URL without going near the key" do
+    require "sloplint/judge/backends/jev"
+    expect(Sloplint::Judge::Secret).not_to receive(:fetch)
+    expect { Sloplint::Judge::Backends::Jev.new(url: "https://attacker.example/v1") }
+      .to raise_error(ArgumentError, /typesafe\.ai host/)
   end
 
   # A DNS name is not case-sensitive, and URI hands the host back as it was

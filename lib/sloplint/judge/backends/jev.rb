@@ -23,10 +23,14 @@ module Sloplint
         def initialize(url: ENV.fetch("SYSTEMONE_URL", DEFAULT_URL),
                        model: ENV.fetch("SYSTEMONE_MODEL", DEFAULT_MODEL),
                        key: nil)
+          # The URL first: reading the key means the environment and then a
+          # keychain subprocess, which can sit for fifteen seconds on a
+          # dialog nobody can see, and a run that is about to be refused for
+          # its URL has no business pulling the secret out of the keychain.
+          @url = self.class.https!(url)
           key ||= Secret.fetch(KEY)&.first
           raise ArgumentError, Secret.missing(KEY) if key.nil? || key.empty?
 
-          @url = self.class.https!(url)
           @model = model
           @key = key
         end

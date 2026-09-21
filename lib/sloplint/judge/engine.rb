@@ -81,7 +81,12 @@ module Sloplint
         flagged = []
 
         unless para_rules.empty?
-          eligible = strict ? paragraphs : paragraphs.select { |p| p.sentences.size >= MIN_SENTENCES }
+          # The gate holds under --strict as well. A paragraph rule asks about
+          # how a paragraph ends or how it opens, and a paragraph of one or
+          # two sentences has no answer to give; the sentence rules already
+          # cover those sentences under strict, and each question here is
+          # paid for.
+          eligible = paragraphs.select { |p| p.sentences.size >= MIN_SENTENCES }
           questions = questions_for(para_rules, register)
           answered = in_parallel(eligible, concurrency) do |p|
             backend.ask({ "register" => register, "paragraph" => p.asked, "sentence_count" => p.sentences.size }, questions)

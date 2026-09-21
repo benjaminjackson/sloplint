@@ -68,6 +68,22 @@ RSpec.describe Sloplint::Engine do
       expect(out.lines.last).to eq("  After the block.\n")
       expect(described_class.blank_markdown("```json\n{\"a\": 1}\n```\n").strip).to be_empty
     end
+
+    # CommonMark measures a fence's indent from whatever contains it, so a
+    # fence inside "10. " stands four spaces in and one inside a nested
+    # bullet further still. Three spaces of indent is the limit only for a
+    # fence at the top level of the document.
+    it "blanks a fence indented under a numbered item and under a nested bullet" do
+      text = "10. Install it:\n\n    ```sh\n    gem install x\n    ```\n\nAfter it.\n"
+      out = described_class.blank_markdown(text)
+      expect(out.lines[2..4].map(&:strip)).to all(be_empty)
+      expect(out.lines.last).to eq("After it.\n")
+
+      nested = "- One:\n  - Two:\n\n      ```ruby\n      puts 1\n      ```\n\n  Done here.\n"
+      out = described_class.blank_markdown(nested)
+      expect(out.lines[3..5].map(&:strip)).to all(be_empty)
+      expect(out.lines.last).to eq("  Done here.\n")
+    end
   end
 
   describe ".context_for" do
