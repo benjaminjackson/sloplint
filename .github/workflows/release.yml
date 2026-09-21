@@ -1,0 +1,26 @@
+name: Release
+
+# v0.9.0 was tagged and pushed to rubygems with no GitHub release behind it,
+# because making one was a manual step nobody was holding. The tag is the
+# trigger now.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The notes are the tag's own CHANGELOG section, so a release with
+      # nothing written for it fails here rather than shipping empty.
+      - run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="## [$version]" 'index($0, v) == 1 { f = 1; next } f && /^## / { exit } f' CHANGELOG.md > notes.md
+          test -s notes.md
+      - run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
