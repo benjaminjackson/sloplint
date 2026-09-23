@@ -84,10 +84,10 @@ module Sloplint
     "and|but|or|nor|yet|too|enough|itself|indeed|which|that|here|there|so" \
     "|time|world|numbers?|roots?|money|estate|user"
 
-# The abstract heads the-x-is-the-x repeats across the copula: nouns that
-# cannot name a specific object. the-x-is-not-the-x skips them, so the
-# negated form of these heads is reported once, by the-x-is-the-x.
-THE_X_HEADS = "reason|problem|question|lesson|difference|trick|move|goal|tell|pattern|insight|takeaway|shift|bet|catch|bottleneck|issue|game|cause|failure|magic|challenge|tension|irony|paradox|trap"
+  # The abstract heads the-x-is-the-x repeats across the copula: nouns that
+  # cannot name a specific object. the-x-is-not-the-x skips them, so the
+  # negated form of these heads is reported once, by the-x-is-the-x.
+  THE_X_HEADS = "reason|problem|question|lesson|difference|trick|move|goal|tell|pattern|insight|takeaway|shift|bet|catch|bottleneck|issue|game|cause|failure|magic|challenge|tension|irony|paradox|trap"
 
   RULES = [
     Rule.new(
