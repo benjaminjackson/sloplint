@@ -1,10 +1,21 @@
-# sloplint-judge — spec
+# sloplint-judge
 
 A second gem in this repository, with sloplint's shape and a different kind of rule. sloplint's rules are regexes: offline, milliseconds, every note traceable to a pattern. sloplint-judge's rules are questions put to a System One model, one that answers typed questions about a piece of text with calibrated probabilities and never writes prose. A rule here is still data. What changes is that the "pattern" is a question the model can answer and a regex cannot: does this paragraph end on a summary, a moral or a hope, does this sentence tell the stated reader anything new, does it name a thing a reader could look up.
 
 Everything else is sloplint's, used directly rather than copied: the note object, the paragraph break, the markdown blanker, the exit codes, the fixture discipline, the provenance rules. The judge depends on the sloplint gem. sloplint knows the judge by name and nothing more: `sloplint check --judge` tries to load it and says how to install it if that fails. The dependency points one way. This is the shape dspy.rb uses for its provider gems, and it is the whole plugin system: a lazy `require` behind one flag.
 
 This document is the contract. Phase one is what the spike settled and what ships first. Phase two lists the open items with the test each one must pass before it is built.
+
+## Installing it, and the key
+
+```bash
+gem install sloplint sloplint-judge     # or both in a Gemfile's :development group
+sloplint-judge key set                  # the keychain tool prompts for the key, echo off
+```
+
+Ruby 3.3+ and sloplint 0.9 or later. Jev is in early access behind a waitlist: sign up at [typesafe.ai](https://typesafe.ai) and issue a key at [console.typesafe.ai](https://console.typesafe.ai/settings/keys) once you are through. `TYPESAFE_API_KEY` in the environment takes precedence over the keychain item; `sloplint-judge status` says which one was found, without reading it. "Where the key lives" below has what the keychain protects and what it does not, and "Backend adapter" has the rest of the environment.
+
+Then either `sloplint check --judge FILE`, which merges the two catalogs into one set of notes, or `sloplint-judge check FILE` for these rules alone. The README covers the first; the CLI surface below covers the second.
 
 ## What it is and is not
 
