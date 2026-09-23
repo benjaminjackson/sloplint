@@ -427,6 +427,9 @@ module Sloplint
           "We assume the importer runs once a day rather than on every upload.",
           "We chose Postgres rather than DynamoDB because the reports need joins.",
           "If the lock is not released within 30 seconds, the worker exits.",
+          "Each upload holds no more than 200 files.",
+          "The email column is declared NOT NULL and indexed.",
+          "A client MUST NOT reuse a nonce within the same session.",
           "\"We are not shipping on Friday,\" the release manager said."
         ],
         rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
