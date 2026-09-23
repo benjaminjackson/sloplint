@@ -475,7 +475,7 @@ RSpec.describe Sloplint::CLI do
     readme = File.read(File.expand_path("../README.md", __dir__), encoding: "UTF-8")
 
     it "quotes the current no-x-no-y rationale in its sample JSON note" do
-      json_block = readme[/```json\n(\{.*?\})\n```/m, 1]
+      json_block = readme[/^## The note\n.*?```json\n(\{.*?\})\n```/m, 1]
       note = JSON.parse(json_block)
       rule = Sloplint::RULES.find { |r| r.id == "no-x-no-y" }
       expect(note["rationale"]).to eq(rule.rationale)
