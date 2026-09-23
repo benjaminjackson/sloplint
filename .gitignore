@@ -4,3 +4,4 @@
 .corpus/
 .claude/worktrees/
 .env
+Gemfile.lock
