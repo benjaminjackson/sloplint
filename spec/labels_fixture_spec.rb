@@ -59,7 +59,11 @@ RSpec.describe "spec/fixtures/labels.jsonl" do
   end
 
   it "never names the private project" do
-    expect(`git grep -il offtrail`.strip).to eq("")
+    # The name is built at runtime and never spelled out in this file, so
+    # the check below can't match itself: nothing in the repo, this file
+    # included, may contain it as a contiguous word.
+    name = %w[off trail].join
+    expect(`git grep -il #{name}`.strip).to eq("")
   end
 
   # A row that shares six lowercase words in a row with a real paragraph is a
