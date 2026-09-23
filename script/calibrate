@@ -56,8 +56,8 @@ def load_register(reg, sample, generated)
 end
 
 # The API sheds load with 5xx under traffic; a long run should wait it out rather than die.
-def ask_retrying(backend, state, q)
-  with_retries(max_tries: 6, base_sleep_seconds: 5, max_sleep_seconds: 60, rescue: Sloplint::Judge::BackendError) { backend.ask(state, q) }
+def retrying(&)
+  with_retries(max_tries: 6, base_sleep_seconds: 5, max_sleep_seconds: 60, rescue: Sloplint::Judge::BackendError, &)
 end
 
 # Units of one text: the first PARAS_PER_TEXT paragraphs of three or more sentences, and their sentences.
@@ -88,7 +88,7 @@ def score(texts, side, rules, backend, reg)
     paras.map { |p| [pq, { "register" => register, "paragraph" => p.text, "sentence_count" => p.sentences.size }] } +
       sents.map { |(p, i)| [sq, { "register" => register, "paragraph" => { "sentences" => p.sentences.map(&:text) }, "target_index" => i, "target" => p.sentences[i].text }] }
   end.reject { |q, _| q.empty? }
-  twice = eng.in_parallel(jobs, 8) { |(q, state)| [ask_retrying(backend, state, q), ask_retrying(backend, state, q)] }
+  twice = eng.in_parallel(jobs, 8) { |(q, state)| [retrying { backend.ask(state, q) }, retrying { backend.ask(state, q) }] }
   jobs.zip(twice).flat_map do |(q, _), (a, b)|
     q.keys.map do |id|
       rule = rules.find { |r| r.id == id }
@@ -117,8 +117,8 @@ def run(opts)
         [hp.first.text, mp.first.text] if hp&.first && mp.first
       end
       Sloplint::Judge::Engine.in_parallel(pairs, 8) do |(a, b)|
-        one = Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: false)
-        two = Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: true)
+        one = retrying { Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: false) }
+        two = retrying { Sloplint::Judge::Compare.run(a, b, place: PLACE.fetch(reg), backend: backend, swap: true) }
         [one, two]
       end.each { |one, two| flips << { register: reg, side: side, flip: one.keep != two.keep, confidence: [one.keep_confidence, two.keep_confidence].min } }
     end
