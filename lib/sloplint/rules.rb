@@ -84,6 +84,11 @@ module Sloplint
     "and|but|or|nor|yet|too|enough|itself|indeed|which|that|here|there|so" \
     "|time|world|numbers?|roots?|money|estate|user"
 
+# The abstract heads the-x-is-the-x repeats across the copula: nouns that
+# cannot name a specific object. the-x-is-not-the-x skips them, so the
+# negated form of these heads is reported once, by the-x-is-the-x.
+THE_X_HEADS = "reason|problem|question|lesson|difference|trick|move|goal|tell|pattern|insight|takeaway|shift|bet|catch|bottleneck|issue|game|cause|failure|magic|challenge|tension|irony|paradox|trap"
+
   RULES = [
     Rule.new(
       id: "no-x-no-y",
@@ -759,7 +764,7 @@ module Sloplint
       # negation ("isn't the reason") both count. The sentence-initial
       # capital is not required, so "and the reason … is the reason …"
       # flags too.
-      pattern: /\bthe\s+(reason|problem|question|lesson|difference|trick|move|goal|tell|pattern|insight|takeaway|shift|bet|catch|bottleneck|issue|game|cause|failure|magic|challenge|tension|irony|paradox|trap)\b
+      pattern: /\bthe\s+(#{THE_X_HEADS})\b
                 (?:[^.!?;:,\n]|\r?\n(?!\s*\n)){1,50}?\bis(?:n['’]t|\s+not)?\s+the\s+\1
                 (?=[,.;:!?]|\s+(?:of|for|with|in|on|to|at|behind|about|that|which|why|here|there|the|a|an|this|these|those|my|our|your|their|its|his|her|it|they|we|you|i|he|she|every|each|most|many|some|any|no|nobody|everyone|people|[a-z]+s)\b)/ix,
       message: '"The X … is the X …" equates by repeating the head noun.',
@@ -796,6 +801,63 @@ module Sloplint
       rationale: "Repeating the head noun across the copula asserts an identity between " \
                  "two things while naming neither; it sounds like a diagnosis and " \
                  "delivers a tautology. Careful writers say what the second thing is."
+    ),
+    Rule.new(
+      id: "the-x-is-not-the-x",
+      category: "cadence",
+      severity: "warning",
+      confidence: "medium",
+      # The negated twin of the-x-is-the-x with any head noun: "the job you
+      # applied for is not the job you will do", "the one you want is not the
+      # one that runs the studio". The same noun sits on both sides of a
+      # negated copula, caught by a backreference, and a clause on either side
+      # splits it into two things the sentence never tells apart. The
+      # repetition is the tell: a writer who knew what separates the two would
+      # name it instead of mirroring the noun.
+      #
+      # The narrowings are structural. The clause between the two heads is
+      # capped at fifty characters and may not hold sentence punctuation, a
+      # comma, semicolon or colon, so the heads share one clause. The second
+      # head may not be followed by "of", which names the difference ("the
+      # voice was not the voice of her brother"), and "not the same X" never
+      # matches because "same" sits between "the" and the head. "same" is not
+      # a head either. The-x-is-the-x's abstract heads are skipped, since that
+      # rule already reports their negated form.
+      pattern: /\bthe#{WRAP_GAP}+(?!(?:#{THE_X_HEADS}|same)\b)([[:alpha:]]{2,})\b
+                (?:[^.!?;:,\n]|\r?\n(?!\s*\n)){0,50}?
+                \b(?:is|are|was|were)(?:n['’]t|#{WRAP_GAP}+not)#{WRAP_GAP}+the#{WRAP_GAP}+\1\b
+                (?!['’-]|#{WRAP_GAP}+of\b)/ix,
+      message: '"The X … is not the X …" splits one noun in two and names neither half.',
+      suggestion: "Name the thing you mean; say what separates it from the other.",
+      examples_bad: [
+        "The job you applied for is not the job you will do.",
+        "Agencies staff two kinds of lead, and the one you need is not the one who pitches.",
+        "The customer who signs the contract isn't the customer who uses the product.",
+        "The meeting on the calendar was not the meeting that mattered.",
+        "The ones who ship first are not the ones who ship well.",
+        # A hard-wrapped clause survives one newline.
+        "The hire you need\nis not the hire the board will pitch."
+      ],
+      examples_ok: [
+        # "of" after the second head names the difference.
+        "The voice behind the door was not the voice of her brother.",
+        # "the same X" is an identity statement.
+        "The captain on the bridge tonight isn't the same captain who hired me.",
+        "The same caution is not the same thing as fear.",
+        # Different heads.
+        "The bug in staging is not the cause of the outage.",
+        # A sentence boundary splits the clause.
+        "The plan was ready. It is not the plan we drew up.",
+        # A comma is a boundary: the heads must share a clause.
+        "The build passed, and it is not the build we ship.",
+        # A paragraph break ends the frame.
+        "The draft was long\n\nand it is not the draft we sent."
+      ],
+      rationale: "Repeating one noun on both sides of 'is not' splits it into two things " \
+                 "without saying what tells them apart. It sounds like a distinction and " \
+                 "withholds it, so the reader has to read on to learn which one is meant. " \
+                 "People write the shape when the noun really is one thing seen twice, " \
+                 "which is why the confidence is medium."
     ),
     Rule.new(
       id: "same-determiner-chain",

@@ -33,7 +33,7 @@ RSpec.describe "Sloplint::RULES" do
   it "puts each rule in the category its move belongs to" do
     expect(Sloplint::RULES.group_by(&:category).transform_values(&:size)).to eq(
       "self-rating" => 16,
-      "cadence" => 18,
+      "cadence" => 19,
       "closer" => 12,
       "puffery" => 8,
       "false-correction" => 8,
