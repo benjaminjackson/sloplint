@@ -376,6 +376,32 @@ module Sloplint
         examples_bad: ["The new pipeline is faster, simpler, and cleaner.", "It's not about the tooling, it's about the culture."],
         examples_ok: ["The new pipeline runs in four minutes instead of eleven.", "The migration dropped the column in production but not in staging."],
         rationale: "A pair or triple whose items are interchangeable was built to a rhythm, not to the content. Off by default: it separates strongly against current Claude models and barely against 2023 models, which is a tell of one model family, and much of what it flags in documentation is a parallel the writer built on purpose."
+      ),
+      Rule.new(
+        id: "mirrored-opposites", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` set opposite words against each other (everywhere and nowhere, always and never, every and none, loud and silent), and if so, are the opposites comparing one thing or stitching two claims together, for %{register}?",
+          "criteria" => [
+            { "what" => "Two different claims are joined by opposite words so that they read as a contrast. The opposition is between the words, not between the facts: the second claim said plainly (not, isn't, nobody, not anywhere) would tell the reader exactly as much.",
+              "examples" => ["The retry logic is identical everywhere it runs and documented nowhere.", "The dashboard is always open and never checked.", "Every team cites the style guide and none of them has read it."] },
+            { "what" => "The opposites compare the same thing across cases the reader needs to tell apart (the same action in two places, the same cost at two stages, before and after), or the sentence has no opposites set against each other.",
+              "examples" => ["The job runs every night in staging and never in production.", "The cache is cheap to build and expensive to run.", "Nobody has documented the retry logic.", "The alert posted to a channel nobody read."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Opposite words make two separate claims read as a contrast.",
+        suggestion: "Say the claim that matters plainly and drop the half that only sets it up.",
+        examples_bad: [
+          "The naming convention is followed in every service and written down in none.",
+          "The feature flag is respected by every client and owned by no one."
+        ],
+        examples_ok: [
+          "The migration runs nightly in staging and never in production.",
+          "Reads return in two milliseconds; writes can block for a full second.",
+          "Nobody wrote the naming convention down."
+        ],
+        rationale: "Setting everywhere against nowhere, or always against never, makes two unrelated facts sound like one finding. The reader learns nothing from the mirror: 'identical everywhere it runs and documented nowhere' says what 'identical, but not documented' says. Opposites that compare one thing in two cases, a job that runs in staging and not in production, carry the contrast in the facts and are fine. matched-shape flags any pair built to a rhythm; this is the narrower case where the pair is a pair of opposites."
       )
     ].freeze
   end
