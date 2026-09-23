@@ -95,4 +95,4 @@ number only when it's doing real work for the reader (why a rule sits at
 `info`, why a narrowing exists); never as backup evidence for a call that's
 already obvious on its face.
 
-Tests: `rspec`. There's no Gemfile; run it directly.
+Tests: `bundle exec rspec`. The Gemfile holds only development gems (rspec, and retries for `script/calibrate`); run `bundle install` once.
