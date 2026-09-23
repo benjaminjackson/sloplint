@@ -1,0 +1,151 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Score a regex rule or a judge rule against a committed label set: how often
+# it fires on the rows that should flag (slop: true) and how often it stays
+# quiet on the rows that should pass (slop: false).
+#
+#   script/score-labels RULE[,RULE] [--set synthetic|real] [--family F] [--shape S]
+#
+# --set synthetic (the default) reads spec/fixtures/labels.jsonl, the
+# committed clones. --set real reads .corpus/labels/real.jsonl, which is
+# gitignored and only present with the .corpus symlink set up; it prints a
+# notice and exits 0 when that file is missing. A judge rule needs a working
+# judge backend (a key set via `sloplint-judge key set` or the environment).
+require "optparse"
+require "json"
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+require "sloplint/judge"
+
+SETS = {
+  "synthetic" => File.expand_path("../spec/fixtures/labels.jsonl", __dir__),
+  "real" => File.expand_path("../.corpus/labels/real.jsonl", __dir__)
+}.freeze
+REGISTER = Sloplint::Judge::Engine::DEFAULT_REGISTER
+USAGE = "usage: script/score-labels RULE[,RULE] [--set synthetic|real] [--family F] [--shape S]"
+
+opts = { set: "synthetic" }
+OptionParser.new do |o|
+  o.banner = USAGE
+  o.on("--set NAME") { |v| opts[:set] = v }
+  o.on("--family F") { |v| opts[:family] = v }
+  o.on("--shape S") { |v| opts[:shape] = v }
+end.parse!
+
+ids = ARGV.shift.to_s.split(",")
+abort USAGE if ids.empty?
+
+path = SETS.fetch(opts[:set]) { abort "unknown --set #{opts[:set]} (known: #{SETS.keys.join(", ")})" }
+if opts[:set] == "real" && !File.exist?(path)
+  puts "no #{path}; the .corpus symlink is not set up here, skipping the real set"
+  exit 0
+end
+
+rows = File.foreach(path).map { |l| JSON.parse(l) }
+rows.select! { |r| r["family"] == opts[:family] } if opts[:family]
+rows.select! { |r| r["shape"] == opts[:shape] } if opts[:shape]
+abort "no rows for --set #{opts[:set]} --family #{opts[:family]} --shape #{opts[:shape]}" if rows.empty?
+
+rules = ids.map do |id|
+  Sloplint::RULES.find { |r| r.id == id } || Sloplint::Judge::RULES.find { |r| r.id == id } ||
+    abort("unknown rule: #{id}")
+end
+
+backend = nil
+if rules.any? { |r| r.is_a?(Sloplint::Judge::Rule) }
+  begin
+    backend = Sloplint::Judge::Backend.load
+  rescue ArgumentError => e
+    abort e.message
+  end
+end
+
+# Whether span a overlaps span b, both half-open [start, end).
+def overlap?(a_start, a_end, b_start, b_end) = a_start < b_end && a_end > b_start
+
+# The labelled sentence's [start, end) in its paragraph, or nil if the fixture
+# is broken and the sentence isn't actually in there (the fixture spec pins
+# this, so it should never happen against a committed set).
+def label_span(row)
+  start = row["paragraph"].index(row["sentence"])
+  start && [start, start + row["sentence"].length]
+end
+
+def regex_hit?(rule, paragraph, span)
+  notes = Sloplint::Engine.scan(paragraph, rules: [rule])
+  line_starts = Sloplint::Engine.line_starts_for(paragraph)
+  notes.any? do |n|
+    offset = line_starts[n.line - 1] + n.column - 1
+    overlap?(offset, offset + n.excerpt.length, *span)
+  end
+end
+
+# true/false, or :unmatched when the labelled span doesn't line up with
+# exactly one sentence Split finds in the paragraph -- the real set's rows
+# were labelled by hand and one of them spans two grammatical sentences,
+# which a sentence-unit judge rule has no single target to ask about.
+def judge_hit?(rule, backend, paragraph, span)
+  para = Sloplint::Split.paragraphs(paragraph).first
+  return :unmatched unless para
+
+  targets = para.sentences.select { |s| overlap?(s.offset, s.offset + s.length, *span) }
+  questions = Sloplint::Judge::Engine.questions_for([rule], REGISTER)
+  if rule.unit == :sentence
+    return :unmatched unless targets.size == 1
+
+    state = { "register" => REGISTER, "paragraph" => { "sentences" => para.sentences.map(&:text) },
+              "target_index" => para.sentences.index(targets.first), "target" => targets.first.text }
+    answer = backend.ask(state, questions).fetch(rule.id)
+    flagged?(rule, answer)
+  else
+    state = { "register" => REGISTER, "paragraph" => para.asked, "sentence_count" => para.sentences.size }
+    answer = backend.ask(state, questions).fetch(rule.id)
+    return false unless flagged?(rule, answer)
+    return true if rule.excerpt == :all
+
+    targets.include?(Sloplint::Judge::Engine.unit_for(rule, para))
+  end
+end
+
+def flagged?(rule, answer)
+  Sloplint::Judge::Engine.flagged?(rule, answer) && Sloplint::Judge::Engine.band(answer.confidence) != "low"
+end
+
+def status_for(slop, hit)
+  return "UNMATCHED" if hit == :unmatched
+
+  if slop
+    hit ? "HIT" : "MISS"
+  else
+    hit ? "FALSE-HIT" : "pass"
+  end
+end
+
+def totals_for(scored)
+  slop, pass = scored.partition { |_, s| s == "HIT" || s == "MISS" }
+  format("slop %d/%d pass %d/%d", slop.count { |_, s| s == "HIT" }, slop.size,
+         pass.count { |_, s| s == "pass" }, pass.size)
+end
+
+rules.each do |rule|
+  is_judge = rule.is_a?(Sloplint::Judge::Rule)
+  puts "== #{rule.id} =="
+  scored = rows.filter_map do |row|
+    span = label_span(row)
+    next puts("UNMATCHED  #{row["family"]}/#{row.fetch("shape", "-")}  #{row["sentence"]}") unless span
+
+    hit = is_judge ? judge_hit?(rule, backend, row["paragraph"], span) : regex_hit?(rule, row["paragraph"], span)
+    status = status_for(row["slop"], hit)
+    puts "#{status}  #{row["family"]}/#{row.fetch("shape", "-")}  #{row["sentence"]}"
+    [row, status] unless status == "UNMATCHED"
+  end
+
+  puts "-- totals by family --"
+  scored.group_by { |row, _| row["family"] }.sort.each { |family, s| puts "#{family}: #{totals_for(s)}" }
+
+  negation = scored.select { |row, _| row["family"] == "negation" }
+  unless negation.empty?
+    puts "-- totals by shape (negation) --"
+    negation.group_by { |row, _| row["shape"] }.sort.each { |shape, s| puts "#{shape}: #{totals_for(s)}" }
+  end
+end
