@@ -3325,6 +3325,106 @@ module Sloplint
                  "especially as list items, should be read as a warning."
     ),
     Rule.new(
+      id: "negative-subject",
+      category: "cadence",
+      severity: "warning",
+      confidence: "medium",
+      # A negative pronoun (Nothing, Nobody, No one, None) as the subject of
+      # a clause, where the clause carries one of three structural markers
+      # instead of stopping at the bare subject and verb. Bare "Nothing
+      # happened." and "No one knows." are the common case in ordinary
+      # prose and are not matched on their own; a regex cannot tell a
+      # lexical verb from any other word, so the narrowing has to come from
+      # what surrounds the subject, not from the verb.
+      #
+      # A fourth frame was probed and cut: "No" plus a common noun carrying
+      # the role ("No vendor holds a contract.") looked like the same kind
+      # of narrowing, but it is indistinguishable from the ordinary way
+      # English negates a subject -- "No installation is necessary.", "No
+      # magic is involved.", "No exceptions are raised on HTTP timeouts."
+      # are three hits from a 266k-word read of installed gems' READMEs,
+      # all fair, none of them slop. On RAID it fired at or above the model
+      # rate in every domain that had any hits at all. There is no
+      # structural narrowing left to try that does not become a word or
+      # exception list, so the frame ships cut rather than forced; the
+      # maintainer's "no builds" case may need a judge rule instead.
+      #
+      # A clause starts at the beginning of the text, at a full stop,
+      # question mark, exclamation mark, semicolon or colon, or at a line
+      # break -- actually-not-x's clause-start set. Frame 1 below adds one
+      # more: after a coordinating conjunction (and, but, or, so, yet, nor),
+      # since that is how a second clause opens inside one sentence
+      # ("...and nothing is queued"). The other two frames stay on the
+      # plain clause-start set: a conjunction most often joins two noun
+      # phrases inside one clause, not two clauses ("two real roots and no
+      # real numbers"), and nothing here can tell the two apart, so only the
+      # frame that already requires its own internal "and" reaches past it.
+      #
+      # The three frames, each pinned by its own examples_ok:
+      #   1. Two negative-subject clauses joined by "and" -- the pronoun
+      #      pairing repeats, which is the cadence itself ("Nothing is
+      #      deployed and nothing is queued.").
+      #   2. A bare pronoun with a prepositional phrase between it and the
+      #      verb ("Nobody on the on-call page owns the service."). "Of" is
+      #      not in the preposition set here: "None of this/that/it" is the
+      #      ordinary partitive idiom, not a modifier placed to look
+      #      specific.
+      #   3. A negative-subject clause whose object carries its own negated
+      #      relative clause ("nothing gets merged that does not get
+      #      reviewed.").
+      pattern: /(?:\A|(?<=[.;:!?\n])[ \t]*|\b(?:and|but|or|so|yet|nor)\b[ \t]+)\K
+                  (?:Nothing|Nobody|No[ \t]+one|None)(?:[ \t]+[\w'’-]+){1,4}[ \t]+and[ \t]+
+                  (?:Nothing|Nobody|No[ \t]+one|None)(?:[ \t]+[\w'’-]+){1,4}[.!?]
+                |
+                (?:\A|(?<=[.;:!?\n])[ \t]*)\K
+                  (?:Nothing|Nobody|No[ \t]+one|None)[ \t]+
+                  (?:in|on|at|for|with|from|under|during|before|after|about|across|within|beneath|behind|inside|outside)[ \t]+
+                  (?:the|a|an|this|that|these|those|our|your|their|its|his|her|my)(?:[ \t]+[\w'’-]+){2,6}[.!?]
+                |
+                (?:\A|(?<=[.;:!?\n])[ \t]*)\K
+                  (?:Nothing|Nobody|No[ \t]+one|None)(?:[ \t]+[\w'’-]+){1,3}[ \t]+that[ \t]+
+                  (?:does[ \t]+not|doesn['’]t|do[ \t]+not|don['’]t|did[ \t]+not|didn['’]t)(?:[ \t]+[\w'’-]+){1,3}[.!?]
+                /ix,
+      message: '"Nothing/Nobody/No one" as the subject names no one and nothing specific.',
+      suggestion: "Name the specific thing that is missing, or who is responsible for it.",
+      examples_bad: [
+        "Nothing is deployed and nothing is queued.",
+        "Nobody on the on-call page owns the service.",
+        "The queue is empty; nothing gets merged that does not get reviewed."
+      ],
+      examples_ok: [
+        # The bare pronoun and a plain verb, with none of the three frames.
+        "No one knows.",
+        "Nothing happened.",
+        "Nobody owns the service.",
+        # A single clause, not a pairing: no second "and nothing ...".
+        "Nothing is deployed.",
+        # A conjunction clause start with a plain verb, no PP, no pairing.
+        "But nobody replied.",
+        # "and nothing" inside one clause, not a second full clause.
+        "The team reviewed the proposal and nothing else mattered.",
+        # A PP modifier that does not sit directly after the subject.
+        "No one is available for the call today.",
+        # "and" joining two noun phrases inside one clause ("has two real
+        # roots and no real numbers"), not opening a second clause -- the
+        # conjunction clause-start is frame 1's alone. Also pins the cut
+        # "No" + noun frame: this stays quiet without it.
+        "The equation has two real roots and no real numbers outside that range.",
+        # The ordinary partitive idiom, not a modifier placed for specificity
+        # -- frame 2 drops "of" from its preposition set for this reason.
+        "None of this means the project failed.",
+        # The cut frame's own shape, left quiet on purpose: a determiner and
+        # a common noun, not one of the three pronouns.
+        "No vendor holds a contract."
+      ],
+      rationale: "A negative pronoun standing as the subject names nothing specific, and a " \
+                 "sentence built to look concrete around it -- a paired clause, a prepositional " \
+                 "aside, a negated relative clause -- reads as if it said something when the " \
+                 "subject still names no one and nothing. Bare 'Nothing happened' is ordinary " \
+                 "prose and is left alone; the tell is the extra structure dressing up a " \
+                 "subject that was never named."
+    ),
+    Rule.new(
       id: "quip-question",
       category: "reader-address",
       severity: "info",
