@@ -148,7 +148,7 @@ Does not: No parking on Sundays.
 
 Everything above is sloplint's 83 **regex rules**: patterns matched against the text, offline, in milliseconds, for nothing. Some tells have no pattern to match. A paragraph that names nothing a reader could check, a sentence that tells its reader what they already know: catching those takes something that can read.
 
-That is the judge, a second catalog of 17 **judge rules** which are questions put to a model rather than patterns. It ships as a companion gem, it turns on with `--judge`, and it needs an API key. Both catalogs write the same notes into the same JSON, so whatever already reads sloplint's output reads the judge's without a change.
+That is the judge, a second catalog of 20 **judge rules** which are questions put to a model rather than patterns. It ships as a companion gem, it turns on with `--judge`, and it needs an API key. Both catalogs write the same notes into the same JSON, so whatever already reads sloplint's output reads the judge's without a change.
 
 ### Install it and get a key
 
