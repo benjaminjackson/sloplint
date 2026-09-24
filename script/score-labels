@@ -71,36 +71,43 @@ def label_span(row)
   start && [start, start + row["sentence"].length]
 end
 
+# Matched directly against the pattern rather than through Engine.scan: a
+# Note's excerpt is whitespace-collapsed, so its length can fall short of the
+# real match and undercount the match's end. skip is applied the same way
+# Engine.scan applies it, so a rule's exclusions still hold here.
 def regex_hit?(rule, paragraph, span)
-  notes = Sloplint::Engine.scan(paragraph, rules: [rule])
-  line_starts = Sloplint::Engine.line_starts_for(paragraph)
-  notes.any? do |n|
-    offset = line_starts[n.line - 1] + n.column - 1
-    overlap?(offset, offset + n.excerpt.length, *span)
+  paragraph.to_enum(:scan, rule.pattern).any? do
+    m = Regexp.last_match
+    rule.skip.none? { |re| m[0].match?(re) } && overlap?(m.begin(0), m.end(0), *span)
   end
 end
 
-# true/false, or :unmatched when the labelled span doesn't line up with
-# exactly one sentence Split finds in the paragraph -- the real set's rows
-# were labelled by hand and one of them spans two grammatical sentences,
-# which a sentence-unit judge rule has no single target to ask about.
+# true/false, or :unmatched when the labelled span overlaps no sentence Split
+# finds in the paragraph. It can overlap more than one -- both label sets
+# have a row whose "sentence" field spans two grammatical sentences -- and a
+# sentence-unit rule then asks about each overlapping sentence, counting a
+# hit if any of them flags.
 def judge_hit?(rule, backend, paragraph, span)
   para = Sloplint::Split.paragraphs(paragraph).first
   return :unmatched unless para
 
   targets = para.sentences.select { |s| overlap?(s.offset, s.offset + s.length, *span) }
+  return :unmatched if targets.empty?
+
   questions = Sloplint::Judge::Engine.questions_for([rule], REGISTER)
   if rule.unit == :sentence
-    return :unmatched unless targets.size == 1
-
-    state = { "register" => REGISTER, "paragraph" => { "sentences" => para.sentences.map(&:text) },
-              "target_index" => para.sentences.index(targets.first), "target" => targets.first.text }
-    answer = backend.ask(state, questions).fetch(rule.id)
-    flagged?(rule, answer)
+    targets.any? do |t|
+      state = { "register" => REGISTER, "paragraph" => { "sentences" => para.sentences.map(&:text) },
+                "target_index" => para.sentences.index(t), "target" => t.text }
+      flagged?(rule, backend.ask(state, questions).fetch(rule.id))
+    end
   else
     state = { "register" => REGISTER, "paragraph" => para.asked, "sentence_count" => para.sentences.size }
     answer = backend.ask(state, questions).fetch(rule.id)
     return false unless flagged?(rule, answer)
+    # excerpt: :all is a paragraph-wide claim (particulars, promotional, ...),
+    # and its note covers the whole paragraph -- so any flag on it is a hit,
+    # whichever sentence the label points at. Deliberate, not an oversight.
     return true if rule.excerpt == :all
 
     targets.include?(Sloplint::Judge::Engine.unit_for(rule, para))

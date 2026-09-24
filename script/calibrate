@@ -1,31 +1,39 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Calibrate a judge backend against RAID. See docs/JUDGE.md "Calibration corpus" and "Adding a backend".
+# Calibrate a judge backend against RAID and HAP-E. See docs/JUDGE.md "Calibration corpus" and
+# "Adding a backend".
 #
+#   script/calibrate fetch-hape
+#       Download the HAP-E blogs parquet files and write .corpus/hape/blogs.jsonl (human chunk 2, gpt-4o,
+#       llama-3-70b-instruct) and .corpus/hape/blogs-chunk1.jsonl (the human chunk 1 each side continues).
 #   script/calibrate run [--rules IDS] [--register R,R] [--sample N] [--generated MODEL]
 #       Per rule, register and model side: the probability that a model unit scores higher than a human one
 #       (AUC), the `check` agreement rate between two runs at each confidence band, and the `compare` flip
 #       rate under passage-order swap at each band. Ends with the pass/fail lines from docs/JUDGE.md.
 #   script/calibrate generate MODEL [--register R,R] [--sample N]
-#       Write a current-model side into .corpus/raid/generated/MODEL/ from RAID's own prompts, same titles
-#       as the human rows. Needs ANTHROPIC_API_KEY. Nothing generated is committed.
+#       Write a current-model side into .corpus/raid/generated/MODEL/ from RAID's own prompts (or, for
+#       --register blogs, HAP-E's continuation prompt), same titles as the human rows. Needs
+#       ANTHROPIC_API_KEY. Nothing generated is committed.
 #
-# Registers are RAID domains (script/probe-raid fetch first); the default is news and abstracts, the two
-# on the list in docs/JUDGE.md. Everything lives under the ignored .corpus/ directory.
+# Registers are RAID domains (script/probe-raid fetch first) plus blogs (script/calibrate fetch-hape);
+# the default is news and abstracts, the two on the list in docs/JUDGE.md. Everything lives under the
+# ignored .corpus/ directory.
 require "optparse"
 require "csv"
 require "json"
 require "net/http"
 require "fileutils"
 require "retries"
+require "parquet"
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "sloplint/judge"
 
 RAID = File.expand_path("../.corpus/raid", __dir__)
+HAPE = File.expand_path("../.corpus/hape", __dir__)
 # The reader each register's questions are asked for, and the venue compare names.
-READER = Hash.new { |_, d| "a reader of #{d}" }.merge("news" => "a reader of a news article", "abstracts" => "a researcher reading the abstract of a paper").freeze
-PLACE = Hash.new { |_, d| "in #{d}" }.merge("news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper").freeze
+READER = Hash.new { |_, d| "a reader of #{d}" }.merge("news" => "a reader of a news article", "abstracts" => "a researcher reading the abstract of a paper", "blogs" => "a reader of a blog post").freeze
+PLACE = Hash.new { |_, d| "in #{d}" }.merge("news" => "as a paragraph of a news article", "abstracts" => "in the abstract of a paper", "blogs" => "as a paragraph of a blog post").freeze
 BANDS = { "high" => 0.7, "medium" => 0.5, "low" => 0.0 }.freeze
 PARAS_PER_TEXT = 2
 
@@ -40,11 +48,53 @@ end.parse!
 
 def rows(path) = File.exist?(path) ? File.foreach(path).map { |l| JSON.parse(l) } : []
 
-# Human rows for a RAID domain, and the model rows for the same titles keyed by side name
-# ("gpt4", "claude-sonnet-5", ...).
+# ── fetch-hape ───────────────────────────────────────────────────────────────
+# HAP-E's own parquet files, one per side, keyed to the model name that side becomes in
+# blogs.jsonl. human-chunk-1 has no model: it is the prompt every other side continues, so it
+# goes to blogs-chunk1.jsonl instead.
+HAPE_URL = "https://huggingface.co/datasets/browndw/human-ai-parallel-corpus/resolve/main/text_data"
+HAPE_SIDES = {
+  "human-chunk-1" => nil,
+  "human-chunk-2" => "human",
+  "gpt-4o-2024-08-06" => "gpt-4o",
+  "llama-3-70B-Instruct" => "llama-3-70b-instruct"
+}.freeze
+
+def fetch_hape(dir = HAPE)
+  out = File.join(dir, "blogs.jsonl")
+  chunk1_out = File.join(dir, "blogs-chunk1.jsonl")
+  return if File.exist?(out) && File.exist?(chunk1_out)
+
+  FileUtils.mkdir_p(dir)
+  sides = Hash.new { |h, k| h[k] = [] }
+  chunk1 = []
+  HAPE_SIDES.each do |file, model|
+    path = File.join(dir, "#{file}.parquet")
+    unless File.exist?(path)
+      system("curl", "-fL", "-o", path, "#{HAPE_URL}/hape-text_#{file}.parquet") || (File.delete(path) if File.exist?(path); abort("download failed: #{file}"))
+    end
+    Parquet.each_row(path, columns: ["doc_id", "text"]) do |row|
+      next unless row["doc_id"].start_with?("blog_")
+
+      source_id, = row["doc_id"].split("@", 2)
+      if model
+        sides[model] << { model: model, source_id: source_id, id: row["doc_id"], title: source_id, text: row["text"] }
+      else
+        chunk1 << { source_id: source_id, text: row["text"] }
+      end
+    end
+  end
+  File.open(out, "w") { |f| sides.each_value { |rs| rs.each { |r| f.puts JSON.generate(r) } } }
+  File.open(chunk1_out, "w") { |f| chunk1.each { |r| f.puts JSON.generate(r) } }
+  puts "wrote #{sides.values.sum(&:size)} texts across #{sides.size} sides and #{chunk1.size} chunk-1 prompts to #{dir}"
+end
+
+# Human rows for a RAID domain (or, for "blogs", HAP-E), and the model rows for the same titles
+# keyed by side name ("gpt4", "claude-sonnet-5", ...).
 def load_register(reg, sample, generated)
-  base = rows(File.join(RAID, "#{reg}.jsonl"))
-  abort "no RAID rows for #{reg}; run script/probe-raid fetch" if base.empty?
+  dir = reg == "blogs" ? HAPE : RAID
+  base = rows(File.join(dir, "#{reg}.jsonl"))
+  abort "no #{reg} rows; run #{reg == "blogs" ? "script/calibrate fetch-hape" : "script/probe-raid fetch"}" if base.empty?
   human = base.select { |r| r["model"] == "human" }.first(sample)
   keys = human.map { |r| r["source_id"] }
   sides = base.reject { |r| r["model"] == "human" }.group_by { |r| r["model"] }
@@ -233,6 +283,14 @@ def raid_prompts(ids)
   found
 end
 
+# HAP-E's own continuation prompt for the sampled titles, read from blogs-chunk1.jsonl.
+def hape_prompts(ids)
+  path = File.join(HAPE, "blogs-chunk1.jsonl")
+  abort "no #{path}; run script/calibrate fetch-hape" unless File.exist?(path)
+  chunk1 = rows(path).to_h { |r| [r["source_id"], r["text"]] }
+  ids.to_h { |id| [id, "In the same style, tone, and diction of the following text, complete the next 500 words, generate exactly 500 words, and note that the text does not necessarily end after the generated words:\n\n#{chunk1.fetch(id)}"] }
+end
+
 def generate(model, opts)
   opts[:registers].each do |reg|
     dir = File.join(RAID, "generated", model)
@@ -240,7 +298,7 @@ def generate(model, opts)
     out = File.join(dir, "#{reg}.jsonl")
     done = rows(out).to_h { |r| [r["source_id"], true] }
     human, = load_register(reg, opts[:sample], nil)
-    prompts = raid_prompts(human.map { |r| r["source_id"] })
+    prompts = reg == "blogs" ? hape_prompts(human.map { |r| r["source_id"] }) : raid_prompts(human.map { |r| r["source_id"] })
     jobs = human.filter_map { |r| (p = prompts[r["source_id"]]) && !done[r["source_id"]] && [r["source_id"], r["title"], p] }
     warn "#{reg}: generating #{jobs.size} texts with #{model}"
     # Each row is written as its own generation comes back, not after the
@@ -262,6 +320,7 @@ def generate(model, opts)
 end
 
 case ARGV.shift
+when "fetch-hape" then fetch_hape
 when "run" then run(opts)
 when "generate" then generate(ARGV.shift || abort("generate MODEL"), opts)
 else abort File.read(__FILE__).lines.grep(/^#   /).join
