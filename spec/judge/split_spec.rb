@@ -171,7 +171,7 @@ RSpec.describe Sloplint::Split do
 
   # The file that found this, read as the judge reads it.
   it "keeps the code block of docs/SPEC.md out of what the judge is asked" do
-    spec = File.read(File.expand_path("../../docs/SPEC.md", __dir__))
+    spec = File.read(File.expand_path("../../docs/SPEC.md", __dir__), encoding: "UTF-8")
     paras = described_class.paragraphs(spec, markdown: true)
     expect(paras.map(&:text)).to all(satisfy { |t| !t.include?("cat FILE") && !t.include?("Recommended for agents") })
     expect(paras.map(&:text)).to include(a_string_starting_with("This is a first-class requirement"))
