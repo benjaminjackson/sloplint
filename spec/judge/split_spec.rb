@@ -63,10 +63,15 @@ RSpec.describe Sloplint::Split do
       .to eq([["See https://example.com for more.", "Fine."]])
   end
 
-  it "drops furniture under --markdown and keeps it otherwise" do
+  it "drops furniture whether or not --markdown is set" do
     text = "- a bullet line.\n\n| a | table |\n\n> quoted.\n\nProse here. More prose.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
-    expect(described_class.paragraphs(text).size).to eq(4)
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+  end
+
+  it "drops a heading and a blockquoted template line with no markdown: argument" do
+    text = "## How the rollout works\n\n> Hi [name], welcome aboard.\n\n> Best,\n> The team\n"
+    expect(described_class.paragraphs(text)).to eq([])
   end
 
   it "keeps the prose around a tight-bound list and drops only the list lines" do
@@ -293,5 +298,23 @@ RSpec.describe Sloplint::Split do
     # An opening --- that never closes is not front matter either.
     text = "---\nProse here. More prose. Third one.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose. Third one."])
+  end
+
+  it "drops a setext title underlined in \"=\", title line included, with no --markdown" do
+    text = "Title Here\n===\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+  end
+
+  it "drops a setext title with a short \"--\" underline as well as a \"---\" one" do
+    text = "Section Here\n--\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+    text = "Section Here\n---\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+  end
+
+  it "keeps a --- divider between two paragraphs as the horizontal rule it is, not a setext underline" do
+    text = "A paragraph here. Second one.\n\n---\n\nAnother paragraph. Second one.\n"
+    expect(described_class.paragraphs(text).map(&:text))
+      .to eq(["A paragraph here. Second one.", "Another paragraph. Second one."])
   end
 end
