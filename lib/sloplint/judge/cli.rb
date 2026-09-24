@@ -52,7 +52,10 @@ module Sloplint
         OptionParser.new do |o|
           o.banner = "usage: sloplint-judge check [options] [paths...]  (\"-\" or no paths = stdin)"
           o.on("-o", "--output-format FORMAT", %w[full json], "Output format: 'full' or 'json' (default: full).") { |v| opts[:format] = v }
-          o.on("--markdown", "Skip fenced/inline code spans, HTML comments, URLs and Markdown furniture.") { markdown = true }
+          o.on("--markdown", "Skip fenced/inline code spans, HTML comments and URLs, and drop the",
+               "furniture that needs a Markdown reading: front matter, an indented",
+               "code block, a lone HTML or code-span line. Headings, lists, tables",
+               "and quotes drop either way.") { markdown = true }
           o.on("--select IDS", "Only run these rules (comma-separated rule ids or categories).") { |v| select = v.split(",").map(&:strip) }
           o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or categories).") { |v| ignore = v.split(",").map(&:strip) }
           o.on("--strict", "Run the rules that are off by default, ask the sentence rules about",

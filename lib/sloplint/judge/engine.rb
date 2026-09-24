@@ -68,8 +68,11 @@ module Sloplint
       end
 
       # text: the source. rules: judge Rules to run. backend: answers `ask`.
-      # markdown: blank code, HTML comments and URLs, and drop furniture.
-      # strict: run sentence rules on every sentence and keep low notes.
+      # markdown: blank code, HTML comments and URLs, and drop the furniture
+      # that needs a Markdown reading (front matter, indented code, a lone
+      # HTML or code-span line). Headings, lists, tables and quotes drop
+      # either way. strict: run sentence rules on every sentence and keep
+      # low notes.
       def scan(text, rules: RULES, backend: Backend.load, markdown: false, path: "-",
                register: DEFAULT_REGISTER, strict: false,
                concurrency: ENV.fetch("SLOPLINT_JUDGE_CONCURRENCY", "8").to_i)
