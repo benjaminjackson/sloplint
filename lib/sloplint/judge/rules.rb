@@ -435,6 +435,59 @@ module Sloplint
         rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
       ),
       Rule.new(
+        id: "name-the-thing", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` call things by their names, or does it make %{register} map a pointer back to a name?",
+          "criteria" => [
+            { "what" => "Refers to something by anything other than its name when a name exists or is available. It picks a thing out by position, order or number in a list (the former, the latter, the first one, the second one, the last of three, the fourth item, the third alert), even when the list was just named; or it uses a stand-in noun or a figure for a named thing (the engine for a named service, the seat for a named role); or it rests its point on an allusion to a divide it never names (which side, which end or which slot someone is on, where someone stood when a system changed) or on the document pointing at itself ('this entire writeup', 'this entire proposal') standing in for a point it never states. The reader has to map the pointer back to a name. One pointer is enough: a sentence full of names still flags if one clause in it points instead of naming, such as an \"only the latter\" after a semicolon or a trailing \"which is this entire writeup\" after a list of facts.",
+              "examples" => ["We tried Kafka and SQS, and the latter needed no cluster to run.", "Both jobs read the same table; only the former writes to it.", "The third alert on that dashboard is the only one worth waking up for.", "We run the ledgerd service in two regions, and the engine is the thing that pages us.", "Hiring managers care where you stood when the monolith was split.", "The March outage, which is this entire proposal in a single afternoon."] },
+            { "what" => "Names what it means. A position word is fine only when the position is the thing's own name (step 4 of the runbook, the second retry, Q3, the first argument). A which-clause that asks about named things (which region, which port, which of the two replicas) is fine. An ordinary pronoun (it, they, this, these) pointing back to something named in the same or the previous sentence, or at a code sample or list beside it, is fine.",
+              "examples" => ["SQS needed no cluster to run.", "Step 4 of the runbook restarts the consumer.", "The second retry waits thirty seconds.", "Which region you deploy to decides the latency floor.", "The on-call engineer decides which of the two replicas to promote.", "The ingest worker reads from the events queue. It restarts every night.", "You can stub a method like this:"] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence points at something instead of naming it.",
+        suggestion: "Write the name: the service, the option, the role or the point itself.",
+        examples_bad: [
+          "Whether you trust the new alerting depends on where you stood when the old scheduler went away.",
+          "We load-tested Envoy and HAProxy last month, and the latter held 40,000 connections without tuning.",
+          "Payments run on a Rust service called tallyd, and the engine has not been patched since June."
+        ],
+        examples_ok: [
+          "Step 4 of the runbook drains the queue before the consumer restarts.",
+          "Which availability zone the replica lands in decides whether it survives a zone outage.",
+          "Register the retry hook in the initializer like this:",
+          "The ingest worker reads from the events queue, and it restarts every night at 02:00 UTC."
+        ],
+        rationale: "The latter, the second one, the engine, where you stood when the old scheduler went away, this entire writeup: each makes the reader map a pointer back to a name the writer had and did not write. Naming the thing costs a word or two and saves the reader the lookup, even when the list was named one clause earlier. A position that is the thing's own name (step 4, the second retry, Q3) is a name, and a pronoun pointing at something just named is ordinary grammar; both pass. The-x-is-not-the-x catches the repeated-noun case; this is the general one."
+      ),
+      Rule.new(
+        id: "maxim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Is `target` a saying: a general rule about how people, teams or systems always behave, where %{register} wants the fact about this case?",
+          "criteria" => [
+            { "what" => "A saying. It states how things always go for anyone, in a turned phrase that could be lifted out and quoted on its own: every X is Y until Z, nobody does X until Y, you learn X the day Y, X stops being Y the moment Z, the X you Y is the one that Z. It is still a saying when the sentences around it are the example that illustrates it, or when it is about people rather than code.",
+              "examples" => ["A cache you never invalidate is a bug you haven't met yet.", "Nobody values a backup until the day they need a restore.", "Every quick fix becomes a permanent one.", "The meeting you skip is the one where they decide."] },
+            { "what" => "Not a saying. It states a fact about this system, team or event; or it says in plain words how a particular tool, protocol, data structure or piece of code behaves, which a reader could test; or it is a step, a requirement or a decision.",
+              "examples" => ["The queue holds 40,000 messages before the broker starts rejecting writes.", "A TCP connection in TIME_WAIT holds its port for twice the maximum segment lifetime.", "Writes to the ledger must be append-only, so a correction is a new row.", "Priya owns the billing client."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence states a saying where the fact belongs.",
+        suggestion: "Cut the saying and let the fact beside it make the point, or replace it with the fact.",
+        examples_bad: [
+          "A dashboard nobody looks at is a postmortem waiting to happen.",
+          "The rollback you never test is the one that fails when you need it."
+        ],
+        examples_ok: [
+          "The dashboard for queue depth has had no viewers in the last 90 days.",
+          "Adding a column with a volatile default rewrites the whole table in Postgres."
+        ],
+        rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
+      ),
+      Rule.new(
         id: "device-before-claim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
         question: {
           "type" => "score",
@@ -450,15 +503,19 @@ module Sloplint
         message: "Sentence makes its claim through a device.",
         suggestion: "Check whether the device carries anything a plain statement of the claim would not.",
         examples_bad: [
-          "New employees follow the runbook. Long-tenured employees work from memory instead. The runbook is followed by everyone who's new and by nobody who's been here a year.",
+          "The cache holds the last hour of queries once it's warm. A cold instance rebuilds that from scratch on every request. The service is fast for the cache that's warm and slow for the one that's cold.",
           "We wrote a rollback plan before the migration ran. It covers every table we're touching. A migration that needs a rollback plan already knows it might fail.",
-          "The build failed twice this morning. Nobody could find a code change that explained it. Here's what actually broke the build: a comment."
+          "The build failed twice this morning. Nobody could find a code change that explained it. Here's what actually broke the build: a comment.",
+          "The incident review named five follow-up tasks. Three were closed within a week without much discussion. The fourth one is the only task that would have prevented the outage.",
+          "Every cache in the fleet shares one eviction policy. The eviction policy that keeps memory free is the same eviction policy that evicts the entry you needed two seconds later."
         ],
         examples_ok: [
-          "New employees follow the runbook for their first few months. After that most people stop opening it and just work from memory.",
+          "The cache holds the last hour of queries once it's warm. A cold instance takes about four seconds to rebuild that on its first request.",
           "We wrote a rollback plan before the migration ran because the migration might fail. It covers every table we're touching.",
           "The build failed twice this morning. A stray comment in the config file caused both failures.",
-          "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes."
+          "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes.",
+          "The incident review named five follow-up tasks, including a rewrite of the retry budget. The retry-budget rewrite would have prevented the outage. The other four tasks were closed within a week.",
+          "Every cache in the fleet shares one eviction policy. It frees memory by evicting the least recently used entry, even when that entry is needed again a few seconds later."
         ],
         rationale: "A sentence can make its claim by mirroring opposites against each other, posing a riddle with a repeated noun, holding an answer back until a run of specifics resolves into it, coining a figure, or drawing a maxim that restates what the paragraph already showed. mirrored-opposites and the-x-is-not-the-x in the regex catalog each catch one syntactic shape of this; this rule reads the sentence's role in the paragraph instead, so a form neither regex expects is still caught. It only says a device is present, not whether the device earns its place: a figure that explains how something works or a real tradeoff dressed as a mirror is still flagged, and it is for the reader to decide whether cutting it loses anything."
       )
