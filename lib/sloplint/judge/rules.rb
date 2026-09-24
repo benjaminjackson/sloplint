@@ -433,6 +433,34 @@ module Sloplint
           "\"We are not shipping on Friday,\" the release manager said."
         ],
         rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
+      ),
+      Rule.new(
+        id: "device-before-claim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Look at `target` inside its paragraph. Does it make its claim through a device - opposites or a matched pair set against each other, a noun repeated to pose a riddle, singling out one item's place in a list or order as the one that matters, the sentence that finally tells %{register} what the specifics before it add up to, a coined figure, or a maxim that generalizes or restates the paragraph's point - or does it state the claim plainly, as one more fact among the others?",
+          "criteria" => [
+            { "what" => "The sentence is a device: opposites or a matched pair set against each other (everyone and nobody, always and never, the frontend ships one thing and the backend ships another); a noun or phrase repeated to pose a riddle; singling out one item's position in a list or order, the second one, the last one, the fourth item, as the one that actually matters; the payoff sentence that tells the reader what a run of specifics before it adds up to; a coined figure; or a maxim, a general rule stated as if it simply follows, that sums up or restates the point the paragraph was already making. It reads as a turn or a landing, not as one more fact.",
+              "examples" => ["The retry logic is identical everywhere it runs and documented nowhere.", "The frontend team ships the button and the backend team owns the endpoint, and neither one works without the other.", "The third name on the escalation list is the one who actually picks up.", "A deploy that never gets rolled back was never really tested."] },
+            { "what" => "The sentence states its claim directly, as one more fact in the paragraph, with no matched pair, no riddle, no singled-out position, no payoff over a run of specifics, and no maxim.",
+              "examples" => ["Nobody has documented the retry logic.", "The frontend team ships the button and the backend team ships the endpoint; both went out this morning.", "The third name on the escalation list is the database team's manager.", "This deploy has never been tested under real failure."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence makes its claim through a device.",
+        suggestion: "Check whether the device carries anything a plain statement of the claim would not.",
+        examples_bad: [
+          "New employees follow the runbook. Long-tenured employees work from memory instead. The runbook is followed by everyone who's new and by nobody who's been here a year.",
+          "We wrote a rollback plan before the migration ran. It covers every table we're touching. A migration that needs a rollback plan already knows it might fail.",
+          "The build failed twice this morning. Nobody could find a code change that explained it. Here's what actually broke the build: a comment."
+        ],
+        examples_ok: [
+          "New employees follow the runbook for their first few months. After that most people stop opening it and just work from memory.",
+          "We wrote a rollback plan before the migration ran because the migration might fail. It covers every table we're touching.",
+          "The build failed twice this morning. A stray comment in the config file caused both failures.",
+          "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes."
+        ],
+        rationale: "A sentence can make its claim by mirroring opposites against each other, posing a riddle with a repeated noun, holding an answer back until a run of specifics resolves into it, coining a figure, or drawing a maxim that restates what the paragraph already showed. mirrored-opposites and the-x-is-not-the-x in the regex catalog each catch one syntactic shape of this; this rule reads the sentence's role in the paragraph instead, so a form neither regex expects is still caught. It only says a device is present, not whether the device earns its place: a figure that explains how something works or a real tradeoff dressed as a mirror is still flagged, and it is for the reader to decide whether cutting it loses anything."
       )
     ].freeze
   end
