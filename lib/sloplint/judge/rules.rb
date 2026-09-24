@@ -491,6 +491,33 @@ module Sloplint
           "Adding a column with a volatile default rewrites the whole table in Postgres."
         ],
         rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
+        ),
+        Rule.new(
+        id: "dressed-pair", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` state its facts plainly, or does it dress them up as a matched pair? Judge only the words of `target`; earlier sentences are context.",
+          "criteria" => [
+            { "what" => "Dresses a plain fact up as a pair. Either the second clause gives a second subject the first clause's verb and adds little beyond a tie back to the first (X deploys and Y deploys with it, A restarts and B restarts on its own), so the fact reads as a parallel when the plain version is one clause; or it sums up two things set out in earlier sentences as both, those two things or the two, and then gives that sum a verdict (is the real work, is the whole point, is what matters).",
+              "examples" => ["The release goes out and the on-call week goes out with it.", "The API falls over and the status page falls over right behind it.", "One team writes the schema and the other reads it, and keeping those two things in step is the whole job."] },
+            { "what" => "States its facts plainly. A pair whose halves carry different facts (reads go to the replica, writes go to the primary), a choice between two named options (either team can own it), a both that says what is true of two named things, even more than once, with no verdict on the pair, a pairing of groups with roles the paragraph already defined, or no pair at all.",
+              "examples" => ["The on-call engineer ships with each release.", "Either the web team or the mobile team can take the bug.", "Staging and production both run the same image, and both restart at midnight.", "Teams that own a database get the pager; teams that only read from one get the digest.", "The alert posted to a Slack channel nobody read."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence dresses a plain fact up as a matched pair.",
+        suggestion: "Say it once: what the second thing does, or what the two things are and what follows.",
+        examples_bad: [
+          "The schema changes, and the client changes right along with it, and the question every migration still leaves open is who finds out first.",
+          "A cache stores what the database returns. A queue holds what the writer sends. This service does both, and keeping those two things apart is the whole trick."
+        ],
+        examples_ok: [
+          "Reads go to the replica and writes go to the primary.",
+          "Either the database team or the platform team can own the failover runbook.",
+          "We run Postgres for orders and Redis for sessions. Both sit behind the same VPC and both are backed up nightly.",
+          "Contractors get read access. Employees get write access."
+        ],
+        rationale: "Two ways of saying one fact as if it were two. The first echoes a verb: 'the release goes out and the on-call week goes out with it' is 'the on-call engineer ships with the release' set to a rhythm. The second sums up a pair as 'both' or 'those two things' and hands the sum a verdict, 'is the whole job', which names neither thing and tells the reader nothing the two sentences before it did not. A pair whose halves carry different facts, a plain 'both', and a pairing of groups with roles the paragraph defined are the facts themselves and pass. matched-shape flags pairs built to a rhythm in general; name-the-thing flags a pair pointed at by position or figure; this is the pair restated instead of named."
       )
     ].freeze
   end
