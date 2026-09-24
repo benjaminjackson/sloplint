@@ -468,6 +468,33 @@ module Sloplint
         rationale: "The latter, the second one, the engine, where you stood when the old scheduler went away, this entire writeup: each makes the reader map a pointer back to a name the writer had and did not write. Naming the thing costs a word or two and saves the reader the lookup, even when the list was named one clause earlier. A position that is the thing's own name (step 4, the second retry, Q3) is a name, and a pronoun pointing at something just named is ordinary grammar; both pass. The-x-is-not-the-x catches the repeated-noun case; this is the general one."
       ),
       Rule.new(
+        id: "stand-in-verb", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` say what someone does with a plain verb, or does it dress the act in a figure of holding, carrying or keeping that %{register} has to translate back?",
+          "criteria" => [
+            { "what" => "The main verb phrase is a figure of holding, carrying or keeping whose object is something that cannot be held, such as a history, the context on a system, a mandate or a story (holds the history of a job, carries the context on a service, keeps the story of a decision), standing in for a plain verb such as knows, wrote, decides, runs or has hired. It is still a figure when the subject is a negative or a group (nobody holds, two people carry).",
+              "examples" => ["Only Marco still carries the context on the ingest scheduler.", "Nobody left on the team holds the history of the billing schema."] },
+            { "what" => "The verbs are plain, or a verb of holding or carrying is used in its literal or ordinary technical sense (holds a lock, carries a header, owns the service, keeps a copy, gives up after three retries). A sentence whose only oddity is somewhere other than its main verb, such as a negative subject or a vague noun, passes here.",
+              "examples" => ["The worker holds a row lock until the transfer commits.", "Each request carries the tenant ID in a header.", "Nobody on the team has reviewed the migration yet.", "Marco knows how the ingest scheduler picks its batch size."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence dresses a plain verb in a figure of holding or carrying.",
+        suggestion: "Write the plain verb: knows, wrote, decides, runs.",
+        examples_bad: [
+          "Priya carries the context on the billing reconciler, so page her first.",
+          "Two people on the support rotation hold the story of how the refund flow got its retry cap."
+        ],
+        examples_ok: [
+          "The worker holds a row lock on the ledger table until the transfer commits.",
+          "Each request carries the tenant ID in the X-Tenant header.",
+          "The platform team owns the deploy script and reviews every change to it.",
+          "Nobody on the team has reviewed the migration yet."
+        ],
+        rationale: "'Holds the history of the job' says knows or wrote in a figure, and the reader has to take the figure apart to find the act: who knows what, who wrote it, who decides. The figure sounds weightier than the plain verb and says less, since it never commits to which act it means. A verb of holding or carrying in its literal or technical sense (holds a lock, carries a header) is the plain verb and passes. name-the-thing catches the same move made with a noun."
+      ),
+      Rule.new(
         id: "maxim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
         question: {
           "type" => "score",
