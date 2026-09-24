@@ -299,4 +299,22 @@ RSpec.describe Sloplint::Split do
     text = "---\nProse here. More prose. Third one.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose. Third one."])
   end
+
+  it "drops a setext title underlined in \"=\", title line included, with no --markdown" do
+    text = "Title Here\n===\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+  end
+
+  it "drops a setext title with a short \"--\" underline as well as a \"---\" one" do
+    text = "Section Here\n--\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+    text = "Section Here\n---\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Prose here. More prose."])
+  end
+
+  it "keeps a --- divider between two paragraphs as the horizontal rule it is, not a setext underline" do
+    text = "A paragraph here. Second one.\n\n---\n\nAnother paragraph. Second one.\n"
+    expect(described_class.paragraphs(text).map(&:text))
+      .to eq(["A paragraph here. Second one.", "Another paragraph. Second one."])
+  end
 end

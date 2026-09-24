@@ -81,10 +81,11 @@ module Sloplint
 
     module_function
 
-    # text: the source. Furniture lines -- headings, bullets, ordered items,
-    # table rows, block quotes, horizontal rules and reference lines -- are
-    # blanked whether or not markdown is set, because their shape alone says
-    # they are not prose. markdown additionally blanks fenced code, HTML
+    # text: the source. Furniture lines -- headings (# and the setext title-
+    # plus-underline form), bullets, ordered items, table rows, block
+    # quotes, horizontal rules and reference lines -- are blanked whether or
+    # not markdown is set, because their shape alone says they are not
+    # prose. markdown additionally blanks fenced code, HTML
     # comments and URLs before splitting, and the furniture that only shows
     # once a document is read as Markdown: front matter, an indented code
     # block, a lone HTML tag line, and a line that is only a code span or a
@@ -227,6 +228,13 @@ module Sloplint
     # opens, and only on the first line of the file.
     FRONT = /\A---[ \t]*\z/
 
+    # The underline of a setext heading: one or more "=" for a level-1
+    # title, two or more "-" for a level-2 one. FURNITURE only knows the
+    # "#" (ATX) form. A "---" underline already drops as a horizontal
+    # rule, but the title line above it used to stay prose, and a title
+    # underlined in "=" did not drop at all.
+    SETEXT_UNDERLINE = /\A(?:=+|-{2,})[ \t]*\z/
+
     # How many lines of YAML front matter the document opens with: the ---
     # on the first line, everything to the next --- line, and that line. Zero
     # for a document that does not open with one, so a --- between two
@@ -248,13 +256,21 @@ module Sloplint
     # the \z that a horizontal rule or a bare link ends at, and neither would
     # be recognised as furniture. markdown: false still drops a line whose
     # shape alone marks it as furniture -- FURNITURE, a list item, a list
-    # item's continuation -- but leaves front matter, an indented code
-    # block, a lone HTML tag line and a lone code-span-or-URL line alone,
-    # because those only read as furniture once the document is read as
-    # Markdown.
+    # item's continuation, a setext title and its underline -- but leaves
+    # front matter, an indented code block, a lone HTML tag line and a lone
+    # code-span-or-URL line alone, because those only read as furniture
+    # once the document is read as Markdown.
     def blank_furniture(scan, shown, markdown: true)
       lines = scan.each_line.to_a
       front = markdown ? front_matter(lines) : 0
+      # A setext title and its underline, marked ahead of the walk below so
+      # each line of the pair can see the other: the walk itself only ever
+      # looks at the line it is on. A line is a title when it is not blank
+      # and the next line is nothing but a setext underline; the underline
+      # is furniture only where a title sits right above it, so a "---"
+      # after a blank line is still read as the horizontal rule it is.
+      underline = lines.map { |l| l.chomp.match?(SETEXT_UNDERLINE) }
+      title = lines.each_index.map { |i| !lines[i].chomp.strip.empty? && underline[i + 1] == true }
       item = false
       prose = false
       code = false
@@ -274,8 +290,9 @@ module Sloplint
         # and where the indent is not a list item's second line. It then runs
         # for as long as the indent holds.
         code = markdown && ((code && (indented || blank)) || (indented && !item && opens))
+        setext = title[i] || (i.positive? && title[i - 1])
         dropped = i < front || code || listed || l.match?(FURNITURE) || (markdown && l.match?(HTML_LINE)) ||
-                  (markdown && lone_inline?(l, prose)) || (item && l.match?(CONTINUED))
+                  (markdown && lone_inline?(l, prose)) || (item && l.match?(CONTINUED)) || setext
         item = listed || (item && l.match?(CONTINUED))
         prose = !dropped && !blank
         opens = blank || dropped
