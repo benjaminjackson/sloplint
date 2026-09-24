@@ -491,8 +491,8 @@ module Sloplint
           "Adding a column with a volatile default rewrites the whole table in Postgres."
         ],
         rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
-        ),
-        Rule.new(
+      ),
+      Rule.new(
         id: "dressed-pair", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
         question: {
           "type" => "score",
@@ -518,6 +518,38 @@ module Sloplint
           "Contractors get read access. Employees get write access."
         ],
         rationale: "Two ways of saying one fact as if it were two. The first echoes a verb: 'the release goes out and the on-call week goes out with it' is 'the on-call engineer ships with the release' set to a rhythm. The second sums up a pair as 'both' or 'those two things' and hands the sum a verdict, 'is the whole job', which names neither thing and tells the reader nothing the two sentences before it did not. A pair whose halves carry different facts, a plain 'both', and a pairing of groups with roles the paragraph defined are the facts themselves and pass. matched-shape flags pairs built to a rhythm in general; name-the-thing flags a pair pointed at by position or figure; this is the pair restated instead of named."
+      ),
+      Rule.new(
+        id: "device-before-claim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Look at `target` inside its paragraph. Does it make its claim through a device - opposites or a matched pair set against each other, a noun repeated to pose a riddle, singling out one item's place in a list or order as the one that matters, the sentence that finally tells %{register} what the specifics before it add up to, a coined figure, or a maxim that generalizes or restates the paragraph's point - or does it state the claim plainly, as one more fact among the others?",
+          "criteria" => [
+            { "what" => "The sentence is a device: opposites or a matched pair set against each other (everyone and nobody, always and never, the frontend ships one thing and the backend ships another); a noun or phrase repeated to pose a riddle; singling out one item's position in a list or order, the second one, the last one, the fourth item, as the one that actually matters; the payoff sentence that tells the reader what a run of specifics before it adds up to; a coined figure; or a maxim, a general rule stated as if it simply follows, that sums up or restates the point the paragraph was already making. It reads as a turn or a landing, not as one more fact.",
+              "examples" => ["The retry logic is identical everywhere it runs and documented nowhere.", "The frontend team ships the button and the backend team owns the endpoint, and neither one works without the other.", "The third name on the escalation list is the one who actually picks up.", "A deploy that never gets rolled back was never really tested."] },
+            { "what" => "The sentence states its claim directly, as one more fact in the paragraph, with no matched pair, no riddle, no singled-out position, no payoff over a run of specifics, and no maxim.",
+              "examples" => ["Nobody has documented the retry logic.", "The frontend team ships the button and the backend team ships the endpoint; both went out this morning.", "The third name on the escalation list is the database team's manager.", "This deploy has never been tested under real failure."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence makes its claim through a device.",
+        suggestion: "Check whether the device carries anything a plain statement of the claim would not.",
+        examples_bad: [
+          "The cache holds the last hour of queries once it's warm. A cold instance rebuilds that from scratch on every request. The service is fast for the cache that's warm and slow for the one that's cold.",
+          "We wrote a rollback plan before the migration ran. It covers every table we're touching. A migration that needs a rollback plan already knows it might fail.",
+          "The build failed twice this morning. Nobody could find a code change that explained it. Here's what actually broke the build: a comment.",
+          "The incident review named five follow-up tasks. Three were closed within a week without much discussion. The fourth one is the only task that would have prevented the outage.",
+          "Every cache in the fleet shares one eviction policy. The eviction policy that keeps memory free is the same eviction policy that evicts the entry you needed two seconds later."
+        ],
+        examples_ok: [
+          "The cache holds the last hour of queries once it's warm. A cold instance takes about four seconds to rebuild that on its first request.",
+          "We wrote a rollback plan before the migration ran because the migration might fail. It covers every table we're touching.",
+          "The build failed twice this morning. A stray comment in the config file caused both failures.",
+          "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes.",
+          "The incident review named five follow-up tasks, including a rewrite of the retry budget. The retry-budget rewrite would have prevented the outage. The other four tasks were closed within a week.",
+          "Every cache in the fleet shares one eviction policy. It frees memory by evicting the least recently used entry, even when that entry is needed again a few seconds later."
+        ],
+        rationale: "A sentence can make its claim by mirroring opposites against each other, posing a riddle with a repeated noun, holding an answer back until a run of specifics resolves into it, coining a figure, or drawing a maxim that restates what the paragraph already showed. mirrored-opposites and the-x-is-not-the-x in the regex catalog each catch one syntactic shape of this; this rule reads the sentence's role in the paragraph instead, so a form neither regex expects is still caught. It only says a device is present, not whether the device earns its place: a figure that explains how something works or a real tradeoff dressed as a mirror is still flagged, and it is for the reader to decide whether cutting it loses anything."
       )
     ].freeze
   end
