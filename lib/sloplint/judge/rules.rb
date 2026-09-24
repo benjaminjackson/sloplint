@@ -483,7 +483,7 @@ module Sloplint
         ],
         examples_ok: [
           "Reads go to the replica and writes go to the primary.",
-          "The API server logs to stdout and the worker logs to a file under /var/log/worker.",
+          "Either the database team or the platform team can own the failover runbook.",
           "We run Postgres for orders and Redis for sessions. Both sit behind the same VPC and both are backed up nightly.",
           "Contractors get read access. Employees get write access."
         ],
