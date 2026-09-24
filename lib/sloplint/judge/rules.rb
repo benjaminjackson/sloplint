@@ -221,8 +221,8 @@ module Sloplint
           "type" => "score",
           "instructions" => "Does `target` tell %{register} something they did not already know?",
           "criteria" => [
-            { "what" => "Defines a term the reader owns, or explains something every reader of this kind already knows.",
-              "examples" => ["A cache stores data so it can be served faster later.", "An RFC is a document published by the IETF."] },
+            { "what" => "Defines a term the reader owns, or explains something every reader of this kind already knows, or tells the reader, in the second person, about their own past actions or their own past words — something they know because they did it or said it, however specific.",
+              "examples" => ["A cache stores data so it can be served faster later.", "An RFC is a document published by the IETF.", "You led the payments migration and then ran the platform team for two years.", "You said yourself the on-call load is the main reason to move."] },
             { "what" => "States something the reader could have guessed from the sentences before it, or a general truth that needed no saying.",
               "examples" => ["Outages are bad for customers.", "Consensus is important in standards work."] },
             { "what" => "Tells the reader a fact, number, decision, or reason they did not have before reading it.",
@@ -232,9 +232,9 @@ module Sloplint
         flag: { level: 0 },
         message: "Explains what this reader already knows.",
         suggestion: "Cut it, or replace it with the fact this reader does not have.",
-        examples_bad: ["A database index is a data structure that speeds up lookups on a column.", "Unit tests are small programs that check that a piece of code behaves as expected."],
-        examples_ok: ["The composite index on (tenant_id, created_at) cut the dashboard query from 900 ms to 40 ms.", "The flaky test was reading the clock; pinning it to a fixed time fixed 30 of the 31 failures."],
-        rationale: "A sentence that defines a term the reader owns is written for a reader who is not there. Model prose explains; human prose in these registers assumes."
+        examples_bad: ["A database index is a data structure that speeds up lookups on a column.", "Unit tests are small programs that check that a piece of code behaves as expected.", "You led the payments migration and then ran the platform team for two years.", "You said yourself the on-call load is the main reason to move."],
+        examples_ok: ["The composite index on (tenant_id, created_at) cut the dashboard query from 900 ms to 40 ms.", "The flaky test was reading the clock; pinning it to a fixed time fixed 30 of the 31 failures.", "You will need a staging account before Monday.", "Rotate the on-call key before Friday's handoff."],
+        rationale: "A sentence that defines a term the reader owns is written for a reader who is not there. Model prose explains; human prose in these registers assumes. The same goes for reading a reader's own past back to them: a fact is not news just because it is specific, if the reader is the one who lived it."
       ),
       Rule.new(
         id: "names-nothing", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
