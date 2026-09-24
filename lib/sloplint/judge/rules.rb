@@ -402,6 +402,31 @@ module Sloplint
           "Nobody wrote the naming convention down."
         ],
         rationale: "Setting everywhere against nowhere, or always against never, makes two unrelated facts sound like one finding. The reader learns nothing from the mirror: 'identical everywhere it runs and documented nowhere' says what 'identical, but not documented' says. Opposites that compare one thing in two cases, a job that runs in staging and not in production, carry the contrast in the facts and are fine. matched-shape flags any pair built to a rhythm; this is the narrower case where the pair is a pair of opposites."
+      ),
+      Rule.new(
+        id: "maxim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Is `target` a saying: a general rule about how people, teams or systems always behave, where %{register} wants the fact about this case?",
+          "criteria" => [
+            { "what" => "A saying. It states how things always go for anyone, in a turned phrase that could be lifted out and quoted on its own: every X is Y until Z, nobody does X until Y, you learn X the day Y, X stops being Y the moment Z, the X you Y is the one that Z. It is still a saying when the sentences around it are the example that illustrates it, or when it is about people rather than code.",
+              "examples" => ["A cache you never invalidate is a bug you haven't met yet.", "Nobody values a backup until the day they need a restore.", "Every quick fix becomes a permanent one.", "The meeting you skip is the one where they decide."] },
+            { "what" => "Not a saying. It states a fact about this system, team or event; or it says in plain words how a particular tool, protocol, data structure or piece of code behaves, which a reader could test; or it is a step, a requirement or a decision.",
+              "examples" => ["The queue holds 40,000 messages before the broker starts rejecting writes.", "A TCP connection in TIME_WAIT holds its port for twice the maximum segment lifetime.", "Writes to the ledger must be append-only, so a correction is a new row.", "Priya owns the billing client."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence states a saying where the fact belongs.",
+        suggestion: "Cut the saying and let the fact beside it make the point, or replace it with the fact.",
+        examples_bad: [
+          "A dashboard nobody looks at is a postmortem waiting to happen.",
+          "The rollback you never test is the one that fails when you need it."
+        ],
+        examples_ok: [
+          "The dashboard for queue depth has had no viewers in the last 90 days.",
+          "Adding a column with a volatile default rewrites the whole table in Postgres."
+        ],
+        rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. The maintainer's standard: refer to the thing as anything other than the thing, and the reader's time is wasted. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
       )
     ].freeze
   end
