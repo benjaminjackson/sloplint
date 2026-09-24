@@ -457,7 +457,7 @@ module Sloplint
           "The dashboard for queue depth has had no viewers in the last 90 days.",
           "Adding a column with a volatile default rewrites the whole table in Postgres."
         ],
-        rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. The maintainer's standard: refer to the thing as anything other than the thing, and the reader's time is wasted. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
+        rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
       )
     ].freeze
   end
