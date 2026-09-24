@@ -409,17 +409,19 @@ module Sloplint
           "type" => "score",
           "instructions" => "Does `target` make its claim by saying what is, or by saying what is not, for %{register}? Judge the claim the sentence makes, not every negative word in it.",
           "criteria" => [
-            { "what" => "The claim is carried by a negative. The sentence says what something is not, does not do or does not have. Or it corrects with not, rather than, instead of, or isn't X, it's Y, anywhere in the sentence, including a trailing or subordinate clause (because it is A rather than B; which is A, not B). Or it makes nothing, nobody, none or no X its subject or object. Or it denies something so that the next sentence can give the positive. Or it tells the reader what not to do. The reader has to work out what is true from what is denied.",
-              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight."] },
-            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
-              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "\"The fix is not ready,\" the lead said."] }
+            { "what" => "The claim is carried by a negative. The sentence says what something is not in place of what it is. Or it corrects with not, rather than, instead of, or isn't X, it's Y, anywhere in the sentence, including a trailing or subordinate clause (because it is A rather than B; which is A, not B). Or it makes nothing, nobody, none or no X its subject, or nothing or nobody its object. Or its verb performs an absence: it gives an act to something that nobody did (publishes no figure, shows no incident, lists no changes, records nothing, offers no support), where the absence could be stated as a property of the thing. Or it denies something so that the next sentence can give the positive. Or it tells the reader what not to do. The reader has to work out what is true from what is denied.",
+              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "The audit shows no finding for the payments service.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight."] },
+            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or the sentence states an absence as a property of the thing, with has no, there is no or without (the batch API has no SLA; the export ships without a schema file). Or it denies a behavior the reader would expect, stated on its own, not set against another option in the same sentence (does not retry, will not overwrite). Or it is a courtesy line that releases the reader from an action (no need to reply). Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
+              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "The vendor's API has no published uptime figure.", "The CLI does not overwrite an existing config file.", "No need to RSVP if you already signed up.","\"The fix is not ready,\" the lead said."] }
           ]
         },
         flag: { level: 0 },
         message: "Says what isn't where it could say what is.",
-        suggestion: "Name what is missing, or say what is there instead.",
+        suggestion: "Say what is there instead, or state the absence as a property of the thing (has no, without).",
         examples_bad: [
           "The sidecar is a proxy, not a cache.",
+          "The changelog lists no breaking changes for 4.0.",
+          "The worker retries the failed chunk, not the whole upload.",
           "Nobody on the platform team owns the deploy script.",
           "Don't page the database team for replica lag."
         ],
@@ -430,9 +432,12 @@ module Sloplint
           "Each upload holds no more than 200 files.",
           "The email column is declared NOT NULL and indexed.",
           "A client MUST NOT reuse a nonce within the same session.",
-          "\"We are not shipping on Friday,\" the release manager said."
+          "\"We are not shipping on Friday,\" the release manager said.",
+          "The batch endpoint has no rate limit.",
+          "The client does not retry a failed upload.",
+          "No need to reply if this doesn't apply to you."
         ],
-        rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
+        rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, not encrypted, cannot be used with), and most of what the rule flags there is a limit the reader needs."
       ),
       Rule.new(
         id: "name-the-thing", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
@@ -486,6 +491,65 @@ module Sloplint
           "Adding a column with a volatile default rewrites the whole table in Postgres."
         ],
         rationale: "A sentence that reaches for a general rule about how things always go tells the reader nothing about this case, whatever specific sentences sit next to it. Medium because the question turns on the sentence's shape, a turned phrase that could stand alone, not on a fixed list of words, and a plain general statement of fact ('adding a volatile-default column rewrites the table') has to be told apart from an aphorism with the same short, declarative build."
+      ),
+      Rule.new(
+        id: "dressed-pair", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` state its facts plainly, or does it dress them up as a matched pair? Judge only the words of `target`; earlier sentences are context.",
+          "criteria" => [
+            { "what" => "Dresses a plain fact up as a pair. Either the second clause gives a second subject the first clause's verb and adds little beyond a tie back to the first (X deploys and Y deploys with it, A restarts and B restarts on its own), so the fact reads as a parallel when the plain version is one clause; or it sums up two things set out in earlier sentences as both, those two things or the two, and then gives that sum a verdict (is the real work, is the whole point, is what matters).",
+              "examples" => ["The release goes out and the on-call week goes out with it.", "The API falls over and the status page falls over right behind it.", "One team writes the schema and the other reads it, and keeping those two things in step is the whole job."] },
+            { "what" => "States its facts plainly. A pair whose halves carry different facts (reads go to the replica, writes go to the primary), a choice between two named options (either team can own it), a both that says what is true of two named things, even more than once, with no verdict on the pair, a pairing of groups with roles the paragraph already defined, or no pair at all.",
+              "examples" => ["The on-call engineer ships with each release.", "Either the web team or the mobile team can take the bug.", "Staging and production both run the same image, and both restart at midnight.", "Teams that own a database get the pager; teams that only read from one get the digest.", "The alert posted to a Slack channel nobody read."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence dresses a plain fact up as a matched pair.",
+        suggestion: "Say it once: what the second thing does, or what the two things are and what follows.",
+        examples_bad: [
+          "The schema changes, and the client changes right along with it, and the question every migration still leaves open is who finds out first.",
+          "A cache stores what the database returns. A queue holds what the writer sends. This service does both, and keeping those two things apart is the whole trick."
+        ],
+        examples_ok: [
+          "Reads go to the replica and writes go to the primary.",
+          "Either the database team or the platform team can own the failover runbook.",
+          "We run Postgres for orders and Redis for sessions. Both sit behind the same VPC and both are backed up nightly.",
+          "Contractors get read access. Employees get write access."
+        ],
+        rationale: "Two ways of saying one fact as if it were two. The first echoes a verb: 'the release goes out and the on-call week goes out with it' is 'the on-call engineer ships with the release' set to a rhythm. The second sums up a pair as 'both' or 'those two things' and hands the sum a verdict, 'is the whole job', which names neither thing and tells the reader nothing the two sentences before it did not. A pair whose halves carry different facts, a plain 'both', and a pairing of groups with roles the paragraph defined are the facts themselves and pass. matched-shape flags pairs built to a rhythm in general; name-the-thing flags a pair pointed at by position or figure; this is the pair restated instead of named."
+      ),
+      Rule.new(
+        id: "device-before-claim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Look at `target` inside its paragraph. Does it make its claim through a device - opposites or a matched pair set against each other, a noun repeated to pose a riddle, singling out one item's place in a list or order as the one that matters, the sentence that finally tells %{register} what the specifics before it add up to, a coined figure, or a maxim that generalizes or restates the paragraph's point - or does it state the claim plainly, as one more fact among the others?",
+          "criteria" => [
+            { "what" => "The sentence is a device: opposites or a matched pair set against each other (everyone and nobody, always and never, the frontend ships one thing and the backend ships another); a noun or phrase repeated to pose a riddle; singling out one item's position in a list or order, the second one, the last one, the fourth item, as the one that actually matters; the payoff sentence that tells the reader what a run of specifics before it adds up to; a coined figure; or a maxim, a general rule stated as if it simply follows, that sums up or restates the point the paragraph was already making. It reads as a turn or a landing, not as one more fact.",
+              "examples" => ["The retry logic is identical everywhere it runs and documented nowhere.", "The frontend team ships the button and the backend team owns the endpoint, and neither one works without the other.", "The third name on the escalation list is the one who actually picks up.", "A deploy that never gets rolled back was never really tested."] },
+            { "what" => "The sentence states its claim directly, as one more fact in the paragraph, with no matched pair, no riddle, no singled-out position, no payoff over a run of specifics, and no maxim.",
+              "examples" => ["Nobody has documented the retry logic.", "The frontend team ships the button and the backend team ships the endpoint; both went out this morning.", "The third name on the escalation list is the database team's manager.", "This deploy has never been tested under real failure."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence makes its claim through a device.",
+        suggestion: "Check whether the device carries anything a plain statement of the claim would not.",
+        examples_bad: [
+          "The cache holds the last hour of queries once it's warm. A cold instance rebuilds that from scratch on every request. The service is fast for the cache that's warm and slow for the one that's cold.",
+          "We wrote a rollback plan before the migration ran. It covers every table we're touching. A migration that needs a rollback plan already knows it might fail.",
+          "The build failed twice this morning. Nobody could find a code change that explained it. Here's what actually broke the build: a comment.",
+          "The incident review named five follow-up tasks. Three were closed within a week without much discussion. The fourth one is the only task that would have prevented the outage.",
+          "Every cache in the fleet shares one eviction policy. The eviction policy that keeps memory free is the same eviction policy that evicts the entry you needed two seconds later."
+        ],
+        examples_ok: [
+          "The cache holds the last hour of queries once it's warm. A cold instance takes about four seconds to rebuild that on its first request.",
+          "We wrote a rollback plan before the migration ran because the migration might fail. It covers every table we're touching.",
+          "The build failed twice this morning. A stray comment in the config file caused both failures.",
+          "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes.",
+          "The incident review named five follow-up tasks, including a rewrite of the retry budget. The retry-budget rewrite would have prevented the outage. The other four tasks were closed within a week.",
+          "Every cache in the fleet shares one eviction policy. It frees memory by evicting the least recently used entry, even when that entry is needed again a few seconds later."
+        ],
+        rationale: "A sentence can make its claim by mirroring opposites against each other, posing a riddle with a repeated noun, holding an answer back until a run of specifics resolves into it, coining a figure, or drawing a maxim that restates what the paragraph already showed. mirrored-opposites and the-x-is-not-the-x in the regex catalog each catch one syntactic shape of this; this rule reads the sentence's role in the paragraph instead, so a form neither regex expects is still caught. It only says a device is present, not whether the device earns its place: a figure that explains how something works or a real tradeoff dressed as a mirror is still flagged, and it is for the reader to decide whether cutting it loses anything."
       )
     ].freeze
   end
