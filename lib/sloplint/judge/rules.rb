@@ -404,6 +404,37 @@ module Sloplint
         rationale: "Setting everywhere against nowhere, or always against never, makes two unrelated facts sound like one finding. The reader learns nothing from the mirror: 'identical everywhere it runs and documented nowhere' says what 'identical, but not documented' says. Opposites that compare one thing in two cases, a job that runs in staging and not in production, carry the contrast in the facts and are fine. matched-shape flags any pair built to a rhythm; this is the narrower case where the pair is a pair of opposites."
       ),
       Rule.new(
+        id: "positive-form", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` make its claim by saying what is, or by saying what is not, for %{register}? Judge the claim the sentence makes, not every negative word in it.",
+          "criteria" => [
+            { "what" => "The claim is carried by a negative. The sentence says what something is not, does not do or does not have. Or it corrects with not, rather than, instead of, or isn't X, it's Y, anywhere in the sentence, including a trailing or subordinate clause (because it is A rather than B; which is A, not B). Or it makes nothing, nobody, none or no X its subject or object. Or it denies something so that the next sentence can give the positive. Or it tells the reader what not to do. The reader has to work out what is true from what is denied.",
+              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight."] },
+            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
+              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "\"The fix is not ready,\" the lead said."] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Says what isn't where it could say what is.",
+        suggestion: "Name what is missing, or say what is there instead.",
+        examples_bad: [
+          "The sidecar is a proxy, not a cache.",
+          "Nobody on the platform team owns the deploy script.",
+          "Don't page the database team for replica lag."
+        ],
+        examples_ok: [
+          "We assume the importer runs once a day rather than on every upload.",
+          "We chose Postgres rather than DynamoDB because the reports need joins.",
+          "If the lock is not released within 30 seconds, the worker exits.",
+          "Each upload holds no more than 200 files.",
+          "The email column is declared NOT NULL and indexed.",
+          "A client MUST NOT reuse a nonce within the same session.",
+          "\"We are not shipping on Friday,\" the release manager said."
+        ],
+        rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
+      ),
+      Rule.new(
         id: "maxim", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
         question: {
           "type" => "score",

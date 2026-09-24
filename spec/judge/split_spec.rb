@@ -90,8 +90,8 @@ RSpec.describe Sloplint::Split do
 
   it "walks offsets without rescanning, so non-ASCII text stays linear" do
     para = "The “quoted” claim held. It held again. And again.\n\n"
-    small = Benchmark.realtime { described_class.paragraphs(para * 500) }
-    large = Benchmark.realtime { described_class.paragraphs(para * 4000) }
+    small = 3.times.map { Benchmark.realtime { described_class.paragraphs(para * 500) } }.min
+    large = 3.times.map { Benchmark.realtime { described_class.paragraphs(para * 4000) } }.min
     expect(large).to be < small * 16
   end
 
@@ -100,8 +100,8 @@ RSpec.describe Sloplint::Split do
   # text with no blank line in it is one paragraph.
   it "stays linear inside one paragraph that is the whole document" do
     line = "The “quoted” claim held up. "
-    small = Benchmark.realtime { described_class.paragraphs(line * 2_000) }
-    large = Benchmark.realtime { described_class.paragraphs(line * 16_000) }
+    small = 3.times.map { Benchmark.realtime { described_class.paragraphs(line * 2_000) } }.min
+    large = 3.times.map { Benchmark.realtime { described_class.paragraphs(line * 16_000) } }.min
     expect(large).to be < small * 16
   end
 
