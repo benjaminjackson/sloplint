@@ -433,6 +433,34 @@ module Sloplint
           "\"We are not shipping on Friday,\" the release manager said."
         ],
         rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
+      ),
+      Rule.new(
+        id: "name-the-thing", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
+        question: {
+          "type" => "score",
+          "instructions" => "Does `target` call things by their names, or does it make %{register} map a pointer back to a name?",
+          "criteria" => [
+            { "what" => "Refers to something by anything other than its name when a name exists or is available. It picks a thing out by position, order or number in a list (the former, the latter, the first one, the second one, the last of three, the fourth item, the third alert), even when the list was just named; or it uses a stand-in noun or a figure for a named thing (the engine for a named service, the seat for a named role); or it rests its point on an allusion to a divide it never names (which side, which end or which slot someone is on, where someone stood when a system changed) or on the document pointing at itself ('this entire writeup', 'this entire proposal') standing in for a point it never states. The reader has to map the pointer back to a name. One pointer is enough: a sentence full of names still flags if one clause in it points instead of naming, such as an \"only the latter\" after a semicolon or a trailing \"which is this entire writeup\" after a list of facts.",
+              "examples" => ["We tried Kafka and SQS, and the latter needed no cluster to run.", "Both jobs read the same table; only the former writes to it.", "The third alert on that dashboard is the only one worth waking up for.", "We run the ledgerd service in two regions, and the engine is the thing that pages us.", "Hiring managers care where you stood when the monolith was split.", "The March outage, which is this entire proposal in a single afternoon."] },
+            { "what" => "Names what it means. A position word is fine only when the position is the thing's own name (step 4 of the runbook, the second retry, Q3, the first argument). A which-clause that asks about named things (which region, which port, which of the two replicas) is fine. An ordinary pronoun (it, they, this, these) pointing back to something named in the same or the previous sentence, or at a code sample or list beside it, is fine.",
+              "examples" => ["SQS needed no cluster to run.", "Step 4 of the runbook restarts the consumer.", "The second retry waits thirty seconds.", "Which region you deploy to decides the latency floor.", "The on-call engineer decides which of the two replicas to promote.", "The ingest worker reads from the events queue. It restarts every night.", "You can stub a method like this:"] }
+          ]
+        },
+        flag: { level: 0 },
+        message: "Sentence points at something instead of naming it.",
+        suggestion: "Write the name: the service, the option, the role or the point itself.",
+        examples_bad: [
+          "Whether you trust the new alerting depends on where you stood when the old scheduler went away.",
+          "We load-tested Envoy and HAProxy last month, and the latter held 40,000 connections without tuning.",
+          "Payments run on a Rust service called tallyd, and the engine has not been patched since June."
+        ],
+        examples_ok: [
+          "Step 4 of the runbook drains the queue before the consumer restarts.",
+          "Which availability zone the replica lands in decides whether it survives a zone outage.",
+          "Register the retry hook in the initializer like this:",
+          "The ingest worker reads from the events queue, and it restarts every night at 02:00 UTC."
+        ],
+        rationale: "The latter, the second one, the engine, where you stood when the old scheduler went away, this entire writeup: each makes the reader map a pointer back to a name the writer had and did not write. Naming the thing costs a word or two and saves the reader the lookup, even when the list was named one clause earlier. A position that is the thing's own name (step 4, the second retry, Q3) is a name, and a pronoun pointing at something just named is ordinary grammar; both pass. The-x-is-not-the-x catches the repeated-noun case; this is the general one."
       )
     ].freeze
   end
