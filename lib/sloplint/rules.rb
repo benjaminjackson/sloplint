@@ -3381,7 +3381,11 @@ module Sloplint
       #      relative clause ("nothing gets merged that does not get
       #      reviewed."). The relative clause's negation is the full closed
       #      set of auxiliaries and their contractions -- does/do/did,
-      #      has/have/had, is/are/was/were -- not just does/do/did.
+      #      has/have/had, is/are/was/were -- not just does/do/did. What
+      #      follows the negation runs one to ten words, atomic, not one to
+      #      three: "that does not pass the full suite first" needs the
+      #      room, and the boundary (a full stop or a clause break) is what
+      #      keeps the run from drifting into the next clause, not the cap.
       #
       # A clause the rule flags does not have to be the last clause in the
       # sentence: what ends it is a full stop, or a clause break (a comma
@@ -3396,15 +3400,22 @@ module Sloplint
       # is followed by that literal word, and an atomic group cannot
       # backtrack to give it back once it has swallowed it as an ordinary
       # word instead.
-      pattern: /(?:\A|(?<=[.;:!?\n])[ \t]*|\b(?:and|but|or|so|yet|nor)\b[ \t]+)\K
+      #
+      # A clause start may also carry one or two markdown emphasis markers
+      # (*, _) directly before the subject, since a markdown document bolds
+      # or italicizes the opening of a sentence or a list item structurally
+      # ("*Nothing is posted and nothing is vacant..."), the same way a
+      # sentence start already tolerates a list marker elsewhere in this
+      # file. The marker is inside the match, same as the subject.
+      pattern: /(?:\A|(?<=[.;:!?\n])[ \t]*|\b(?:and|but|or|so|yet|nor)\b[ \t]+)\K(?:[*_]{1,2})?
                   (?:Nothing|Nobody|No[ \t]+one|None)(?>(?:[ \t]+(?!and\b)[\w'’-]+){1,8})[ \t]+and[ \t]+
                   (?:Nothing|Nobody|No[ \t]+one|None)(?>(?:[ \t]+[\w'’-]+){1,8})
                   (?:[.!?]|,[ \t]+(?:and|but|or|so|yet|nor)\b|[,;:])
                 |
-                (?:\A|(?<=[.;:!?\n])[ \t]*)\K
+                (?:\A|(?<=[.;:!?\n])[ \t]*)\K(?:[*_]{1,2})?
                   (?:Nothing|Nobody|No[ \t]+one|None)(?>(?:[ \t]+(?!that\b)[\w'’-]+){1,3})[ \t]+that[ \t]+
                   (?:(?:does|do|did|has|have|had|is|are|was|were)[ \t]+not|(?:doesn|don|didn|hasn|haven|hadn|isn|aren|wasn|weren)['’]t)
-                  (?>(?:[ \t]+[\w'’-]+){1,3})
+                  (?>(?:[ \t]+[\w'’-]+){1,10})
                   (?:[.!?]|,[ \t]+(?:and|but|or|so|yet|nor)\b|[,;:])
                 /ix,
       message: '"Nothing/Nobody/No one" as the subject names no one and nothing specific.',
@@ -3414,7 +3425,11 @@ module Sloplint
         "The queue is empty; nothing gets merged that does not get reviewed.",
         # A clause break, not the end of the sentence, closes each frame.
         "Nobody merges anything that hasn't passed review.",
-        "Nothing is staged and nothing is promoted this week, and the freeze holds through Friday."
+        "Nothing is staged and nothing is promoted this week, and the freeze holds through Friday.",
+        # A longer relative-clause tail than three words.
+        "One rule holds every release: nothing ships that does not pass the full suite first.",
+        # A markdown emphasis marker opening the sentence.
+        "*Nothing is queued and nothing is running on the batch cluster tonight."
       ],
       examples_ok: [
         # The bare pronoun and a plain verb, with neither of the two frames.
