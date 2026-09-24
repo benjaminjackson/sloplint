@@ -176,12 +176,15 @@ def run(opts)
 
   sides = scored.map { |s| s[:side] }.uniq - ["human"]
   table = lambda do |columns, &cell|
+    # Widen to the longest name, so a side like llama-3-70b-instruct or a long rule id keeps its gap.
+    idw = [rules.map { |r| r.id.size }.max, 16].max
+    colw = [columns.map(&:size).max + 2, 18].max
     opts[:registers].each do |reg|
       puts "\n#{reg}"
-      puts format("  %-16s %s", "rule", columns.map { |s| format("%18s", s) }.join)
+      puts format("  %-*s %s", idw, "rule", columns.map { |s| s.rjust(colw) }.join)
       rules.each do |r|
         of = ->(side) { scored.select { |x| x[:register] == reg && x[:side] == side && x[:rule] == r.id } }
-        puts format("  %-16s %s", r.id, columns.map { |s| format("%18s", cell.call(of.(s), of.("human"))) }.join)
+        puts format("  %-*s %s", idw, r.id, columns.map { |s| cell.call(of.(s), of.("human")).to_s.rjust(colw) }.join)
       end
     end
   end
