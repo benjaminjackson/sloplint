@@ -409,17 +409,19 @@ module Sloplint
           "type" => "score",
           "instructions" => "Does `target` make its claim by saying what is, or by saying what is not, for %{register}? Judge the claim the sentence makes, not every negative word in it.",
           "criteria" => [
-            { "what" => "The claim is carried by a negative. The sentence says what something is not, does not do or does not have. Or it corrects with not, rather than, instead of, or isn't X, it's Y, anywhere in the sentence, including a trailing or subordinate clause (because it is A rather than B; which is A, not B). Or it makes nothing, nobody, none or no X its subject or object. Or it denies something so that the next sentence can give the positive. Or it tells the reader what not to do. The reader has to work out what is true from what is denied.",
-              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight."] },
-            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
-              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "\"The fix is not ready,\" the lead said."] }
+            { "what" => "The claim is carried by a negative. The sentence says what something is not in place of what it is. Or it corrects with not, rather than, instead of, or isn't X, it's Y, anywhere in the sentence, including a trailing or subordinate clause (because it is A rather than B; which is A, not B). Or it makes nothing, nobody, none or no X its subject, or nothing or nobody its object. Or its verb performs an absence: it gives an act to something that nobody did (publishes no figure, shows no incident, lists no changes, records nothing, offers no support), where the absence could be stated as a property of the thing. Or it denies something so that the next sentence can give the positive. Or it tells the reader what not to do. The reader has to work out what is true from what is denied.",
+              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "The audit shows no finding for the payments service.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight."] },
+            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or the sentence states an absence as a property of the thing, with has no, there is no or without (the batch API has no SLA; the role is posted without a salary band). Or it denies a behavior the reader would expect, stated on its own, not set against another option in the same sentence (does not retry, will not overwrite). Or it is a courtesy line that releases the reader from an action (no need to reply). Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
+              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "The vendor's API has no published uptime figure.", "The CLI does not overwrite an existing config file.", "No need to RSVP if you already signed up.","\"The fix is not ready,\" the lead said."] }
           ]
         },
         flag: { level: 0 },
         message: "Says what isn't where it could say what is.",
-        suggestion: "Name what is missing, or say what is there instead.",
+        suggestion: "Say what is there instead, or state the absence as a property of the thing (has no, without).",
         examples_bad: [
           "The sidecar is a proxy, not a cache.",
+          "The changelog lists no breaking changes for 4.0.",
+          "The config reload did nothing for the error rate.",
           "Nobody on the platform team owns the deploy script.",
           "Don't page the database team for replica lag."
         ],
@@ -430,7 +432,10 @@ module Sloplint
           "Each upload holds no more than 200 files.",
           "The email column is declared NOT NULL and indexed.",
           "A client MUST NOT reuse a nonce within the same session.",
-          "\"We are not shipping on Friday,\" the release manager said."
+          "\"We are not shipping on Friday,\" the release manager said.",
+          "The batch endpoint has no rate limit.",
+          "The client does not retry a failed upload.",
+          "No need to reply if this doesn't apply to you."
         ],
         rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, does not retry, will not overwrite), and most of what the rule flags there is a limit the reader needs."
       ),
