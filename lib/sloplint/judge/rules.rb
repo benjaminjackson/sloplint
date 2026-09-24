@@ -484,13 +484,14 @@ module Sloplint
         suggestion: "Write the plain verb: knows, wrote, decides, runs.",
         examples_bad: [
           "Priya carries the context on the billing reconciler, so page her first.",
-          "Two people on the support rotation hold the story of how the refund flow got its retry cap."
+          "Two people on the support rotation hold the story of how the refund flow got its retry cap.",
+          "No one on the platform team keeps the story of why the cache TTL is ninety seconds."
         ],
         examples_ok: [
           "The worker holds a row lock on the ledger table until the transfer commits.",
           "Each request carries the tenant ID in the X-Tenant header.",
           "The platform team owns the deploy script and reviews every change to it.",
-          "Nobody on the team has reviewed the migration yet."
+          "Nobody on the platform team has read the new runbook yet."
         ],
         rationale: "'Holds the history of the job' says knows or wrote in a figure, and the reader has to take the figure apart to find the act: who knows what, who wrote it, who decides. The figure sounds weightier than the plain verb and says less, since it never commits to which act it means. A verb of holding or carrying in its literal or technical sense (holds a lock, carries a header) is the plain verb and passes. name-the-thing catches the same move made with a noun."
       ),
