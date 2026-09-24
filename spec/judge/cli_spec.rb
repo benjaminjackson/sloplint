@@ -196,10 +196,28 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(out).to eq("")
     expect(err).to include("nothing examined in stdin").and include("Markdown furniture")
     expect(backend.calls).to be_empty
-    # The same document without --markdown is prose, and the judge reads it.
+    # The heading, bullets and table drop without --markdown too, because
+    # furniture is dropped on line shape alone. What --markdown still adds is
+    # blanking the fenced code, so without it "code()" is left as text and
+    # reaches the judge.
     code, = run(Sloplint::Judge::CLI, ["check", "-"], stdin_text: furniture)
     expect(code).not_to eq(2)
     expect(backend.calls).not_to be_empty
+  end
+
+  # A field run's false positives were almost all headings and a quoted
+  # email template's placeholder line, sent to the model as if they were
+  # sentences. Furniture drops without --markdown now, so neither reaches
+  # the backend and neither gets a note.
+  it "makes no note and no backend call on headings and a blockquoted template, without --markdown" do
+    backend = FakeBackend.new
+    allow(Sloplint::Judge::Backend).to receive(:load).and_return(backend)
+    furniture = "# Rollout plan\n\n## How the rollout works\n\n> Hi [name], your account is ready.\n"
+    code, out, err = run(Sloplint::Judge::CLI, ["check", "--strict", "-"], stdin_text: furniture)
+    expect(code).to eq(2)
+    expect(out).to eq("")
+    expect(err).to include("nothing examined in stdin")
+    expect(backend.calls).to be_empty
   end
 
   it "exits 2, not 3, when the backend is not configured or not known" do

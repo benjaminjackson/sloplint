@@ -81,14 +81,19 @@ module Sloplint
 
     module_function
 
-    # text: the source. markdown: blank code, HTML comments and URLs before
-    # splitting, and blank furniture lines so they neither count as prose nor
-    # take the prose around them with them. Splitting happens on the blanked
-    # copy; the texts returned are cut from the original at the same offsets,
-    # so an excerpt is always a string that is in the file. Blanking is
-    # character for character, so the offsets agree.
+    # text: the source. Furniture lines -- headings, bullets, ordered items,
+    # table rows, block quotes, horizontal rules and reference lines -- are
+    # blanked whether or not markdown is set, because their shape alone says
+    # they are not prose. markdown additionally blanks fenced code, HTML
+    # comments and URLs before splitting, and the furniture that only shows
+    # once a document is read as Markdown: front matter, an indented code
+    # block, a lone HTML tag line, and a line that is only a code span or a
+    # URL. Splitting happens on the blanked copy; the texts returned are cut
+    # from the original at the same offsets, so an excerpt is always a
+    # string that is in the file. Blanking is character for character, so
+    # the offsets agree.
     def paragraphs(text, markdown: false)
-      scan, asked = markdown ? blank_furniture(blank(text), blank_blocks(text)) : [text, text]
+      scan, asked = blank_furniture(markdown ? blank(text) : text, markdown ? blank_blocks(text) : text, markdown:)
       # A document with nothing to leave out is asked about as written, and
       # then every text is cut once instead of twice.
       asked = text if asked == text
@@ -241,10 +246,15 @@ module Sloplint
     # original and in both copies. The line ending is taken off before the
     # tests run: on a CRLF file it would otherwise sit between the line and
     # the \z that a horizontal rule or a bare link ends at, and neither would
-    # be recognised as furniture.
-    def blank_furniture(scan, shown)
+    # be recognised as furniture. markdown: false still drops a line whose
+    # shape alone marks it as furniture -- FURNITURE, a list item, a list
+    # item's continuation -- but leaves front matter, an indented code
+    # block, a lone HTML tag line and a lone code-span-or-URL line alone,
+    # because those only read as furniture once the document is read as
+    # Markdown.
+    def blank_furniture(scan, shown, markdown: true)
       lines = scan.each_line.to_a
-      front = front_matter(lines)
+      front = markdown ? front_matter(lines) : 0
       item = false
       prose = false
       code = false
@@ -263,9 +273,9 @@ module Sloplint
         # already -- the first line, or after a blank or furniture line --
         # and where the indent is not a list item's second line. It then runs
         # for as long as the indent holds.
-        code = (code && (indented || blank)) || (indented && !item && opens)
-        dropped = i < front || code || listed || l.match?(FURNITURE) || l.match?(HTML_LINE) ||
-                  lone_inline?(l, prose) || (item && l.match?(CONTINUED))
+        code = markdown && ((code && (indented || blank)) || (indented && !item && opens))
+        dropped = i < front || code || listed || l.match?(FURNITURE) || (markdown && l.match?(HTML_LINE)) ||
+                  (markdown && lone_inline?(l, prose)) || (item && l.match?(CONTINUED))
         item = listed || (item && l.match?(CONTINUED))
         prose = !dropped && !blank
         opens = blank || dropped
