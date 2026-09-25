@@ -198,22 +198,22 @@ module Sloplint
         id: "stock-figure", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
         question: {
           "type" => "score",
-          "instructions" => "Does `target` use figurative language, and if so, is the figure specific to this situation or a stock phrase?",
+          "instructions" => "Does `target` use figurative language, and if so, is the figure specific to this situation or a stock phrase? A word or phrase is a name the writer chose, not a figure, when `target` sets it in code as a command or identifier, when it is one of a set of options, verdicts, statuses or modes that the paragraph names or lists together, or when it is a term defined in this paragraph, the defining sentence included. Set aside only that span and judge every other word of the sentence as usual: a stock figure elsewhere in the sentence still counts. Bold used only for emphasis is not a name: a lone bold phrase the paragraph never sets up as a name is judged like plain prose.",
           "criteria" => [
             { "what" => "Uses a stock figure or idiom anyone could use about anything: shouting into the void, double-edged sword, low-hanging fruit, moving the needle, a journey, a landscape, unlock, navigate.",
               "examples" => ["The alert was shouting into an empty room.", "This unlocks a whole new landscape of possibilities."] },
             { "what" => "Uses a figure that could only have been made for this situation and that tells the reader something literal words would not.",
               "examples" => ["The renewal script was a smoke detector with the battery pulled.", "The RFC hums rather than votes."] },
-            { "what" => "Uses no figurative language. Every word is literal.",
-              "examples" => ["The certificate expired at 09:14 and the load balancer rejected every handshake.", "Nobody read the channel."] }
+            { "what" => "Uses no figurative language, or only names the writer chose (a status, an option, a command).",
+              "examples" => ["The certificate expired at 09:14 and the load balancer rejected every handshake.", "Nobody read the channel.", "Tickets move through **open**, **on ice** and **closed**."] }
           ]
         },
         flag: { level: 0 },
         message: "Stock figure of speech.",
         suggestion: "Say the literal thing, or make a figure that only fits this case.",
-        examples_bad: ["Migrating the auth service turned out to be a double-edged sword.", "We picked the low-hanging fruit first and moved the needle on latency."],
-        examples_ok: ["Migrating the auth service cut login time by half and broke password reset for a day.", "The retry loop kept redialing a number the kernel had already disconnected."],
-        rationale: "A figure anyone could use about anything tells the reader nothing about this case. Model prose reaches for the stock figure where human prose in these registers says the literal thing or makes a figure to fit."
+        examples_bad: ["Migrating the auth service turned out to be a double-edged sword.", "We picked the low-hanging fruit first and moved the needle on latency.", "The reviewer sent the proposal back to the drawing board.", "Moving to the new queue was a **game-changer** for the on-call rota.", "Our answer to flaky builds is the **silver bullet** everyone wanted: retry every step.", "The nightly job writes its errors to `sync-errors.csv`, and so far they are only the tip of the iceberg."],
+        examples_ok: ["Migrating the auth service cut login time by half and broke password reset for a day.", "The retry loop kept redialing a number the kernel had already disconnected.", "The reviewer returns one of three verdicts: **ship it**, **back to the drawing board**, or **shelve**.", "Run `burn-the-boats` to delete the staging stack and its volumes.", "We call a deploy that skips the canary a cold start. The cold start on Tuesday took checkout down for nine minutes."],
+        rationale: "A figure anyone could use about anything tells the reader nothing about this case. Model prose reaches for the stock figure where human prose in these registers says the literal thing or makes a figure to fit. A command in code, one of a set of options the paragraph lists, or a term the paragraph defines is a label, not a figure. Bold counts only when the paragraph sets the phrase up as a name."
       ),
       Rule.new(
         id: "no-news", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
