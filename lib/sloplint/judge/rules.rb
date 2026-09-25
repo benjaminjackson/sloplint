@@ -198,22 +198,22 @@ module Sloplint
         id: "stock-figure", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
         question: {
           "type" => "score",
-          "instructions" => "Does `target` use figurative language, and if so, is the figure specific to this situation or a stock phrase?",
+          "instructions" => "Does `target` use figurative language, and if so, is the figure specific to this situation or a stock phrase? A word or phrase is a name the writer chose, not a figure, when `target` sets it in code as a command or identifier, when it is one of a set of options, verdicts, statuses or modes that the paragraph names or lists together, or when it is a term defined in this paragraph, the defining sentence included. Set aside only that span and judge every other word of the sentence as usual: a stock figure elsewhere in the sentence still counts. Bold used only for emphasis is not a name: a lone bold phrase the paragraph never sets up as a name is judged like plain prose.",
           "criteria" => [
             { "what" => "Uses a stock figure or idiom anyone could use about anything: shouting into the void, double-edged sword, low-hanging fruit, moving the needle, a journey, a landscape, unlock, navigate.",
               "examples" => ["The alert was shouting into an empty room.", "This unlocks a whole new landscape of possibilities."] },
             { "what" => "Uses a figure that could only have been made for this situation and that tells the reader something literal words would not.",
               "examples" => ["The renewal script was a smoke detector with the battery pulled.", "The RFC hums rather than votes."] },
-            { "what" => "Uses no figurative language. Every word is literal.",
-              "examples" => ["The certificate expired at 09:14 and the load balancer rejected every handshake.", "Nobody read the channel."] }
+            { "what" => "Uses no figurative language, or only names the writer chose (a status, an option, a command).",
+              "examples" => ["The certificate expired at 09:14 and the load balancer rejected every handshake.", "Nobody read the channel.", "Tickets move through **open**, **on ice** and **closed**."] }
           ]
         },
         flag: { level: 0 },
         message: "Stock figure of speech.",
         suggestion: "Say the literal thing, or make a figure that only fits this case.",
-        examples_bad: ["Migrating the auth service turned out to be a double-edged sword.", "We picked the low-hanging fruit first and moved the needle on latency."],
-        examples_ok: ["Migrating the auth service cut login time by half and broke password reset for a day.", "The retry loop kept redialing a number the kernel had already disconnected."],
-        rationale: "A figure anyone could use about anything tells the reader nothing about this case. Model prose reaches for the stock figure where human prose in these registers says the literal thing or makes a figure to fit."
+        examples_bad: ["Migrating the auth service turned out to be a double-edged sword.", "We picked the low-hanging fruit first and moved the needle on latency.", "The reviewer sent the proposal back to the drawing board.", "Moving to the new queue was a **game-changer** for the on-call rota.", "Our answer to flaky builds is the **silver bullet** everyone wanted: retry every step.", "The nightly job writes its errors to `sync-errors.csv`, and so far they are only the tip of the iceberg."],
+        examples_ok: ["Migrating the auth service cut login time by half and broke password reset for a day.", "The retry loop kept redialing a number the kernel had already disconnected.", "The reviewer returns one of three verdicts: **ship it**, **back to the drawing board**, or **shelve**.", "Run `burn-the-boats` to delete the staging stack and its volumes.", "We call a deploy that skips the canary a cold start. The cold start on Tuesday took checkout down for nine minutes."],
+        rationale: "A figure anyone could use about anything tells the reader nothing about this case. Model prose reaches for the stock figure where human prose in these registers says the literal thing or makes a figure to fit. A command in code, one of a set of options the paragraph lists, or a term the paragraph defines is a label, not a figure. Bold counts only when the paragraph sets the phrase up as a name."
       ),
       Rule.new(
         id: "no-news", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
@@ -242,9 +242,9 @@ module Sloplint
           "type" => "score",
           "instructions" => "How concrete is `target`? Judge only what its nouns and verbs name.",
           "criteria" => [
-            { "what" => "Names no specific thing. Its nouns are categories or abstractions such as process, factor, framework, aspect, solution, approach, value, experience, and its claim could be made about many different situations.",
+            { "what" => "Names no specific thing. Its nouns are categories or abstractions such as process, factor, framework, aspect, solution, approach, value, experience, and its claim could be made about many different situations. Nothing in its paragraph makes this claim checkable, even if the paragraph names other things: pointing back at something the paragraph named, with these or this design, does not make a new general claim about it checkable.",
               "examples" => ["This approach provides significant value across a range of use cases.", "It is important to consider the various factors involved in the process."] },
-            { "what" => "Names the kind of thing it is about but not which one. A reader knows the topic but could not point to, count, or look up the thing.",
+            { "what" => "Names the kind of thing it is about but not which one. A reader knows the topic but could not point to, count, or look up the thing. Or it is a fragment with no verb, or a whole sentence of four words or fewer, that the next sentence of its paragraph spells out.",
               "examples" => ["The service caches responses to reduce load on the database.", "Some users reported slow page loads after the update."] },
             { "what" => "Names a specific thing a reader could point to, count, look up, or check: a named system, a number, a date, a person, a quoted line, a particular event.",
               "examples" => ["The checkout API returned 503 for 47 minutes on March 3 after the TLS certificate for api.example.com expired.", "RFC 2119 defines MUST, SHOULD and MAY for use in standards text."] }
@@ -253,8 +253,8 @@ module Sloplint
         flag: { level: 0 },
         message: "Sentence names nothing specific.",
         suggestion: "Name the system, the number, the person or the event.",
-        examples_bad: ["This approach delivers meaningful improvements across a variety of scenarios.", "Several factors contributed to the overall outcome of the initiative."],
-        examples_ok: ["The search endpoint returned 503 for 47 minutes on March 3.", "Section 4.2 of RFC 7230 says a proxy MUST NOT forward a hop-by-hop header."],
+        examples_bad: ["This approach delivers meaningful improvements across a variety of scenarios.", "Several factors contributed to the overall outcome of the initiative.", "The retry queue holds 200 jobs and drains every 30 seconds. Over time, small gaps like these tend to grow into larger problems across the organisation."],
+        examples_ok: ["The search endpoint returned 503 for 47 minutes on March 3.", "Section 4.2 of RFC 7230 says a proxy MUST NOT forward a hop-by-hop header.", "Idempotent. Running the migration twice leaves the schema at version 14 and logs one skip line.", "Retries back off 1, 2, 4 and 8 seconds, then give up. That schedule keeps a failing job from holding its worker for long."],
         rationale: "A sentence whose nouns are all categories could be about anything, and reads as written by someone who was not there."
       ),
       Rule.new(
@@ -413,9 +413,9 @@ module Sloplint
           "instructions" => "Does `target` make its claim by saying what is, or by saying what is not, for %{register}? Judge the claim the sentence makes, not every negative word in it.",
           "criteria" => [
             { "what" => "The claim is carried by a negative. The sentence says what something is not in place of what it is. Or it corrects with not, rather than, instead of, or isn't X, it's Y, anywhere in the sentence, including a trailing or subordinate clause (because it is A rather than B; which is A, not B). Or it makes nothing, nobody, none or no X its subject, or nothing or nobody its object. Or its verb performs an absence: it gives an act to something that nobody did (publishes no figure, shows no incident, lists no changes, records nothing, offers no support), where the absence could be stated as a property of the thing. Or it denies something so that the next sentence can give the positive. Or it tells the reader what not to do. The reader has to work out what is true from what is denied.",
-              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "The audit shows no finding for the payments service.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight."] },
-            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or the sentence states an absence as a property of the thing, with has no, there is no or without (the batch API has no SLA; the export ships without a schema file). Or it denies a behavior the reader would expect, stated on its own, not set against another option in the same sentence (does not retry, will not overwrite). Or it is a courtesy line that releases the reader from an action (no need to reply). Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
-              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "The vendor's API has no published uptime figure.", "The CLI does not overwrite an existing config file.", "No need to RSVP if you already signed up.","\"The fix is not ready,\" the lead said."] }
+              "examples" => ["The retry queue is a buffer, not a store.", "Nothing about the schema changes.", "The vendor publishes no uptime figure.", "The audit shows no finding for the payments service.", "Do not mention the cutover date in the release note.", "The problem isn't the index, it's that the query scans every partition.", "Two services write to the table, which is by design rather than an oversight.", "The real limit is disk throughput instead of memory."] },
+            { "what" => "The claim is carried by a positive statement: the sentence says what is, has or does. It has no negative, or its negative sits outside the claim: in a condition (unless, if not), a bound (no more than, zero rows), a fixed name (non-blocking, NOT NULL, 404 Not Found), or a requirement keyword in a standard (MUST NOT). Or the sentence says in so many words that it states an assumption or a decision (we assume, we chose) and names the option it rules out. Or it states a design choice, what a thing was built, set up or configured to be, names the option it rules out, and gives the reason that option would fail; a corrected cause or a corrected fact is not a choice, whatever reason comes with it. Or it is an instruction that sends the reader to a different command, tool, section or option for a case it names (run, see, try, switch to); an instead of or rather than there only names the other option and denies nothing. Or the sentence states an absence as a property of the thing, with has no, there is no or without (the batch API has no SLA; the export ships without a schema file). Or it denies a behavior the reader would expect, stated on its own, not set against another option in the same sentence (does not retry, will not overwrite). Or it is a courtesy line that releases the reader from an action (no need to reply). Or the sentence reports someone's words in quotation marks: a quoted denial belongs to the speaker, not the writer, whatever it says.",
+              "examples" => ["The retry queue keeps each message for seven days.", "We assume the export runs nightly rather than hourly.", "The uploader writes to local disk rather than straight to S3, since a dropped connection would leave a partial object there.", "If you need the raw events instead of the daily totals, query the events table.", "The client gives up after no more than three attempts.", "If the token is not set, the CLI reads it from the keychain.", "The vendor's API has no published uptime figure.", "The CLI does not overwrite an existing config file.", "No need to RSVP if you already signed up.","\"The fix is not ready,\" the lead said."] }
           ]
         },
         flag: { level: 0 },
@@ -426,11 +426,16 @@ module Sloplint
           "The changelog lists no breaking changes for 4.0.",
           "The worker retries the failed chunk, not the whole upload.",
           "Nobody on the platform team owns the deploy script.",
-          "Don't page the database team for replica lag."
+          "Don't page the database team for replica lag.",
+          "The slow part is the serializer instead of the network.",
+          "The deploy stalled because the registry throttled pulls, not because the image was large."
         ],
         examples_ok: [
           "We assume the importer runs once a day rather than on every upload.",
           "We chose Postgres rather than DynamoDB because the reports need joins.",
+          "Sessions live in Redis rather than the app database, because the app database fails over in minutes and a session lookup cannot wait that long.",
+          "If you deploy on bare metal, see the ops guide instead of this page.",
+          "To rebuild one package rather than the whole tree, run `make -C pkg/auth`.",
           "If the lock is not released within 30 seconds, the worker exits.",
           "Each upload holds no more than 200 files.",
           "The email column is declared NOT NULL and indexed.",
@@ -440,7 +445,7 @@ module Sloplint
           "The client does not retry a failed upload.",
           "No need to reply if this doesn't apply to you."
         ],
-        rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, not encrypted, cannot be used with), and most of what the rule flags there is a limit the reader needs."
+        rationale: "A sentence that says what a thing is not makes the reader work out what it is, and a model reaches for the denial because it sounds decisive without having to know the positive fact. The corrective (a buffer, not a store) sets up a contrast nobody raised. A sentence whose subject is nothing or nobody, or an instruction about what not to do, names the gap and leaves the reader to fill it. The regex rules not-x-but-y, isnt-x-its-y and not-nothing see a few fixed frames of this; this rule reads where the negative sits, so a negative inside a condition, a bound, a fixed name, a standard's MUST NOT or quoted speech passes, and so does a stated assumption or decision that names the option it rules out, a design choice that gives the reason the other option would fail, and a pointer that sends the reader to another option for a case it names. mirrored-opposites flags opposite words that make two claims read as one; this is any claim made by denial. Off by default: reference documentation states limits as negatives on purpose (not supported, not encrypted, cannot be used with), and most of what the rule flags there is a limit the reader needs."
       ),
       Rule.new(
         id: "name-the-thing", category: "sentence", unit: :sentence, severity: "info", confidence: "low",

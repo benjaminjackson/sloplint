@@ -22,23 +22,23 @@ The human output drops `-o json`:
 
 ```
 $ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the point I keep making about it.\n' | sloplint check -
--:1:17: error rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
+-:1:17: error (high confidence) rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
     excerpt: The report is a [rich tapestry] of vibrant detail. That is exactly the…
     why: 'tapestry of' is one of the most reliable single-phrase model tells.
     fix: Cut the metaphor; name the actual things.
 
--:1:34: error puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
+-:1:34: error (high confidence) puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
     excerpt: The report is a rich tapestry of [vibrant] detail. That is exactly the point I…
     why: Travel-brochure adjectives and phrases that models reach for and careful writers avoid.
     fix: Replace with a concrete, specific detail or cut it.
 
--:2:1: info exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
+-:2:1: info (medium confidence) exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
     excerpt: …is a rich tapestry of vibrant detail. [That is exactly] the point I keep making about it.
     why: Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to check; it earns its place only next to a number, a name, or a stated identity.
     fix: Cut it, or replace with the number, name, or match it's supposed to be precise about.
 ```
 
-The brackets mark the match; the rest lets you see what you're fixing without opening the file, *why* included, so an agent has the rationale without a second command.
+The brackets mark the match; the rest lets you see what you're fixing without opening the file, *why* included, so an agent has the rationale without a second command. The confidence is how likely the note is right; a `low` note is a place to look, not a finding.
 
 ## Installation
 
@@ -126,7 +126,7 @@ version      print the sloplint version
 - `--markdown` replaces fenced code, inline code, HTML comments, and URLs with same-length whitespace before scanning, so line and column stay correct. Without it, sloplint treats the file as prose and flags text inside your code fences. Off by default, so it never silently eats prose.
 - `--select IDS` runs only these rules. Comma-separated rule ids or category names.
 - `--ignore IDS` skips these rules. Same id-or-category form.
-- `--strict` runs every rule, including the low-confidence ones that are off by default. `--ignore` still applies.
+- `--strict` runs every rule, including the low-confidence ones that are off by default. Their notes are places to look, not findings. `--ignore` still applies.
 - `--judge` also runs the judge rules, which need the `sloplint-judge` gem and a key: see [The judge](#the-judge-the-tells-a-regex-cannot-reach).
 
 An agent calls `explain` to decide whether a note is worth acting on:
@@ -197,7 +197,7 @@ The notes merge into one array in document order, so nothing downstream has to k
 
 - `--register TEXT` says who the reader is. The default reader is an engineer on the team reading a design document, and the judge asks every question on that reader's behalf, so a rule like `no-news` flags a sentence *that* reader already knows rather than one anybody would know.
 
-`--strict` does more under `--judge`: on top of the regex rules that are off by default, it runs the judge rules that are off by default, asks the sentence questions of every sentence rather than only the flagged paragraphs, and keeps answers the model was unsure of.
+`--strict` does more under `--judge`: on top of the regex rules that are off by default, it runs the judge rules that are off by default, asks the sentence questions of every sentence rather than only the flagged paragraphs, and keeps answers the model was unsure of, which come through at `low`: places to look, not findings.
 
 Without the gem, `--judge` exits 2 and names the install command. Without a key, it exits 2 and names the variable to set. If the model cannot be reached, or answers in a shape the judge does not understand, it exits 3 and writes nothing, not even the regex notes, so a partial run can never pass as a clean one.
 
@@ -292,7 +292,7 @@ They run when you name them (`sloplint check --select rule-of-three -`), or when
 Twenty rules in two categories. They run only under `--judge`, because each one costs a request to a model; `sloplint-judge rules` lists them and `sloplint-judge explain ID` prints the question it asks the model, the answer that flags, and the fixtures. The bar differs from the regex catalog's: a judge rule ships when a reader, shown the flagged unit, agrees it should go, whoever wrote it. Severity comes from how sharply the rule separates model prose from human prose. So `throat-clearing` is `info`, not gone: human abstracts open by announcing the paper, and the announcement is dead weight either way.
 
 - **paragraph** (6): `particulars`, names nothing a reader could check; `wrap-up`, ends on a summary, a moral or a hope; `throat-clearing`, opens by announcing its topic; `self-narration`, signposts the document instead of advancing it; `promotional`, praises its subject and measures nothing; `same-weight`, states its guesses as flatly as its measurements.
-- **sentence** (14): `stock-figure`, a stock figure of speech; `no-news`, explains what the reader you declared already knows; `names-nothing`, carries no specific noun; `ends-on-verdict`, ends by grading the fact it just stated; `trailing-gloss`, ends on an -ing clause drawing its own moral; `unnamed-authority`, hands a claim to experts, studies, "many people" or what is "known"; `stated-stakes`, says something matters without saying why; `matched-shape`, a pair or triple built to a rhythm rather than to content; `mirrored-opposites`, opposite words that make two separate claims read as a contrast; `positive-form`, says what something is not where it could say what it is; `name-the-thing`, points at something by position, stand-in or allusion instead of naming it; `maxim`, states a general saying where the fact about this case belongs; `dressed-pair`, one fact dressed as a pair, by an echoed verb or a "both" handed a verdict; `device-before-claim`, makes its claim through a mirror, a riddle, a held-back answer, a coined figure or a maxim instead of stating it plainly.
+- **sentence** (14): `stock-figure`, a stock figure of speech; `no-news`, explains what the reader you declared already knows; `names-nothing`, names nothing specific, and nothing in its paragraph makes its claim checkable; `ends-on-verdict`, ends by grading the fact it just stated; `trailing-gloss`, ends on an -ing clause drawing its own moral; `unnamed-authority`, hands a claim to experts, studies, "many people" or what is "known"; `stated-stakes`, says something matters without saying why; `matched-shape`, a pair or triple built to a rhythm rather than to content; `mirrored-opposites`, opposite words that make two separate claims read as a contrast; `positive-form`, says what something is not where it could say what it is; `name-the-thing`, points at something by position, stand-in or allusion instead of naming it; `maxim`, states a general saying where the fact about this case belongs; `dressed-pair`, one fact dressed as a pair, by an echoed verb or a "both" handed a verdict; `device-before-claim`, makes its claim through a mirror, a riddle, a held-back answer, a coined figure or a maxim instead of stating it plainly.
 
 `same-weight`, `stated-stakes`, `matched-shape`, `mirrored-opposites`, `positive-form`, `name-the-thing` and `dressed-pair` are off by default; name them in `--select` or pass `--strict`.
 
