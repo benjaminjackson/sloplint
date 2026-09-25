@@ -70,7 +70,8 @@ module Sloplint
         o.on("--strict", "Run every rule, including the ones that are off by default;",
              "with --judge, also ask the sentence rules about every sentence, about three times the requests.",
              "It also reports low-confidence notes and answers: places to look, not findings.") { strict = true }
-        o.on("--judge", "Also run sloplint-judge's rules, which ask a model (needs the gem and a key).") { judge = true }
+        o.on("--judge", "Also run sloplint-judge's rules, which ask a model (needs the gem and a key).",
+             "`sloplint explain ID` explains their notes too.") { judge = true }
         o.on("--register TEXT", "With --judge: who the reader is.") { |v| register = v }
         o.on("--backend NAME", "With --judge: which model adapter to use.") { |v| backend = v }
         # OptionParser answers -h itself when nobody else does, and it answers
@@ -294,8 +295,13 @@ module Sloplint
       end
       rule = RULES.find { |r| r.id == id }
       unless rule
+        # `check --judge` prints the judge's notes too, so their ids have to
+        # explain from here as well, or a reader holding one is sent to a
+        # catalog that does not list it.
+        return Judge::CLI.run(["explain", id], out:, err:) if judge_rule?(id)
+
         err.puts("sloplint: no such rule: #{id}")
-        err.puts("run `sloplint rules` to list them.")
+        err.puts("run `sloplint rules` to list them, and `sloplint-judge rules` for the judge's.")
         return 2
       end
       out.puts(<<~TXT)
@@ -318,6 +324,15 @@ module Sloplint
     # `explain` is parsed by agents, and a stray newline reads as end-of-list.
     def fixture_list(examples)
       examples.map { |e| e.gsub("\r", '\r').gsub("\n", '\n') }.join("\n          ")
+    end
+
+    # True when the judge is installed and owns this id. A missing judge is
+    # not an error here: the id is then simply unknown.
+    def judge_rule?(id)
+      require "sloplint/judge/cli"
+      Judge::RULES.any? { |r| r.id == id }
+    rescue LoadError
+      false
     end
 
     # ── helpers ─────────────────────────────────────────────────────────────
@@ -396,8 +411,10 @@ module Sloplint
             check        scan paths (or stdin) for AI-slop tells and report notes [default]
                          a first argument that is not a command name is taken as a path
                          --judge adds sloplint-judge's model-backed rules when that gem is installed
-            rules        list the rule catalog (add --json for the machine-readable form)
-            explain ID   print one rule's message, rationale, and a bad/ok example
+            rules        list the rule catalog (add --json for the machine-readable form);
+                         `sloplint-judge rules` lists the --judge rules
+            explain ID   print one rule's message, rationale, and a bad/ok example;
+                         works for any rule id in a note, --judge rules included
             version      print the sloplint version
 
           global options:

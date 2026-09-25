@@ -389,6 +389,12 @@ RSpec.describe Sloplint::CLI do
       expect(out).to include("No fluff, no filler, no jargon.")
     end
 
+    it "explains a judge rule, since check --judge prints its notes too" do
+      code, out = run(["explain", "device-before-claim"])
+      expect(code).to eq(0)
+      expect(out).to include("device-before-claim", "Asks:")
+    end
+
     it "errors on an unknown rule id" do
       code, = run(["explain", "no-such-rule"])
       expect(code).to eq(2)

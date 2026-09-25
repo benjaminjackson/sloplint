@@ -74,7 +74,7 @@ On `0`, name what was scanned and how much of it: "Checked your memo, 412 words 
 
 On `1`, present the notes in document order, the order the JSON already gives you. Do not group them by rule: grouping scatters one paragraph's three problems across three sections, so the reader can never fix a paragraph in one pass. For each note, quote the `context` field — the match bracketed inside about 40 characters either side — then give one plain sentence from `suggestion`.
 
-Do not print the rule id, the category, the severity word, or the `line:column` unless asked. They have no line 12; their document has pages. Offer that you can explain any one of them, and use `explain RULE_ID` when they take you up on it.
+Do not print the rule id, the category, the severity word, or the `line:column` unless asked. They have no line 12; their document has pages. Offer that you can explain any one of them, and use `ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" explain RULE_ID` when they take you up on it; it explains the judge's rules too.
 
 ## Two standing rules
 
