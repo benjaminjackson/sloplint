@@ -122,7 +122,7 @@ module Sloplint
           return 2
         end
 
-        Sloplint::CLI.emit(result.notes, opts[:format], out:, by_path: sources.count { |label, _| label != "-" } > 1, judge: result.usage)
+        Sloplint::CLI.emit(result.notes, opts[:format], out:, by_path: sources.count { |label, _| label != "-" } > 1, judge: result.usage, err:, strict:)
         result.notes.empty? ? 0 : 1
       end
 

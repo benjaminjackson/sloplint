@@ -199,7 +199,7 @@ module Sloplint
         judge_usage = judged.usage
       end
 
-      emit(all_notes, opts[:format], out:, by_path:, judge: judge_usage)
+      emit(all_notes, opts[:format], out:, by_path:, judge: judge_usage, err:, strict:)
       all_notes.empty? ? 0 : 1
     end
 
@@ -247,7 +247,15 @@ module Sloplint
       sources
     end
 
-    def emit(notes, format, out:, by_path:, judge: nil)
+    def emit(notes, format, out:, by_path:, judge: nil, err: nil, strict: false)
+      # An agent reads --help once and the notes one at a time, so the
+      # warning goes where it acts: at the top of the run, on stderr so JSON
+      # on stdout stays parseable.
+      low = notes.count { |n| n.confidence == "low" }
+      if strict && err && low.positive?
+        err.puts("#{low} of #{notes.size} notes are low confidence (--strict). They are places to look, " \
+                 "not findings: do not rewrite on their word alone.")
+      end
       if format == "json"
         out.puts(Output.format_json(notes, by_path:, judge:))
       else

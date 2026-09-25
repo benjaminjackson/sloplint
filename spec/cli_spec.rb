@@ -389,6 +389,15 @@ RSpec.describe Sloplint::CLI do
       expect(out).to include("No fluff, no filler, no jargon.")
     end
 
+    it "warns on stderr, not stdout, when --strict reports low-confidence notes" do
+      argv = ["check", "--strict", "--select", "rule-of-three", "-o", "json", "-"]
+      _, out, err = run(argv, stdin_text: "It was fast, cheap, and simple.\n")
+      expect(err).to include("1 of 1 notes are low confidence (--strict)", "places to look")
+      expect { JSON.parse(out) }.not_to raise_error
+      _, _, err = run(argv - ["--strict"], stdin_text: "It was fast, cheap, and simple.\n")
+      expect(err).to be_empty
+    end
+
     it "explains a judge rule, since check --judge prints its notes too" do
       code, out = run(["explain", "device-before-claim"])
       expect(code).to eq(0)

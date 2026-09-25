@@ -48,6 +48,8 @@ Without the judge:
 ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --markdown -o json PATH
 ```
 
+Do not add `--strict` unless the person asks for it. It runs the rules that fire on careful human prose too, and it reports the notes the model was unsure of.
+
 When the judge did run, end the report with one line that says so: the text was sent to api.typesafe.ai, which backend answered, how many requests, how many tokens, and the cost, all from the `judge` object. If `requests` is 0, the judge examined nothing: the document was all Markdown furniture, or its paragraphs were too short for the rules that ran. Say that only the regex rules examined the text; do not say the judge found nothing.
 
 If it aborts with a message about needing Ruby 3.3, try each of these and use the first that reports 3.3 or later:
@@ -72,7 +74,7 @@ If none works, do not quote the error. Say that this needs a piece of software c
 
 On `0`, name what was scanned and how much of it: "Checked your memo, 412 words — nothing flagged." A bare "looks clean" hides the case where the text arrived truncated or the wrong file got scanned.
 
-On `1`, present the notes in document order, the order the JSON already gives you. Do not group them by rule: grouping scatters one paragraph's three problems across three sections, so the reader can never fix a paragraph in one pass. For each note, quote the `context` field — the match bracketed inside about 40 characters either side — then give one plain sentence from `suggestion`.
+On `1`, present the notes in document order, the order the JSON already gives you. Do not group them by rule: grouping scatters one paragraph's three problems across three sections, so the reader can never fix a paragraph in one pass. For each note, quote the `context` field — the match bracketed inside about 40 characters either side — then give one plain sentence from `suggestion`. A note whose `confidence` is `low` is a place to look, not a finding: put it to the person as a question, and never edit their text on its word alone.
 
 Do not print the rule id, the category, the severity word, or the `line:column` unless asked. They have no line 12; their document has pages. Offer that you can explain any one of them, and use `ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" explain RULE_ID` when they take you up on it; it explains the judge's rules too.
 
