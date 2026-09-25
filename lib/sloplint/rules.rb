@@ -3097,9 +3097,10 @@ module Sloplint
       category: "cadence",
       severity: "info",
       confidence: "low",
-      # A comma before the first word means the tail of a longer series; the
-      # word-character guard keeps the match from starting mid-word instead.
-      pattern: /(?<![\w'-]|,\s|,\s\s)[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
+      # A comma before the first word, across any whitespace, means the tail
+      # of a longer series; \K drops that prefix so the note points at the
+      # first word, and the word-character guard keeps it from starting mid-word.
+      pattern: /(?:\A|(?<=[^,\s]))\s*\K(?<![\w'-])[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
       message: "Three single words in a comma series closing a sentence (heuristic; high false-positive).",
       suggestion: "Fine in moderation; watch for the AI habit of ending on triplets.",
       examples_bad: ["It was fast, cheap, and simple."],
@@ -3110,7 +3111,8 @@ module Sloplint
         # Four or more items are a list, not a triad.
         "Pack tents, stoves, rope, lamps, and maps.",
         "We grow beans, leeks, chard, kale.",
-        "Pack tents, fly-sheets, pegs, and rope."
+        "Pack tents, fly-sheets, pegs, and rope.",
+        "Load the van with crates,\n    ladders, buckets, and brooms."
       ],
       rationale: "Rule-of-three endings are a model habit, but humans use them too — off by default. " \
                  "The closing two items must be single words; a triad of phrases is three ordinary " \
