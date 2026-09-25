@@ -242,9 +242,9 @@ module Sloplint
           "type" => "score",
           "instructions" => "How concrete is `target`? Judge only what its nouns and verbs name.",
           "criteria" => [
-            { "what" => "Names no specific thing. Its nouns are categories or abstractions such as process, factor, framework, aspect, solution, approach, value, experience, and its claim could be made about many different situations.",
+            { "what" => "Names no specific thing. Its nouns are categories or abstractions such as process, factor, framework, aspect, solution, approach, value, experience, and its claim could be made about many different situations. No other sentence in its paragraph names the specific things this claim is about.",
               "examples" => ["This approach provides significant value across a range of use cases.", "It is important to consider the various factors involved in the process."] },
-            { "what" => "Names the kind of thing it is about but not which one. A reader knows the topic but could not point to, count, or look up the thing.",
+            { "what" => "Names the kind of thing it is about but not which one. A reader knows the topic but could not point to, count, or look up the thing. Or it is a fragment with no verb, or a whole sentence of four words or fewer, that the next sentence of its paragraph spells out.",
               "examples" => ["The service caches responses to reduce load on the database.", "Some users reported slow page loads after the update."] },
             { "what" => "Names a specific thing a reader could point to, count, look up, or check: a named system, a number, a date, a person, a quoted line, a particular event.",
               "examples" => ["The checkout API returned 503 for 47 minutes on March 3 after the TLS certificate for api.example.com expired.", "RFC 2119 defines MUST, SHOULD and MAY for use in standards text."] }
@@ -253,8 +253,8 @@ module Sloplint
         flag: { level: 0 },
         message: "Sentence names nothing specific.",
         suggestion: "Name the system, the number, the person or the event.",
-        examples_bad: ["This approach delivers meaningful improvements across a variety of scenarios.", "Several factors contributed to the overall outcome of the initiative."],
-        examples_ok: ["The search endpoint returned 503 for 47 minutes on March 3.", "Section 4.2 of RFC 7230 says a proxy MUST NOT forward a hop-by-hop header."],
+        examples_bad: ["This approach delivers meaningful improvements across a variety of scenarios.", "Several factors contributed to the overall outcome of the initiative.", "The retry queue holds 200 jobs and drains every 30 seconds. Over time, small gaps like these tend to grow into larger problems across the organisation."],
+        examples_ok: ["The search endpoint returned 503 for 47 minutes on March 3.", "Section 4.2 of RFC 7230 says a proxy MUST NOT forward a hop-by-hop header.", "Idempotent. Running the migration twice leaves the schema at version 14 and logs one skip line.", "The worker pool runs 8 threads with the queue capped at 500 jobs. Both limits came from the May load test."],
         rationale: "A sentence whose nouns are all categories could be about anything, and reads as written by someone who was not there."
       ),
       Rule.new(
