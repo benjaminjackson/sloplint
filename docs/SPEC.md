@@ -146,7 +146,8 @@ check options:
   --markdown           skip fenced/inline code spans, HTML comments, and URLs
   --select IDS         only run these rules (comma-separated ids or categories)
   --ignore IDS         skip these rules
-  --strict             run every rule, including the off-by-default ones
+  --strict             run every rule, including the off-by-default ones;
+                       their low-confidence notes are places to look, not findings
 ```
 
 `check` is the default command. A first argument that is not a command name is

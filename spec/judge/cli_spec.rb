@@ -220,6 +220,20 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(backend.calls).to be_empty
   end
 
+  # JSON always carried a note's confidence; the full format hid it, so a
+  # --strict run read as a list of findings when its low notes are only
+  # places to look.
+  it "prints each note's confidence in the full format, low ones under --strict" do
+    unsure = FakeBackend.new { |state, _n, q| state["paragraph"].to_s.include?("In short") ? level(0, size: q["criteria"].size, confidence: 0.3) : level(q["criteria"].size - 1) }
+    allow(Sloplint::Judge::Backend).to receive(:load).and_return(unsure)
+    code, out, = run(Sloplint::Judge::CLI, ["check", "--strict", "-"], stdin_text: text)
+    expect(code).to eq(1)
+    heads = out.lines.grep(/\A-:\d+:\d+: /)
+    expect(heads).not_to be_empty
+    expect(heads).to all(match(/: \w+ \((high|medium|low) confidence\) /))
+    expect(heads.join).to include("(low confidence) wrap-up")
+  end
+
   it "exits 2, not 3, when the backend is not configured or not known" do
     allow(Sloplint::Judge::Backend).to receive(:load).and_raise(ArgumentError, "TYPESAFE_API_KEY is not set")
     code, out, err = run(Sloplint::CLI, ["check", "--judge", "-"], stdin_text: text)
@@ -263,10 +277,10 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
     expect(code).to eq(0)
     # Three things, not two: the rules that are off by default are part of
     # what the flag turns on, and the cost is what the person pays for it.
-    expect(entry.call(out)).to include("off by default").and include("every sentence").and include("three times the requests")
+    expect(entry.call(out)).to include("off by default").and include("every sentence").and include("three times the requests").and include("low-confidence").and include("not findings")
     code, out, = run(Sloplint::CLI, ["check", "--help"])
     expect(code).to eq(0)
-    expect(entry.call(out)).to include("off by default").and include("with --judge").and include("three times the requests")
+    expect(entry.call(out)).to include("off by default").and include("with --judge").and include("three times the requests").and include("low-confidence").and include("not findings")
   end
 
   it "status answers from the key's presence, never its value, and exits 2 when there is none" do

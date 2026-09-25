@@ -68,7 +68,8 @@ module Sloplint
         o.on("--select IDS", "Only run these rules (comma-separated rule ids or category names).") { |v| select = v.split(",").map(&:strip) }
         o.on("--ignore IDS", "Skip these rules (comma-separated rule ids or category names).") { |v| ignore = v.split(",").map(&:strip) }
         o.on("--strict", "Run every rule, including the ones that are off by default;",
-             "with --judge, also ask the sentence rules about every sentence, about three times the requests.") { strict = true }
+             "with --judge, also ask the sentence rules about every sentence, about three times the requests.",
+             "It also reports low-confidence notes and answers: places to look, not findings.") { strict = true }
         o.on("--judge", "Also run sloplint-judge's rules, which ask a model (needs the gem and a key).") { judge = true }
         o.on("--register TEXT", "With --judge: who the reader is.") { |v| register = v }
         o.on("--backend NAME", "With --judge: which model adapter to use.") { |v| backend = v }

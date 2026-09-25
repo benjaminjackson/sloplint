@@ -22,23 +22,23 @@ The human output drops `-o json`:
 
 ```
 $ printf 'The report is a rich tapestry of vibrant detail.\nThat is exactly the point I keep making about it.\n' | sloplint check -
--:1:17: error rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
+-:1:17: error (high confidence) rich-tapestry  "rich tapestry"/"tapestry of" is a signature AI cliché.
     excerpt: The report is a [rich tapestry] of vibrant detail. That is exactly the…
     why: 'tapestry of' is one of the most reliable single-phrase model tells.
     fix: Cut the metaphor; name the actual things.
 
--:1:34: error puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
+-:1:34: error (high confidence) puffery-words  Wikipedia-style puffery word/phrase — a common AI tell.
     excerpt: The report is a rich tapestry of [vibrant] detail. That is exactly the point I…
     why: Travel-brochure adjectives and phrases that models reach for and careful writers avoid.
     fix: Replace with a concrete, specific detail or cut it.
 
--:2:1: info exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
+-:2:1: info (medium confidence) exact-exactly  "exact/exactly" is reflexive emphasis unless it names something checkable.
     excerpt: …is a rich tapestry of vibrant detail. [That is exactly] the point I keep making about it.
     why: Models reach for 'exact/exactly' as filler emphasis on a claim with nothing to check; it earns its place only next to a number, a name, or a stated identity.
     fix: Cut it, or replace with the number, name, or match it's supposed to be precise about.
 ```
 
-The brackets mark the match; the rest lets you see what you're fixing without opening the file, *why* included, so an agent has the rationale without a second command.
+The brackets mark the match; the rest lets you see what you're fixing without opening the file, *why* included, so an agent has the rationale without a second command. The confidence is how likely the note is right; a `low` note is a place to look, not a finding.
 
 ## Installation
 
@@ -126,7 +126,7 @@ version      print the sloplint version
 - `--markdown` replaces fenced code, inline code, HTML comments, and URLs with same-length whitespace before scanning, so line and column stay correct. Without it, sloplint treats the file as prose and flags text inside your code fences. Off by default, so it never silently eats prose.
 - `--select IDS` runs only these rules. Comma-separated rule ids or category names.
 - `--ignore IDS` skips these rules. Same id-or-category form.
-- `--strict` runs every rule, including the low-confidence ones that are off by default. `--ignore` still applies.
+- `--strict` runs every rule, including the low-confidence ones that are off by default. Their notes are places to look, not findings. `--ignore` still applies.
 - `--judge` also runs the judge rules, which need the `sloplint-judge` gem and a key: see [The judge](#the-judge-the-tells-a-regex-cannot-reach).
 
 An agent calls `explain` to decide whether a note is worth acting on:
@@ -197,7 +197,7 @@ The notes merge into one array in document order, so nothing downstream has to k
 
 - `--register TEXT` says who the reader is. The default reader is an engineer on the team reading a design document, and the judge asks every question on that reader's behalf, so a rule like `no-news` flags a sentence *that* reader already knows rather than one anybody would know.
 
-`--strict` does more under `--judge`: on top of the regex rules that are off by default, it runs the judge rules that are off by default, asks the sentence questions of every sentence rather than only the flagged paragraphs, and keeps answers the model was unsure of.
+`--strict` does more under `--judge`: on top of the regex rules that are off by default, it runs the judge rules that are off by default, asks the sentence questions of every sentence rather than only the flagged paragraphs, and keeps answers the model was unsure of, which come through at `low`: places to look, not findings.
 
 Without the gem, `--judge` exits 2 and names the install command. Without a key, it exits 2 and names the variable to set. If the model cannot be reached, or answers in a shape the judge does not understand, it exits 3 and writes nothing, not even the regex notes, so a partial run can never pass as a clean one.
 

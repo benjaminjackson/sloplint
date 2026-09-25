@@ -11,7 +11,7 @@ module Sloplint
       return "" if notes.empty?
 
       notes.map do |n|
-        head = "#{n.path}:#{n.line}:#{n.column}: #{n.severity} #{n.rule}  #{n.message}"
+        head = "#{n.path}:#{n.line}:#{n.column}: #{n.severity} (#{n.confidence} confidence) #{n.rule}  #{n.message}"
         excerpt = "    excerpt: #{n.context}"
         why = "    why: #{n.rationale}"
         fix = "    fix: #{n.suggestion}"
