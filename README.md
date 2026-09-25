@@ -279,7 +279,7 @@ Some tells come in a confident form and an ambiguous one, and those ship as a pa
 
 The `low` rules are **off by default**, because each one matches a shape ordinary prose produces on its own:
 
-- `rule-of-three` flags a comma series of single words closing a sentence, which writers of every kind produce constantly. The narrowing is that the last two items must be single words, so three phrases do not match, but a series of three words is still often an ordinary list, and no regex sees the difference.
+- `rule-of-three` flags a comma series of single words closing a sentence, which writers of every kind produce constantly. The narrowings are that the last two items must be single words, so three phrases do not match, and that the first word cannot follow a comma, so the tail of a longer list does not match either. A series of three words is still often an ordinary list, and no regex sees the difference.
 - `genuinely` flags every occurrence of the word. As an intensifier it rates the writer's sincerity, but it still does real work when it draws a contrast, and nothing in the sentence separates the two.
 - `epistrophe` flags two clauses ending on the same phrase: a named figure careful writers use on purpose, and one ordinary prose produces by reusing a phrase.
 - `trailing-restatement` flags the "…, which means …" tail and the participles that hang a result off the sentence ("…, making it easier"). The connective is visible and the restatement is not, so a real consequence trips it too.

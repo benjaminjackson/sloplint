@@ -3097,18 +3097,27 @@ module Sloplint
       category: "cadence",
       severity: "info",
       confidence: "low",
-      pattern: /\b[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
+      # A comma before the first word, across any whitespace, means the tail
+      # of a longer series; \K drops that prefix so the note points at the
+      # first word, and the word-character guard keeps it from starting mid-word.
+      pattern: /(?:\A|(?<=[^,\s]))\s*\K(?<![\w'-])[\w'-]+,\s+[\w'-]+,\s+(?:and\s+)?[\w'-]+[.!?]/,
       message: "Three single words in a comma series closing a sentence (heuristic; high false-positive).",
       suggestion: "Fine in moderation; watch for the AI habit of ending on triplets.",
       examples_bad: ["It was fast, cheap, and simple."],
       examples_ok: [
         "We met on Tuesday afternoon.",
         # Phrasal items do not match; the closing two slots take one word each.
-        "It was very fast, very cheap, and very simple."
+        "It was very fast, very cheap, and very simple.",
+        # Four or more items are a list, not a triad.
+        "Pack tents, stoves, rope, lamps, and maps.",
+        "We grow beans, leeks, chard, kale.",
+        "Pack tents, fly-sheets, pegs, and rope.",
+        "Load the van with crates,\n    ladders, buckets, and brooms."
       ],
       rationale: "Rule-of-three endings are a model habit, but humans use them too — off by default. " \
                  "The closing two items must be single words; a triad of phrases is three ordinary " \
-                 "list items to a regex, so those are left unflagged rather than guessed at."
+                 "list items to a regex, so those are left unflagged rather than guessed at. The last " \
+                 "three words of a longer series are not a triad and are left alone too."
     ),
     # clause-triad-then was cut. The pattern (comma-clause, comma-clause,
     # "then" clause) had no way to require the clauses actually be parallel
