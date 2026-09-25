@@ -307,11 +307,11 @@ module Sloplint
         id: "unnamed-authority", category: "sentence", unit: :sentence, severity: "info", confidence: "medium",
         question: {
           "type" => "score",
-          "instructions" => "If `target` attributes a claim to someone, who, for %{register}?",
+          "instructions" => "If `target` attributes a claim to someone, or calls it known, who, for %{register}?",
           "criteria" => [
-            { "what" => "To an authority the reader could not find and that speaks for nobody in particular: experts, studies, research, observers, analysts, critics, fans, pundits, many, some, it is widely believed.",
-              "examples" => ["Experts agree that the migration reduced operational risk.", "Studies show that smaller pull requests get better reviews.", "Many believe the old scheduler was the real bottleneck."] },
-            { "what" => "To a named person, body, document or dataset the reader could go to, or to a source that speaks for a body and the register quotes by convention (officials, a spokesperson, the company, a court, police), or to prior work in a register that keeps its citations elsewhere (an abstract's existing methods, previous studies), or the sentence makes the claim in its own voice.",
+            { "what" => "To an authority the reader could not find and that speaks for nobody in particular: experts, studies, research, observers, analysts, critics, fans, pundits, many, some, it is widely believed; or the claim is only called known, with nobody in the sentence or its paragraph who found it: a known cause, it is well known that, as is widely known.",
+              "examples" => ["Experts agree that the migration reduced operational risk.", "Studies show that smaller pull requests get better reviews.", "Many believe the old scheduler was the real bottleneck.", "It is well known that users abandon a form after the third required field."] },
+            { "what" => "To a named person, body, document or dataset the reader could go to, or to a source that speaks for a body and the register quotes by convention (officials, a spokesperson, the company, a court, police), or to prior work in a register that keeps its citations elsewhere (an abstract's existing methods, previous studies), or to a known fact the sentence or its paragraph cites, or the sentence makes the claim in its own voice. In an abstract, and only there, a result the field is said to know is prior work however it is phrased: an abstract that opens \"it is well known that the lattice is rigid\" or \"the solver is known to diverge on sparse inputs\" is pointing at the literature. A person or group described as known or well known is a reputation, not a claim, and attributes nothing.",
               "examples" => ["The April postmortem counts three fewer pages a week since the migration.", "A spokesperson for the airline said the flight was cancelled because of crew hours.", "The migration reduced pages from nine a week to six."] }
           ]
         },
@@ -320,14 +320,17 @@ module Sloplint
         suggestion: "Name the source, or say it yourself.",
         examples_bad: [
           "Research suggests that teams with a single on-call rotation recover faster.",
-          "Many in the industry expect event-driven designs to dominate within a few years."
+          "Many in the industry expect event-driven designs to dominate within a few years.",
+          "Long-lived feature branches are a known source of merge pain."
         ],
         examples_ok: [
           "The 2024 DORA report puts the median recovery time for teams with one rotation at under an hour.",
           "Officials said the bridge would stay closed until the inspection was complete.",
-          "Existing methods segment the vessel tree slice by slice and lose the branching structure between slices."
+          "Existing methods segment the vessel tree slice by slice and lose the branching structure between slices.",
+          "Long-lived feature branches are a known source of merge pain: in our 2023 repository audit, branches open longer than two weeks hit three times as many conflicts.",
+          "A well-known campaigner for cycle lanes told the council that the painted lanes on Mill Road had halved cyclist injuries."
         ],
-        rationale: "A claim handed to experts, studies or many is a claim the reader cannot check and the writer has not owned. The regex catalog's vague-attribution sees three fixed frames; this is the reading of who is being cited, so \"studies show\" and \"research suggests\" and a bare \"many believe\" are caught and a source the register names by convention, officials, a spokesperson, the company, is not. Two levels. Info because news attributes to unnamed officials by convention, and an abstract to prior work, and the rule must let both through."
+        rationale: "A claim handed to experts, studies or many is a claim the reader cannot check and the writer has not owned. The regex catalog's vague-attribution sees three fixed frames; this is the reading of who is being cited, so \"studies show\" and \"research suggests\" and a bare \"many believe\" are caught and a source the register names by convention, officials, a spokesperson, the company, is not. Two levels. Info because news attributes to unnamed officials by convention, and an abstract to prior work, and the rule must let both through. An appeal to what is \"known\" hands the claim to everyone, and so to no one."
       ),
       Rule.new(
         id: "stated-stakes", category: "sentence", unit: :sentence, severity: "info", confidence: "low",
