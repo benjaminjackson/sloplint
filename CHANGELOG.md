@@ -5,7 +5,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
-### [0.2.0] - 2026-09-25
+### [0.2.0] - 2026-10-13
 
 - New sentence rule `positive-form` (`info`, `low`, off by default): a claim
   made by denial instead of a plain positive statement (Strunk and White,
@@ -161,7 +161,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint
 
-## [0.10.0] - 2026-09-25
+## [0.10.0] - 2026-10-13
 
 ### Added
 
@@ -171,9 +171,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `the-x-is-the-x`.
 - New rule `negative-subject` (cadence, `warning`, `medium`): a negative pronoun (Nothing,
   Nobody, No one, None) standing as the subject of a clause, dressed up
-  with a second negative-subject clause joined by "and", a prepositional
-  aside before the verb ("Nobody on the on-call page owns the service."),
-  or a negated relative clause on the object ("nothing gets merged that
+  with a second negative-subject clause joined by "and", or a negated
+  relative clause on the object ("nothing gets merged that
   does not get reviewed."). Bare "Nothing happened." and "No one knows."
   are left alone.
 
