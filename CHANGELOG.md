@@ -5,6 +5,86 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
+### [0.2.0] - 2026-09-25
+
+- New sentence rule `positive-form` (`info`, `low`, off by default): a claim
+  made by denial instead of a plain positive statement (Strunk and White,
+  rule 15) --
+  a correction with "not", "nothing" or "nobody" as subject or object, or an
+  instruction not to do something. A negative outside the claim passes: a
+  condition, a bound, a fixed name, a standard's MUST NOT, quoted speech, or
+  a denied option a decision names on its way to a different one. A verb
+  that performs an absence ("publishes no salary band") still flags; an
+  absence stated as a property of the thing ("has no salary band", "without
+  a salary band") passes, and so does an expected behavior denied on its own
+  ("does not retry") with nothing set against it. A routing instruction
+  (which tool to use for which job) and a design choice given with its
+  reason also pass. Off by default because reference documentation states
+  limits as negatives on purpose.
+- New sentence rule `name-the-thing` (`info`, `low`, off by default): referring to a
+  thing by anything other than its name when a name is available --
+  a position (the latter, the second one), a stand-in noun or figure (the
+  engine for a named service), an allusion to a divide it never names, or
+  the document pointing at itself ("this entire writeup"). A position that
+  is the thing's own name (step 4, the second retry, Q3), a which-clause
+  about named things, and a pronoun pointing at something just named pass.
+- New sentence rule `device-before-claim` (`info`, `medium`): a sentence
+  that makes its claim through a device -- a mirror or matched pair, a
+  riddle, a held-back answer, a singled-out position in a list, a coined
+  figure, or a maxim -- instead of stating it plainly. Detection only; the
+  calling model decides whether the device earns its keep.
+- New sentence rule `maxim` (`info`, `medium`): a sentence that states a
+  general saying in place of the fact the case needs, often as a
+  paragraph's closing line.
+- New sentence rule `dressed-pair` (`info`, `low`, off by default): one
+  fact said as if it were two -- a second clause that echoes the first
+  clause's verb, or a "both" / "those two things" summing up an earlier
+  pair and handed a verdict. It catches pairs that `matched-shape` and
+  `name-the-thing` miss.
+- New sentence rule `mirrored-opposites` (`info`, `low`, off by default):
+  opposite words joining two separate claims so they read as a contrast
+  ("identical everywhere it runs and documented nowhere"). Opposites that
+  compare one thing across two cases ("runs in staging and never in
+  production") pass. The narrow case of `matched-shape`.
+- `no-news` also flags a sentence that tells the reader, in the second
+  person, about their own past actions or their own past words. A fact is
+  not news to the reader who lived it, even when the sentence is specific.
+- `names-nothing` judges each sentence with its paragraph. A sentence
+  passes when its paragraph makes the claim checkable, and so does a short
+  label or verbless fragment that the next sentence spells out. Pointing
+  back at things the paragraph named ("these", "this design") does not by
+  itself make a new general claim checkable.
+- `stock-figure` passes names the writer chose: a command or identifier in
+  code, one of a set of options, statuses or modes the paragraph lists, and
+  a term the paragraph defines, the defining sentence included. Bold counts
+  only when the paragraph sets the phrase up as a name. A stock figure
+  elsewhere in the same sentence still flags.
+- `unnamed-authority` also flags a claim called known with no source ("a
+  known cause", "it is well known that"). A known fact passes when the
+  sentence or its paragraph cites a source for it. In an abstract, a result
+  the field is said to know is prior work and passes; a person described as
+  well known is a reputation, not a claim.
+- Graveyard: `stand-in-verb`, a rule for a verb of holding, carrying or
+  keeping standing in for a plain verb ("holds the history of a job"), was
+  added and reverted. Its only real specimens were two labelled rows, and
+  the maintainer ruled that their verbs are worn figures in their own
+  trades, not this tell. A version widened to any figurative main verb
+  read as ornate prose (`stock-figure`'s job) rather than a stand-in for
+  who knows, wrote or decides.
+- The default `--register` is now "the reader this document is written
+  for", in place of "an engineer on the team reading a design document".
+  The model infers the reader from the text, so a run without `--register`
+  can flag different sentences than before. Name the reader when you know
+  it.
+- `script/calibrate run --reader TEXT` asks every register's questions for
+  one reader, to measure a candidate default against each register's own
+  reader.
+- `script/calibrate` retries API errors with backoff, including the
+  compare calls, and gains a `blogs` register (HAP-E) alongside RAID's news
+  and abstracts. A failed HAP-E download now stops with an error. `script/score-labels`
+  is a new script that scores a rule against a synthetic or real label set
+  by name.
+
 ### [0.1.0] - 2026-09-21
 
 - New sentence rule `unnamed-authority` (`info`, `medium`): a claim handed to
@@ -80,6 +160,53 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   command is refused with exit 2.
 
 ## sloplint
+
+## [0.10.0] - 2026-09-25
+
+### Added
+
+- New rule `the-x-is-not-the-x` (cadence, `warning`, `medium`): one head noun on both sides of
+  a negated copula, split in two by a clause and never told apart ("the
+  one you want is not the one that runs the studio"). The negated twin of
+  `the-x-is-the-x`.
+- New rule `negative-subject` (cadence, `warning`, `medium`): a negative pronoun (Nothing,
+  Nobody, No one, None) standing as the subject of a clause, dressed up
+  with a second negative-subject clause joined by "and", a prepositional
+  aside before the verb ("Nobody on the on-call page owns the service."),
+  or a negated relative clause on the object ("nothing gets merged that
+  does not get reviewed."). Bare "Nothing happened." and "No one knows."
+  are left alone.
+
+### Changed
+
+- Full output (`-o full`) shows each note's confidence next to its
+  severity. The `--strict` help, in `sloplint check` and `sloplint-judge check`,
+  says it also reports low-confidence notes, and that those are places to
+  look, not findings.
+- `--register` under `--judge` now defaults to "the reader this document
+  is written for" instead of a design-document reader, and its help asks
+  you to name the real reader. The check skill passes one.
+- `sloplint explain ID` also explains the judge's rules when sloplint-judge
+  is installed, so every rule id in a `check --judge` note explains from
+  one command. `--help` and the check skill say so.
+- Under `--strict`, a run that reports low-confidence notes says on stderr
+  how many there are and that they are places to look, not findings.
+  stdout is unchanged, so JSON output still parses. The check skill no
+  longer adds `--strict` unless asked, and puts a low-confidence note to
+  the person as a question instead of editing on it.
+
+### Fixed
+
+- `rule-of-three` no longer flags the last three words of a longer list,
+  including a list hard-wrapped onto an indented line. A real triad after
+  an introductory comma ("in a word, fast, cheap, and simple") is now
+  missed too: a regex cannot tell a list comma from any other comma.
+- `negative-subject`'s frames now accept a clause break (a comma before a
+  coordinating conjunction, or a bare comma, semicolon or colon) as well
+  as the end of the sentence, so a real clause followed by more of the
+  same sentence still matches; and its relative-clause tail now allows one
+  to ten words instead of at most three, so a real "that does not X" tail
+  isn't cut short.
 
 ## [0.9.0] - 2026-09-21
 
