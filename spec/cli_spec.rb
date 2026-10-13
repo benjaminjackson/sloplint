@@ -456,6 +456,11 @@ RSpec.describe Sloplint::CLI do
       run(["check", "-"], stdin_text: "Plain prose here.\n")
     end
 
+    it "check --help names the judge's default reader and asks for the real one" do
+      _, out = run(["check", "--help"])
+      expect(out.gsub(/\s+/, " ")).to include("Default: #{Sloplint::DEFAULT_REGISTER}", "Name the reader when you know it")
+    end
+
     it "--help behaves the same as -h" do
       code, out = run(["--help"])
       expect(code).to eq(0)

@@ -62,7 +62,7 @@ module Sloplint
                "every sentence, and keep low-confidence notes; about three times the",
                "requests of a default run. Low-confidence notes are places to look,",
                "not findings.") { strict = true }
-          o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
+          o.on("--register TEXT", "Who reads the document (default: #{Engine::DEFAULT_REGISTER}).") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
           # OptionParser answers -h itself when nobody else does, and it
           # answers it on the real stdout and ends the process. This command
@@ -133,7 +133,7 @@ module Sloplint
         OptionParser.new do |o|
           o.banner = "usage: sloplint-judge compare [--drift] A B  (two files)"
           o.on("--drift", "Also ask whether B changes what A says.") { drift = true }
-          o.on("--register TEXT", "Who the reader is.") { |v| opts[:register] = v }
+          o.on("--register TEXT", "Who reads the document (default: #{Engine::DEFAULT_REGISTER}).") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use.") { |v| opts[:backend] = v }
           o.on("-h", "--help", "Show this help.") { out.puts(o.help); help = true }
         # permute!, so `compare A B --drift` sees the flag. There is no nested
@@ -244,7 +244,7 @@ module Sloplint
 
           #{rule.message}
 
-          Asks: #{format(rule.question["instructions"], register: Engine::DEFAULT_REGISTER)}
+          Asks: #{format(rule.question["instructions"], register: "the reader")}
           #{levels.join("\n")}
 
           Why: #{rule.rationale}
@@ -264,7 +264,9 @@ module Sloplint
             # Recommended for agents (both linters, one document). The judge sends the text to
             # api.typesafe.ai, so ask the person before running it. Check first, ask, then run:
             sloplint-judge status                            # exit 0 = a key is set up (reads no key), 2 = not
-            sloplint check --judge --markdown -o json FILE
+            sloplint check --judge --markdown -o json --register "READER" FILE
+            # READER names who the document is for. Every question is asked on that reader's behalf;
+            # without it the judge guesses the reader from the text.
             # exit 0 = clean, 1 = notes found, 2 = usage error or not configured, 3 = the model could not be reached (nothing checked)
             # output: {"notes": [...], "judge": {"backend","requests","input_tokens","output_tokens","cost_usd"}}
 
@@ -283,7 +285,9 @@ module Sloplint
             global options:
           BANNER
           o.on("-o", "--output-format FORMAT", %w[full json]) { |v| opts[:format] = v }
-          o.on("--register TEXT", "Who the reader is (default: #{Engine::DEFAULT_REGISTER}).") { |v| opts[:register] = v }
+          o.on("--register TEXT", "Who reads the document; every question is asked on that reader's",
+               "behalf (default: #{Engine::DEFAULT_REGISTER}).",
+               "Name the reader when you know it.") { |v| opts[:register] = v }
           o.on("--backend NAME", "Which adapter to use (default: $SLOPLINT_JUDGE_BACKEND or jev).") { |v| opts[:backend] = v }
           o.on("-h", "--help", "Show this help, including the agent recipe above.") { out.puts(o.help); opts[:help_shown] = true }
           o.on("-v", "--version", "Print the sloplint-judge version.") { out.puts(VERSION); opts[:version_shown] = true }

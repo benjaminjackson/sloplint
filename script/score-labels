@@ -21,7 +21,9 @@ SETS = {
   "synthetic" => File.expand_path("../spec/fixtures/labels.jsonl", __dir__),
   "real" => File.expand_path("../.corpus/labels/real.jsonl", __dir__)
 }.freeze
-REGISTER = Sloplint::Judge::Engine::DEFAULT_REGISTER
+# The label set is design-document prose, and its history was scored for this
+# reader; the shipped default changed, this set's reader did not.
+REGISTER = "an engineer on the team reading a design document"
 USAGE = "usage: script/score-labels RULE[,RULE] [--set synthetic|real] [--family F] [--shape S]"
 
 opts = { set: "synthetic" }

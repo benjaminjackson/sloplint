@@ -3,6 +3,14 @@
 require_relative "rules"
 
 module Sloplint
+  # The reader sloplint-judge asks its questions for when --register names
+  # none. It names no audience, so the model reads the audience off the
+  # document, the way calibration matches each register to its own reader;
+  # a named default reverses rules on documents written for someone else.
+  # It lives here, not in the judge, because `sloplint check --help` quotes
+  # it on a machine without the judge gem.
+  DEFAULT_REGISTER = "the reader this document is written for"
+
   # One match = one Note. See docs/SPEC.md "Note".
   Note = Data.define(
     :path, :line, :column, :severity, :confidence, :rule, :category,

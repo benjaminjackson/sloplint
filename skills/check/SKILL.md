@@ -37,8 +37,10 @@ ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint-judge" status >/dev/null 2>&1 && echo j
 With the judge:
 
 ```bash
-ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json PATH
+ruby "${CLAUDE_PLUGIN_ROOT}/exe/sloplint" check --judge --markdown -o json --register "READER" PATH
 ```
+
+Replace READER with who the document is for, in words: "a developer deciding whether to install this tool, reading its README", "a customer reading an email about an outage", "the on-call engineer reading an incident report". The judge asks every question on that reader's behalf, so whether a sentence is news, filler or a claim that needs a reason depends on who reads it. Without it the judge guesses the reader from the text, which works but is a guess. If the person has not said who the reader is and the document does not make it plain, ask in the same question as the judge.
 
 The JSON is then an object: the notes under `notes` (the usual array, or keyed by path for several files) and what it spent under `judge` (backend, requests, token counts, cost). If it exits `2` with a message naming the sloplint-judge gem or `TYPESAFE_API_KEY`, the judge is not installed or not configured after all; run the plain check and say so.
 

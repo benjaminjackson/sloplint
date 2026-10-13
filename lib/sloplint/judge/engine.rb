@@ -11,7 +11,7 @@ module Sloplint
     # docs/JUDGE.md "Rule catalog" for the triage order and "Note" for how the
     # confidence on each note is derived.
     module Engine
-      DEFAULT_REGISTER = "an engineer on the team reading a design document"
+      DEFAULT_REGISTER = Sloplint::DEFAULT_REGISTER
       RANK = { "high" => 0, "medium" => 1, "low" => 2 }.freeze
       MIN_SENTENCES = 3
 

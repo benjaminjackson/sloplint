@@ -95,7 +95,8 @@ commands:
 global options:
   -o, --output-format  full | json   (default: full)
   --backend NAME       which adapter to use (default: from SLOPLINT_JUDGE_BACKEND, else jev)
-  --register TEXT      who the reader is (default: "an engineer on the team reading a design document")
+  --register TEXT      who reads the document; every question is asked on that reader's behalf
+                       (default: "the reader this document is written for")
 
 check options:
   paths ...            files to scan; "-" or no paths reads stdin

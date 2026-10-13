@@ -72,7 +72,11 @@ module Sloplint
              "It also reports low-confidence notes and answers: places to look, not findings.") { strict = true }
         o.on("--judge", "Also run sloplint-judge's rules, which ask a model (needs the gem and a key).",
              "`sloplint explain ID` explains their notes too.") { judge = true }
-        o.on("--register TEXT", "With --judge: who the reader is.") { |v| register = v }
+        o.on("--register TEXT", "With --judge: who reads the document. The judge asks every question",
+             "on that reader's behalf, so the same sentence is news to one reader",
+             "and filler to another. Default: #{DEFAULT_REGISTER},",
+             "which leaves the model to guess. Name the reader when you know it, e.g.",
+             "\"a developer deciding whether to install this tool, reading its README\".") { |v| register = v }
         o.on("--backend NAME", "With --judge: which model adapter to use.") { |v| backend = v }
         # OptionParser answers -h itself when nobody else does, and it answers
         # it on the real stdout and ends the process. This command prints to
@@ -187,7 +191,7 @@ module Sloplint
       elsif judge_backend
         begin
           judged = Judge::Engine.scan_sources(sources, name: "sloplint: judge", err:, rules: judge_rules, backend: judge_backend,
-                                                       markdown:, register: register || Judge::Engine::DEFAULT_REGISTER, strict:)
+                                                       markdown:, register: register || DEFAULT_REGISTER, strict:)
         # Exit 3 withholds the regex notes too: a caller that asked for both
         # and got one would read it as a clean judge run.
         rescue Judge::BackendError => e
@@ -394,7 +398,9 @@ module Sloplint
         # With the judge (sloplint-judge is installed here). It sends the text to api.typesafe.ai,
         # so an agent asks the person before running it. Check first, ask, then run:
         sloplint-judge status                            # exit 0 = a key is set up (reads no key), 2 = not
-        sloplint check --judge --markdown -o json FILE    # output becomes {"notes": [...], "judge": {requests, tokens, cost_usd}}
+        sloplint check --judge --markdown -o json --register "READER" FILE    # output becomes {"notes": [...], "judge": {requests, tokens, cost_usd}}
+        # READER names who the document is for. Without it the judge guesses the reader from the text;
+        # naming one keeps the judge from guessing.
         # exit 3 = the model could not be reached; nothing was checked, not even the regex rules
       RECIPE
     end

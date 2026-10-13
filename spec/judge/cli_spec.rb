@@ -399,6 +399,8 @@ RSpec.describe "the --judge flag and the sloplint-judge executable" do
       code, out, = run(Sloplint::Judge::CLI, ["explain", "wrap-up"])
       expect(code).to eq(0)
       expect(out).to include("Asks:").and include("(flags)")
+      expect(out).to include("for the reader")
+      expect(out).not_to include(Sloplint::DEFAULT_REGISTER)
     end
 
     it "exits 2 on a mistyped rule and 3 on a backend failure" do

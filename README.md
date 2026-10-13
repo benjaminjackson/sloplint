@@ -195,7 +195,7 @@ The notes merge into one array in document order, so nothing downstream has to k
 
 `--judge` adds one option of its own:
 
-- `--register TEXT` says who the reader is. The default reader is an engineer on the team reading a design document, and the judge asks every question on that reader's behalf, so a rule like `no-news` flags a sentence *that* reader already knows rather than one anybody would know.
+- `--register TEXT` says who the reader is. The judge asks every question on that reader's behalf, so a rule like `no-news` flags a sentence *that* reader already knows rather than one anybody would know. The default is "the reader this document is written for", which leaves the model to infer the audience from the text. Name the reader when you know it: `--register "a developer deciding whether to install this tool, reading its README"` scores a README against the person it is written for.
 
 `--strict` does more under `--judge`: on top of the regex rules that are off by default, it runs the judge rules that are off by default, asks the sentence questions of every sentence rather than only the flagged paragraphs, and keeps answers the model was unsure of, which come through at `low`: places to look, not findings.
 
