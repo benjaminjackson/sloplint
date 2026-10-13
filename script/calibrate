@@ -7,10 +7,12 @@
 #   script/calibrate fetch-hape
 #       Download the HAP-E blogs parquet files and write .corpus/hape/blogs.jsonl (human chunk 2, gpt-4o,
 #       llama-3-70b-instruct) and .corpus/hape/blogs-chunk1.jsonl (the human chunk 1 each side continues).
-#   script/calibrate run [--rules IDS] [--register R,R] [--sample N] [--generated MODEL]
+#   script/calibrate run [--rules IDS] [--register R,R] [--sample N] [--generated MODEL] [--reader TEXT]
 #       Per rule, register and model side: the probability that a model unit scores higher than a human one
 #       (AUC), the `check` agreement rate between two runs at each confidence band, and the `compare` flip
 #       rate under passage-order swap at each band. Ends with the pass/fail lines from docs/JUDGE.md.
+#       --reader asks every register's questions for that one reader instead of the reader matched to
+#       the register, to measure a candidate default against the matched numbers.
 #   script/calibrate generate MODEL [--register R,R] [--sample N]
 #       Write a current-model side into .corpus/raid/generated/MODEL/ from RAID's own prompts (or, for
 #       --register blogs, HAP-E's continuation prompt), same titles as the human rows. Needs
@@ -44,6 +46,7 @@ OptionParser.new do |o|
   o.on("--sample N", Integer) { |n| opts[:sample] = n }
   o.on("--generated MODEL") { |v| opts[:generated] = v }
   o.on("--backend NAME") { |v| opts[:backend] = v }
+  o.on("--reader TEXT") { |v| opts[:reader] = v }
 end.parse!
 
 def rows(path) = File.exist?(path) ? File.foreach(path).map { |l| JSON.parse(l) } : []
@@ -127,9 +130,9 @@ end
 # Score every unit of every text with every rule, twice for the agreement rate. The score is the
 # expected level, so higher is better prose and level 0 (the flagged level) is the bottom. Returns
 # [{rule:, side:, score:, flagged:, confidence:, flagged_again:}].
-def score(texts, side, rules, backend, reg)
+def score(texts, side, rules, backend, reg, reader)
   eng = Sloplint::Judge::Engine
-  register = READER.fetch(reg)
+  register = reader || READER.fetch(reg)
   para_rules, sent_rules = rules.partition { |r| r.unit == :paragraph }
   pq = eng.questions_for(para_rules, register)
   sq = eng.questions_for(sent_rules, register)
@@ -156,9 +159,9 @@ def run(opts)
   opts[:registers].each do |reg|
     human, sides = load_register(reg, opts[:sample], opts[:generated])
     warn "#{reg}: #{human.size} human texts; model sides: #{sides.map { |k, v| "#{k} (#{v.size})" }.join(", ")}"
-    scored.concat(score(human, "human", rules, backend, reg).map { |h| h.merge(register: reg) })
+    scored.concat(score(human, "human", rules, backend, reg, opts[:reader]).map { |h| h.merge(register: reg) })
     sides.each do |side, texts|
-      scored.concat(score(texts, side, rules, backend, reg).map { |h| h.merge(register: reg) })
+      scored.concat(score(texts, side, rules, backend, reg, opts[:reader]).map { |h| h.merge(register: reg) })
       # compare: the human paragraph against the model paragraph for the same title, in both orders.
       pairs = texts.filter_map do |m|
         h = human.find { |x| x["source_id"] == m["source_id"] }
