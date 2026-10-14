@@ -311,7 +311,7 @@ The writer grades their own prose or claim.
 - `clean-x` — "a clean abstraction/distinction/framing", "clean line between"; `medium` confidence
 - `clean-count` — "two/three clean parts/buckets/categories…"; needs a partition noun
 - `cleanest-x` — "the cleanest framing/formulation", "cleanest way to put it"; noun list only
-- `cleanly` — "cleanly" into/onto/in two/in half — the partition frame; the preposition is the narrowing; the engineering idiom ("applies cleanly", "separated cleanly", "cleanly compiled") is a checkable fact and stays out, and the clause-final form is left out. `medium` confidence: the frame is not the sense, and separating "splits cleanly into two parts" from "retracted cleanly into the well" needs the subject
+- `cleanly` — every "cleanly", by maintainer ruling; the frame-keyed versions (partition, contest result) each let the next frame through, and the engineering idiom ("applies cleanly", "exited cleanly") is flagged too. `high` confidence
 - `honest-x` — "an honest comparison", "the honest framing"; short noun list; "answer", "assessment", "account" excluded as ordinary; superlative yielded to the rule below
 - `most-honest-x` — "the most honest framing", "the most honest way to put it"; wider noun list than `honest-x`; no human nouns, so "the most honest person" stays out
 - `honestly` — a word, then "honestly", then a full stop or comma; terminal position required; discourse-marker slot guarded ("and/quite/but honestly,"); no animacy test

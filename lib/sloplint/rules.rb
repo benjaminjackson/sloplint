@@ -999,50 +999,32 @@ module Sloplint
       id: "cleanly",
       category: "self-rating",
       severity: "warning",
-      confidence: "medium",
-      # The bare adverb was the whole rule, and the engineering idioms were
-      # flagged on purpose. Technical prose says that was the wrong call: a
-      # patch that applies cleanly, a build that compiles cleanly and a gear
-      # leg that separates cleanly are all checkable facts with a visible
-      # failure state, which is the opposite of rating a fit you haven't
-      # shown. The original probe -- 25 Gutenberg texts, no modern manner
-      # adverb found -- could not have caught this, because Victorian novels
-      # have no builds; the same corpus read as engineering ("clearly and
-      # cleanly drawn in pencil", Machine Drawing and Design, 1890) has it.
-      #
-      # What is left is the partition frame: something divided into parts, or
-      # mapped onto another scheme, and rated before the reader sees the
-      # parts. The clause-final form ("the objection breaks down cleanly, and
-      # neither half survives") is the same tell and is left out.
-      #
-      # The frame is not the sense, and the confidence here is medium because of it.
-      # "The argument splits cleanly into two parts" and "the gear retracted
-      # cleanly into the well" are one pattern apart only in their subject,
-      # and a regex cannot see the subject -- the same limit that keeps the
-      # animacy verbs out of trailing-significance-participle. The preposition
-      # buys the common physical cases ("separated cleanly from", "cleanly
-      # compiled", "cleanly drawn") and nothing more, so a flag here is a
-      # question for the agent reading it, not a verdict.
-      pattern: /\bcleanly\s+(?:in(?:to|\s+(?:two|three|half))|onto)\b/i,
-      message: '"Cleanly" rates the fit instead of showing it.',
+      confidence: "high",
+      # Every "cleanly", by maintainer ruling. Narrower versions keyed the
+      # rule to a frame -- the partition ("splits cleanly into two"), the
+      # contest result ("lost cleanly") -- and each one let the next frame
+      # through. The engineering idiom ("applies cleanly", "exited cleanly")
+      # is flagged too: a patch that applied or a process that exited says
+      # so without the adverb, and the adverb is the house style of the
+      # prose this tool is pointed at.
+      pattern: /\bcleanly\b/i,
+      message: '"Cleanly" rates the fit or the result instead of showing it.',
       suggestion: "Cut the adverb, or say what actually lined up.",
       examples_bad: [
         "The argument splits cleanly into two parts.",
         "The new taxonomy maps cleanly onto the old one.",
-        "The objection divides cleanly in half, and neither side survives."
+        "The objection divides cleanly in half, and neither side survives.",
+        "She ran a full campaign for the new seat and lost cleanly.",
+        "The incumbent won cleanly in the end.",
+        "The patch applies cleanly to main.",
+        "The worker exited cleanly after the last job.",
+        "The parts fit cleanly."
       ],
       examples_ok: [
         "The branch merged without conflicts.",
         "She wiped the counter clean.",
         "The build finished with no warnings.",
-        # The engineering idiom the rule used to flag on purpose. A patch that
-        # applies cleanly either did or did not; there is nothing being rated.
-        "The patch applies cleanly to main.",
-        # Wording follows NTSB AAR-14/01 and NASA SEL-84-101 (US government
-        # works) and An Introduction to Machine Drawing and Design (1890).
-        "The main landing gear separated cleanly from the airplane.",
-        "The code should be cleanly compiled beforehand.",
-        "Your answers should be clearly and cleanly drawn in pencil."
+        "The worker exited with status 0 after the last job."
       ],
       rationale: "The adverb rates the join instead of showing it, and it rates before the " \
                  "reader has anything to check. Real material resists -- the leftover case, " \
