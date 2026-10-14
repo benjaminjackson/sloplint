@@ -223,6 +223,10 @@ module Sloplint
     # here. A sentence that names a tag in running text does not look like
     # this: "<p> is the tag for a paragraph." has words after the ">".
     HTML_LINE = %r{\A[ \t]{0,3}</?[A-Za-z][^\n]*>[ \t]*\z}
+    # A line that is only character references, with or without tags among
+    # them: the "&nbsp;" a template leaves as a spacer, "<br>&#160;". It
+    # holds no words, so nothing on it is a sentence.
+    ENTITY_LINE = %r{\A[ \t]*(?:(?:&(?:[A-Za-z][A-Za-z0-9]*|\#\d+|\#[xX]\h+);|</?[A-Za-z][^<>\n]*>)[ \t]*)+\z}
     # The --- that opens YAML front matter. FURNITURE reads it as a
     # horizontal rule wherever it appears; front matter is the block it
     # opens, and only on the first line of the file.
@@ -291,7 +295,7 @@ module Sloplint
         # for as long as the indent holds.
         code = markdown && ((code && (indented || blank)) || (indented && !item && opens))
         setext = title[i] || (i.positive? && title[i - 1])
-        dropped = i < front || code || listed || l.match?(FURNITURE) || (markdown && l.match?(HTML_LINE)) ||
+        dropped = i < front || code || listed || l.match?(FURNITURE) || (markdown && (l.match?(HTML_LINE) || l.match?(ENTITY_LINE))) ||
                   (markdown && lone_inline?(l, prose)) || (item && l.match?(CONTINUED)) || setext
         item = listed || (item && l.match?(CONTINUED))
         prose = !dropped && !blank

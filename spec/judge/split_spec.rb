@@ -286,6 +286,16 @@ RSpec.describe Sloplint::Split do
       .to eq(["<p> is the tag for a paragraph. It wraps running text."])
   end
 
+  it "drops a line that is only HTML entities and tags, and keeps a sentence that has one" do
+    text = "# Title\n\n&nbsp;\n\n## Section\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
+    text = "&#160;\n\n<br>&nbsp; &#xA0;\n\nProse here. More prose.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
+    # An entity inside running text is part of the sentence.
+    text = "Wait&nbsp;five minutes. Then retry.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Wait&nbsp;five minutes. Then retry."])
+  end
+
   it "drops YAML front matter, and keeps a horizontal rule between paragraphs" do
     text = "---\ntitle: My Doc\nauthor: Someone\n---\n\nProse here. More prose.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose."])
