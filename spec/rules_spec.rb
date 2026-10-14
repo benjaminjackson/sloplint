@@ -36,7 +36,7 @@ RSpec.describe "Sloplint::RULES" do
       "cadence" => 20,
       "closer" => 12,
       "puffery" => 8,
-      "false-correction" => 8,
+      "false-correction" => 9,
       "false-concession" => 7,
       "reader-address" => 6,
       "borrowed-metaphor" => 5,

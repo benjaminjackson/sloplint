@@ -3025,6 +3025,77 @@ module Sloplint
                  "verdict."
     ),
     Rule.new(
+      id: "x-not-y",
+      category: "false-correction",
+      severity: "warning",
+      confidence: "medium",
+      # The corrective turned round: the true half first, the rejected half
+      # trailing after a comma ("That's a collection gap, not a clean bill.").
+      # not-x-but-y and isnt-x-its-y only see the order where the rejection
+      # comes first.
+      #
+      # Narrowed on structure. The subject is a deictic ("that's", "it was",
+      # "this is") or one of the abstract head nouns bare-equative uses ("The
+      # problem is scope, not speed."), so "The meeting is Tuesday, not
+      # Wednesday." has the wrong subject. Neither half may open on a capital
+      # or a digit, which keeps out dates, names and version numbers ("It's
+      # Tuesday, not Wednesday."), nor on a preposition, a degree word or
+      # "just"/"only", and the rejected half may not be a pronoun ("that's
+      # your problem, not mine"). Each half is at most four words, and the
+      # rejected half must end the clause, so a longer contrast that goes on
+      # to explain itself is out.
+      #
+      # Medium confidence. Reference docs write the same shape to head off a
+      # real misreading ("it is a line number, not a file name"), at about one
+      # per million words, and so do people elsewhere. A flag reports the
+      # shape, not a verdict.
+      pattern: /\b(?:(?:that|it|this)['’]s|(?:that|it|this)(?:[ \t]|\r?\n(?!\s*\n))+(?:is|was)
+                 |(?-i:[Tt])he(?:[ \t]|\r?\n(?!\s*\n))+
+                  (?:tell|point|question|problem|issue|lesson|difference|trick|move|risk|goal|reason|pattern|insight|takeaway|shift|bet|catch|gap|bottleneck|failure|mistake|secret|magic|challenge|tension|trap)
+                  (?:[ \t]|\r?\n(?!\s*\n))+(?:is|was))
+                (?:[ \t]|\r?\n(?!\s*\n))+
+                (?>(?:a|an|the)(?:[ \t]|\r?\n(?!\s*\n))+)?
+                (?!(?:actually|just|only|merely|simply|even|because|that|to|in|on|at|for|from|with|by|as|so|yet|always|never|all|too|very|quite|really|necessarily|exactly|much|many|one|least|now|here|there|about|until|unlike|like|if|when|whether)\b)
+                (?-i:[a-z])[\w'’-]*(?>(?:[ \t]+[a-z][\w'’-]*){0,3}),
+                (?:[ \t]|\r?\n(?!\s*\n))+not(?:[ \t]|\r?\n(?!\s*\n))+
+                (?>(?:a|an|the)(?:[ \t]|\r?\n(?!\s*\n))+)?
+                (?!(?:actually|just|only|merely|simply|even|because|that|to|in|on|at|for|from|with|by|as|so|yet|always|never|all|too|very|quite|really|necessarily|exactly|much|many|one|least|now|here|there|about|until|unlike|like|if|when|whether
+                   |mine|yours|his|hers|ours|theirs|me|you|him|her|us|them|it|this|those|these)\b)
+                (?-i:[a-z])[\w'’-]*(?>(?:[ \t]+[a-z][\w'’-]*){0,3})
+                (?=[ \t]*(?:[.;!?:]|[—–]|\z|\r?\n))/ix,
+      message: '"X, not Y" corrects a description nobody offered.',
+      suggestion: "State the first half on its own; drop the rejected one.",
+      examples_bad: [
+        "That's a collection gap, not a clean bill.",
+        "It was a gap, not a failure.",
+        "The problem is scope, not speed.",
+        "That's the point, not the bug.",
+        "This is a marathon, not a sprint.",
+        "It was a judgment call, not a bug."
+      ],
+      examples_ok: [
+        # Concrete contrasts with a non-deictic subject, or no copula.
+        "The meeting is Tuesday, not Wednesday.",
+        "Use the v2 endpoint, not v1.",
+        # A capital or a digit is a date, a name or a value.
+        "It's Tuesday, not Wednesday.",
+        "That's 40 minutes, not 30.",
+        # A pronoun in the rejected half is a plain contrast of people.
+        "That's your problem, not mine.",
+        # The rejected half must end the clause.
+        "It was a gap, not a failure of the whole review process as it was designed.",
+        # "not just" belongs to not-just-x-but-y.
+        "It's a gap, not just a delay.",
+        # "actually" belongs to actually-not-x.
+        "Despite the name, it is actually a byte string, not text."
+      ],
+      rationale: "The frame rejects a description nobody proposed, so the sentence sounds " \
+                 "like a correction while correcting nobody. It is 'not A but B' turned " \
+                 "round, with the true half first and the rejection trailing. Reference " \
+                 "writing uses the shape to head off a real misreading, so the rule reports " \
+                 "the shape, not a verdict."
+    ),
+    Rule.new(
       id: "not-by-x-but-by-y",
       category: "false-correction",
       severity: "warning",
