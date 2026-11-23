@@ -6,7 +6,7 @@ RSpec.describe "Sloplint::Judge::RULES" do
   let(:rules) { Sloplint::Judge::RULES }
 
   it "has unique ids that do not collide with sloplint's ids or categories" do
-    ids = rules.map(&:id)
+    ids = rules.map(&:id) + [Sloplint::Judge::TRIAGE_ID]
     expect(ids).to eq(ids.uniq)
     taken = Sloplint::RULES.flat_map { |r| [r.id, r.category] }
     expect(ids & taken).to be_empty
@@ -103,6 +103,60 @@ RSpec.describe "Sloplint::Judge::RULES" do
       rule.examples_ok.each do |ex|
         it "#{rule.id} does not flag: #{ex[0, 60].inspect}" do
           expect(flags?(rule, ex, backend)).to be(false)
+        end
+      end
+    end
+
+    # A default run asks the sentence rules only about paragraphs a paragraph
+    # rule or the triage question flagged. Each default sentence rule's bad
+    # example, set between plain sentences, must reach the sentence rules, or
+    # a default run cannot see it inside a long paragraph. The sentence
+    # requests themselves are answered here without the backend: the question
+    # is whether they are made, not what they find.
+    describe "paragraph triage" do
+      before_plain = "The export job moved to the new cluster on Tuesday. It now finishes in eleven minutes."
+      after_plain = "The old cluster stays up until Friday."
+      on = Sloplint::Judge::RULES.reject { _1.confidence == "low" }
+      paragraph_rules = on.select { _1.unit == :paragraph }
+
+      # Passes paragraph requests to the backend and records whether any
+      # sentence request followed.
+      let(:reached) do
+        Class.new do
+          attr_reader :sentence_asked
+
+          def initialize(backend) = @backend = backend
+          def name = @backend.name
+
+          def ask(state, questions)
+            return @backend.ask(state, questions) unless state.key?("target")
+
+            @sentence_asked = true
+            questions.to_h { |id, q| [id, Sloplint::Judge::Answer.new(type: q["type"], probabilities: [0.0] * (q["criteria"].size - 1) + [1.0], confidence: 1.0, usage: {})] }
+          end
+        end
+      end
+
+      # device-before-claim's own live fixtures miss these two, so the
+      # triage question missing them too is the same gap. pending, not
+      # skip: the day either one passes, the suite says so.
+      known_misses = [
+        "The cache holds the last hour of queries once it's warm.",
+        "The incident review named five follow-up tasks."
+      ]
+
+      on.select { _1.unit == :sentence }.each do |rule|
+        rule.examples_bad.each do |ex|
+          it "reaches #{rule.id}: #{ex[0, 60].inspect}" do
+            pending "device-before-claim misses this example in its own fixtures" if known_misses.any? { ex.start_with?(_1) }
+            text = [before_plain, ex, after_plain].join(" ")
+            draws = Array.new(2) do
+              recorder = reached.new(backend)
+              Sloplint::Judge::Engine.scan(text, rules: paragraph_rules + [rule], backend: recorder)
+              recorder.sentence_asked
+            end
+            expect(draws).to all(be(true)), "no sentence request in #{draws.count(&:!)} of 2 draws"
+          end
         end
       end
     end

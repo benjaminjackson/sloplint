@@ -7,6 +7,21 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### [Unreleased]
 
+- A default `--judge` run now asks the sentence rules about a long paragraph
+  that no paragraph rule flagged when a triage question, asked in the same
+  paragraph request, finds a sentence doing one of the things they look for.
+  Before, a stock figure, an unnamed authority or a verdict in the middle of
+  an otherwise plain paragraph was never asked about. The triage question is
+  not a rule and makes no note. Default runs send more sentence requests;
+  how many more depends on the prose (see docs/JUDGE.md "Cost and speed").
+- `stock-figure` and `device-before-claim` no longer flag a quotation that
+  reports what someone said. `device-before-claim` also passes a sentence
+  that reports an event or a result, even when it sets two sides against
+  each other. Both narrowings cut the notes the triage question added on
+  human news by more than half.
+- `stock-figure`'s suggestion now says to keep a figure when the literal
+  words lose something, or when the reader's field uses it as the plain name
+  for the thing.
 - New paragraph rule `set-piece` (`info`, `medium`): a paragraph with a
   sentence anywhere in it that makes its point through a device -- a
   reversal or mirror built as a line, a slogan, a maxim, a coined figure

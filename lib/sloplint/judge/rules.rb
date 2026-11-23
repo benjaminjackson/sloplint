@@ -221,7 +221,7 @@ module Sloplint
           "At the review, the database lead said, \"We can't shard this table until the foreign keys are gone.\" The team agreed to drop both keys first. That work starts next sprint.",
           "The mayor told reporters on Friday, \"The budget is tight. Our streets aren't optional.\" The council votes on the plan next week. Road repairs take up a third of the draft budget."
         ],
-        rationale: "A reversal, mirror, slogan or maxim set in the middle of a paragraph reads as a line written to be quoted, not as one more fact. device-before-claim and maxim ask about each sentence, but in a default run the sentence rules only reach paragraphs a paragraph rule flagged; this rule is the paragraph-level question that sends them there. A line in quotation marks written for someone to say, a script line or a tagline, counts; a quotation reporting what someone already said does not, because news quotes people and their devices are part of the story."
+        rationale: "A reversal, mirror, slogan or maxim set in the middle of a paragraph reads as a line written to be quoted, not as one more fact. A line in quotation marks written for someone to say, a script line or a tagline, counts; a quotation reporting what someone already said does not, because news quotes people and their devices are part of the story."
       ),
 
       # ── sentence ────────────────────────────────────────────────────────────
@@ -235,16 +235,16 @@ module Sloplint
               "examples" => ["The alert was shouting into an empty room.", "This unlocks a whole new landscape of possibilities."] },
             { "what" => "Uses a figure that could only have been made for this situation and that tells the reader something literal words would not.",
               "examples" => ["The renewal script was a smoke detector with the battery pulled.", "The RFC hums rather than votes."] },
-            { "what" => "Uses no figurative language, or only names the writer chose (a status, an option, a command).",
-              "examples" => ["The certificate expired at 09:14 and the load balancer rejected every handshake.", "Nobody read the channel.", "Tickets move through **open**, **on ice** and **closed**."] }
+            { "what" => "Uses no figurative language, or only names the writer chose (a status, an option, a command), or the figure is inside a quotation that reports what someone said in an interview, a match report, a statement or a meeting: the writer reports those words, not chooses them. A line in quotation marks that the document writes for someone to say or print, a script line or a tagline, is the writer's own and is judged as usual.",
+              "examples" => ["The certificate expired at 09:14 and the load balancer rejected every handshake.", "Nobody read the channel.", "Tickets move through **open**, **on ice** and **closed**.", "\"We were up against the wall all season,\" the coach told reporters after the final."] }
           ]
         },
         flag: { level: 0 },
         message: "Stock figure of speech.",
-        suggestion: "Say the literal thing, or make a figure that only fits this case.",
+        suggestion: "Try the literal words. If they say the same thing, use them. Keep the figure if the literal words lose something the reader needs, or if the reader's field uses it as the plain name for the thing.",
         examples_bad: ["Migrating the auth service turned out to be a double-edged sword.", "We picked the low-hanging fruit first and moved the needle on latency.", "The reviewer sent the proposal back to the drawing board.", "Moving to the new queue was a **game-changer** for the on-call rota.", "Our answer to flaky builds is the **silver bullet** everyone wanted: retry every step.", "The nightly job writes its errors to `sync-errors.csv`, and so far they are only the tip of the iceberg."],
-        examples_ok: ["Migrating the auth service cut login time by half and broke password reset for a day.", "The retry loop kept redialing a number the kernel had already disconnected.", "The reviewer returns one of three verdicts: **ship it**, **back to the drawing board**, or **shelve**.", "Run `burn-the-boats` to delete the staging stack and its volumes.", "We call a deploy that skips the canary a cold start. The cold start on Tuesday took checkout down for nine minutes."],
-        rationale: "A figure anyone could use about anything tells the reader nothing about this case. Model prose reaches for the stock figure where human prose in these registers says the literal thing or makes a figure to fit. A command in code, one of a set of options the paragraph lists, or a term the paragraph defines is a label, not a figure. Bold counts only when the paragraph sets the phrase up as a name."
+        examples_ok: ["Migrating the auth service cut login time by half and broke password reset for a day.", "The retry loop kept redialing a number the kernel had already disconnected.", "The reviewer returns one of three verdicts: **ship it**, **back to the drawing board**, or **shelve**.", "Run `burn-the-boats` to delete the staging stack and its volumes.", "We call a deploy that skips the canary a cold start. The cold start on Tuesday took checkout down for nine minutes.", "The club's chairman spoke to reporters after the vote. \"This deal is a game-changer for the academy,\" he said. The board approved the sale nine votes to two."],
+        rationale: "A figure anyone could use about anything tells the reader nothing about this case. Model prose reaches for the stock figure where human prose in these registers says the literal thing or makes a figure to fit. A command in code, one of a set of options the paragraph lists, or a term the paragraph defines is a label, not a figure. Bold counts only when the paragraph sets the phrase up as a name. A quotation reporting what someone said is a fact about their words, so a figure in it is theirs, not the writer's."
       ),
       Rule.new(
         id: "no-news", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
@@ -566,8 +566,8 @@ module Sloplint
           "criteria" => [
             { "what" => "The sentence is a device: opposites or a matched pair set against each other (everyone and nobody, always and never, the frontend ships one thing and the backend ships another); a noun or phrase repeated to pose a riddle; singling out one item's position in a list or order, the second one, the last one, the fourth item, as the one that actually matters; the payoff sentence that tells the reader what a run of specifics before it adds up to; a coined figure; or a maxim, a general rule stated as if it simply follows, that sums up or restates the point the paragraph was already making. It reads as a turn or a landing, not as one more fact.",
               "examples" => ["The retry logic is identical everywhere it runs and documented nowhere.", "The frontend team ships the button and the backend team owns the endpoint, and neither one works without the other.", "The third name on the escalation list is the one who actually picks up.", "A deploy that never gets rolled back was never really tested."] },
-            { "what" => "The sentence states its claim directly, as one more fact in the paragraph, with no matched pair, no riddle, no singled-out position, no payoff over a run of specifics, and no maxim.",
-              "examples" => ["Nobody has documented the retry logic.", "The frontend team ships the button and the backend team ships the endpoint; both went out this morning.", "The third name on the escalation list is the database team's manager.", "This deploy has never been tested under real failure."] }
+            { "what" => "The sentence states its claim directly, as one more fact in the paragraph, with no matched pair, no riddle, no singled-out position, no payoff over a run of specifics, and no maxim. A sentence that reports an event or a result is a fact, even when it sets two sides against each other: one side lost and the other won, a method beat the baseline. A quotation that reports what someone said in an interview, a match report, a statement or a meeting is a fact about what they said, even when their words are a device.",
+              "examples" => ["Nobody has documented the retry logic.", "The frontend team ships the button and the backend team ships the endpoint; both went out this morning.", "The third name on the escalation list is the database team's manager.", "This deploy has never been tested under real failure.", "The visitors led at half-time, but the home side scored twice in the last ten minutes to win.", "\"They had more of the ball, but we took our chances,\" the captain said."] }
           ]
         },
         flag: { level: 0 },
@@ -586,10 +586,41 @@ module Sloplint
           "The build failed twice this morning. A stray comment in the config file caused both failures.",
           "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes.",
           "The incident review named five follow-up tasks, including a rewrite of the retry budget. The retry-budget rewrite would have prevented the outage. The other four tasks were closed within a week.",
-          "Every cache in the fleet shares one eviction policy. It frees memory by evicting the least recently used entry, even when that entry is needed again a few seconds later."
+          "Every cache in the fleet shares one eviction policy. It frees memory by evicting the least recently used entry, even when that entry is needed again a few seconds later.",
+          "The final went to a deciding set. The defending champion saved two match points and then lost her serve at 5-5. Her opponent served out the match to take the title.",
+          "The striker spoke after the draw. \"We played better than them and still dropped two points,\" he said. The club is third in the table.",
+          "We train the model on half of the labelled scans. It matches the fully supervised baseline on both test sets while using a tenth of the annotation time."
         ],
-        rationale: "A sentence can make its claim by mirroring opposites against each other, posing a riddle with a repeated noun, holding an answer back until a run of specifics resolves into it, coining a figure, or drawing a maxim that restates what the paragraph already showed. mirrored-opposites and the-x-is-not-the-x in the regex catalog each catch one syntactic shape of this; this rule reads the sentence's role in the paragraph instead, so a form neither regex expects is still caught. It only says a device is present, not whether the device earns its place: a figure that explains how something works or a real tradeoff dressed as a mirror is still flagged, and it is for the reader to decide whether cutting it loses anything."
+        rationale: "A sentence can make its claim by mirroring opposites against each other, posing a riddle with a repeated noun, holding an answer back until a run of specifics resolves into it, coining a figure, or drawing a maxim that restates what the paragraph already showed. mirrored-opposites and the-x-is-not-the-x in the regex catalog each catch one syntactic shape of this; this rule reads the sentence's role in the paragraph instead, so a form neither regex expects is still caught. It only says a device is present, not whether the device earns its place: a figure that explains how something works or a real tradeoff dressed as a mirror is still flagged, and it is for the reader to decide whether cutting it loses anything. A sentence reporting an event or a result, or a quotation reporting what someone said, is a fact even when it contrasts two sides: news and abstracts report contests and comparisons, and a quoted speaker's device is part of the story."
       )
     ].freeze
+
+    # The question a default run adds to every paragraph request, so that the
+    # sentence rules reach a long paragraph no paragraph rule flagged. It is
+    # not a rule: it makes no note, nothing lists or selects it, and a flag
+    # only sends the paragraph's sentences to the sentence rules, which decide
+    # what is reported. So it is asked for recall: a paragraph sent on by
+    # mistake costs a few requests, and a paragraph held back by mistake hides
+    # a tell. See docs/JUDGE.md "Rule catalog".
+    TRIAGE_ID = "sentence-triage"
+    TRIAGE = {
+      "type" => "score",
+      "instructions" => "Does any sentence in this paragraph do something other than state its point plainly, for %{register}?",
+      "criteria" => [
+        { "what" => "At least one sentence, anywhere in the paragraph, does one of these: uses a stock figure of speech; explains or defines something the reader already knows, or tells the reader what they themselves did or said; makes a claim so general it names nothing; grades, praises or draws a moral from the fact it just stated, in a clause like \"which shows\" or \"highlighting\"; hands a claim to unnamed experts, studies, the industry or what is \"known\"; states a general saying where the fact about this case belongs; makes its point through a mirror, a riddle, a held-back answer or a coined figure; or sums up the facts before it as a balanced pair or a twist (good for one case and bad for the other, the same thing that does one job is the thing that undoes it, a single item picked out as what mattered).",
+          "examples" => [
+            "The scheduler moved to the new hosts in March. Swapping it out mid-quarter was always going to be a balancing act. The old hosts were retired in April.",
+            "The import job now validates every row before it writes. Validation is the process of checking that data is correct. Rejected rows go to a separate file.",
+            "The API gateway now rejects requests over 2 MB. Studies show that smaller payloads improve reliability. The limit is set in gateway.yaml.",
+            "The nightly report finished at 02:10, which speaks volumes about how far the pipeline has come. It used to finish after six.",
+            "Each region keeps its own copy of the price list. Updates reach the copies within a minute. The copy that makes reads fast is the same copy that makes a price change slow to land."
+          ] },
+        { "what" => "Every sentence states a fact, decision, step, event or reason about this case in plain words. A quotation that reports what someone said is a fact about what they said.",
+          "examples" => [
+            "The scheduler moved to the new hosts in March. Two jobs failed on the first night because their cron paths were hard-coded. We fixed both paths and the old hosts were retired in April.",
+            "The import job now validates every row before it writes. Rows with a missing account number go to rejected.csv. Support reviews that file each morning."
+          ] }
+      ]
+    }.freeze
   end
 end

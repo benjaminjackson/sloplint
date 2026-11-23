@@ -52,6 +52,53 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(result.notes.map(&:rule).tally).to eq("wrap-up" => 1, "no-news" => 6)
   end
 
+  describe "the triage question" do
+    let(:long_para) { "A one. B two. C three. D four.\n" }
+    # Paragraph rules never flag; the triage question answers with `triage`.
+    def backend_with(triage)
+      FakeBackend.new do |state, name, q|
+        if state.key?("target") then level(0)
+        elsif name == Sloplint::Judge::TRIAGE_ID then triage
+        else level(q["criteria"].size - 1)
+        end
+      end
+    end
+
+    it "sends a long paragraph no paragraph rule flagged to the sentence rules" do
+      backend = backend_with(level(0, size: 2))
+      result = described_class.scan(long_para, rules: [para_rule, sent_rule], backend: backend)
+      expect(backend.calls.count { |s, _| s.key?("target") }).to eq(4)
+      expect(result.notes.map(&:rule).uniq).to eq(["no-news"])
+    end
+
+    it "makes no note of its own" do
+      backend = backend_with(level(0, size: 2))
+      result = described_class.scan(long_para, rules: [para_rule], backend: backend)
+      expect(result.notes).to be_empty
+    end
+
+    it "holds a paragraph back on a low-confidence flag" do
+      backend = backend_with(level(0, size: 2, confidence: 0.3))
+      described_class.scan(long_para, rules: [para_rule, sent_rule], backend: backend)
+      expect(backend.calls.none? { |s, _| s.key?("target") }).to be(true)
+    end
+
+    it "holds a paragraph back on a tie, which has no most likely level" do
+      backend = backend_with([[0.5, 0.5], 0.9])
+      described_class.scan(long_para, rules: [para_rule, sent_rule], backend: backend)
+      expect(backend.calls.none? { |s, _| s.key?("target") }).to be(true)
+    end
+
+    it "is not asked under --strict or when the run has no sentence rule" do
+      [[[para_rule, sent_rule], true], [[para_rule], false]].each do |rules, strict|
+        backend = backend_with(level(0, size: 2))
+        described_class.scan(long_para, rules:, backend:, strict:)
+        paragraph_calls = backend.calls.reject { |s, _| s.key?("target") }
+        expect(paragraph_calls.flat_map { |_, q| q.keys }).not_to include(Sloplint::Judge::TRIAGE_ID)
+      end
+    end
+  end
+
   it "runs sentence rules everywhere when the run has no paragraph rule" do
     described_class.scan(text, rules: [sent_rule], backend: flag_all)
     expect(flag_all.calls.size).to eq(6)

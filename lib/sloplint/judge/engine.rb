@@ -91,6 +91,10 @@ module Sloplint
           # paid for.
           eligible = paragraphs.select { |p| p.sentences.size >= MIN_SENTENCES }
           questions = questions_for(para_rules, register)
+          # Under --strict the sentence rules read every paragraph anyway, and
+          # with no sentence rule there is nothing to send a paragraph to.
+          triage = !strict && !sent_rules.empty?
+          questions[TRIAGE_ID] = format_question(TRIAGE, register) if triage
           answered = in_parallel(eligible, concurrency) do |p|
             backend.ask({ "register" => register, "paragraph" => p.asked, "sentence_count" => p.sentences.size }, questions)
           end
@@ -103,6 +107,7 @@ module Sloplint
               notes << note
               flagged << p
             end
+            flagged << p if triage && triaged?(answer_for_id(answers, TRIAGE_ID))
           end
         end
 
@@ -132,11 +137,17 @@ module Sloplint
       end
 
       def questions_for(rules, register)
-        rules.to_h do |r|
-          q = r.question.merge("instructions" => format(r.question["instructions"], register: register))
-          [r.id, q]
-        end
+        rules.to_h { |r| [r.id, format_question(r.question, register)] }
       end
+
+      def format_question(question, register)
+        question.merge("instructions" => format(question["instructions"], register: register))
+      end
+
+      # The triage question flags at its first level, and only at medium
+      # confidence or above, the same bar a paragraph rule's flag clears
+      # before it opens a paragraph to the sentence rules.
+      def triaged?(answer) = answer.top == 0 && band(answer.confidence) != "low"
 
       # The sentence a paragraph rule points at, or the paragraph itself.
       def unit_for(rule, paragraph)
@@ -151,7 +162,9 @@ module Sloplint
 
       # A backend that answers some questions and not others is a failed
       # request, not a clean one.
-      def answer_for(answers, rule) = answers.fetch(rule.id) { raise BackendError, "no answer for #{rule.id}" }
+      def answer_for(answers, rule) = answer_for_id(answers, rule.id)
+
+      def answer_for_id(answers, id) = answers.fetch(id) { raise BackendError, "no answer for #{id}" }
 
       # Model confidence to a band. Provisional -- see docs/JUDGE.md "Note".
       def band(confidence)
