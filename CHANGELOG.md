@@ -27,10 +27,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reversal or mirror built as a line, a slogan, a maxim, a coined figure
   or a payoff line. A line in quotation marks counts when the document
   writes it for someone to say; a quotation reporting what someone already said
-  does not. In a default run the sentence rules only reach paragraphs a
-  paragraph rule flagged, so a device sentence in a long paragraph that
-  is otherwise plain was never asked about. `set-piece` sends
-  `device-before-claim` and `maxim` there.
+  does not.
 
 ### [0.2.0] - 2026-10-13
 
@@ -187,6 +184,29 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   command is refused with exit 2.
 
 ## sloplint
+
+## [Unreleased]
+
+### Added
+
+- New rule `x-not-y` (false-correction, `warning`, `medium`): the reversed
+  corrective, with the true half first and the rejected half after a comma
+  ("That's a gap, not a failure."). `not-x-but-y` and `isnt-x-its-y` only
+  see the other order.
+
+### Changed
+
+- `cleanly` (self-rating, `warning`) now flags every use of the adverb, at
+  `high` confidence, including the engineering idiom ("applies cleanly",
+  "exited cleanly"). Before, it flagged only some frames, and each
+  narrowing missed the next frame.
+
+### Fixed
+
+- Under `--markdown`, a line made only of HTML character references, with
+  or without tags among them ("&nbsp;", "<br>&#160;"), is dropped. It holds
+  no words, so it is not a sentence, and the judge no longer sends it to
+  the model. An entity inside running text stays part of its sentence.
 
 ## [0.10.0] - 2026-10-13
 
