@@ -150,12 +150,15 @@ RSpec.describe "Sloplint::Judge::RULES" do
           it "reaches #{rule.id}: #{ex[0, 60].inspect}" do
             pending "device-before-claim misses this example in its own fixtures" if known_misses.any? { ex.start_with?(_1) }
             text = [before_plain, ex, after_plain].join(" ")
-            draws = Array.new(2) do
+            draw = lambda do
               recorder = reached.new(backend)
               Sloplint::Judge::Engine.scan(text, rules: paragraph_rules + [rule], backend: recorder)
-              recorder.sentence_asked
+              recorder.sentence_asked == true
             end
-            expect(draws).to all(be(true)), "no sentence request in #{draws.count(&:!)} of 2 draws"
+            # Two draws that agree settle it; a third breaks the tie, as in flags?.
+            draws = Array.new(2) { draw.call }
+            draws << draw.call if draws.uniq.size > 1
+            expect(draws.count(true)).to be > draws.size / 2, "no sentence request in #{draws.count(false)} of #{draws.size} draws"
           end
         end
       end

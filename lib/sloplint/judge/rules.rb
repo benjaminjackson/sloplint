@@ -408,7 +408,7 @@ module Sloplint
         message: "Matched pair or triple shaped the content.",
         suggestion: "Keep the items the content needs and drop the one that completes the pattern.",
         examples_bad: ["The new pipeline is faster, simpler, and cleaner.", "It's not about the tooling, it's about the culture."],
-        examples_ok: ["The new pipeline runs in four minutes instead of eleven.", "The migration dropped the column in production but not in staging."],
+        examples_ok: ["The nightly build now takes four minutes; it took eleven before we cached the dependencies.", "The migration dropped the column in production but not in staging."],
         rationale: "A pair or triple whose items are interchangeable was built to a rhythm, not to the content. Off by default: it separates strongly against current Claude models and barely against 2023 models, which is a tell of one model family, and much of what it flags in documentation is a parallel the writer built on purpose."
       ),
       Rule.new(
@@ -585,7 +585,7 @@ module Sloplint
           "We wrote a rollback plan before the migration ran because the migration might fail. It covers every table we're touching.",
           "The build failed twice this morning. A stray comment in the config file caused both failures.",
           "The deploy at 09:40 tripled error rates on the billing endpoint. The Redis connection pool was maxed at 20 for six minutes. We rolled back to the previous build and error rates returned to normal within two minutes.",
-          "The incident review named five follow-up tasks, including a rewrite of the retry budget. The retry-budget rewrite would have prevented the outage. The other four tasks were closed within a week.",
+          "The incident review named five follow-up tasks, including a rewrite of the retry budget. The team agreed the rewrite would have prevented the outage. Four of the five tasks were closed within a week.",
           "Every cache in the fleet shares one eviction policy. It frees memory by evicting the least recently used entry, even when that entry is needed again a few seconds later.",
           "The final went to a deciding set. The defending champion saved two match points and then lost her serve at 5-5. Her opponent served out the match to take the title.",
           "The striker spoke after the draw. \"We played better than them and still dropped two points,\" he said. The club is third in the table.",
