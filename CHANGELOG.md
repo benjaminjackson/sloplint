@@ -5,7 +5,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
-### [Unreleased]
+### [0.3.0] - 2026-11-23
 
 - A default `--judge` run now asks the sentence rules about a long paragraph
   that no paragraph rule flagged when a triage question, asked in the same
@@ -185,7 +185,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint
 
-## [Unreleased]
+## [0.11.0] - 2026-11-23
 
 ### Added
 
