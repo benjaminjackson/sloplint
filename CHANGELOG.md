@@ -5,6 +5,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
+### [Unreleased]
+
+- New paragraph rule `set-piece` (`info`, `medium`): a paragraph with a
+  sentence anywhere in it that makes its point through a device -- a
+  reversal or mirror built as a line, a slogan, a maxim, a coined figure
+  or a payoff line. A line in quotation marks counts when the document
+  writes it for someone to say; a quotation reporting what someone already said
+  does not. In a default run the sentence rules only reach paragraphs a
+  paragraph rule flagged, so a device sentence in a long paragraph that
+  is otherwise plain was never asked about. `set-piece` sends
+  `device-before-claim` and `maxim` there.
+
 ### [0.2.0] - 2026-10-13
 
 - New sentence rule `positive-form` (`info`, `low`, off by default): a claim

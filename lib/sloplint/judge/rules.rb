@@ -193,6 +193,37 @@ module Sloplint
         rationale: "A paragraph in which every judgment is favorable, none is measured and no cost appears is copy, whatever it is attached to. The regex catalog's puffery-words sees the watch words; this rule sees the paragraph that is positive without any of them. Two levels, so the score is the probability of the flag. A README is allowed to like its project, so the clean side is wide: one measure or one drawback anywhere in the paragraph is enough. Warning because no human paragraph in news or abstracts flagged and model paragraphs did in both; medium because the question has two parts."
       ),
 
+      Rule.new(
+        id: "set-piece", category: "paragraph", unit: :paragraph, severity: "info", confidence: "medium",
+        question: {
+          "type" => "score",
+          "instructions" => "Does any sentence in this paragraph make its point through a device written as a line, or does every sentence state its point plainly, for %{register}?",
+          "criteria" => [
+            { "what" => "At least one sentence, anywhere in the paragraph, is a device: a reversal or mirror built as a line (one short sentence set against the next, a thing is A and another is not, shared everywhere and understood nowhere), a slogan, a maxim, a coined figure, or a payoff line that tells the reader what the facts around it add up to. A line in quotation marks counts when the document writes it for someone to say or print: a script line, a tagline, a line a speaker will open a talk with.",
+              "examples" => ["The pitch opens on one slide. \"The product is new. The problem isn't.\" Then the founder walks through the numbers.", "Every team logs to the same bucket. Each team wrote its own parser. The data is shared everywhere and understood nowhere."] },
+            { "what" => "Every sentence states a fact, decision, step or event. A contrast between two cases is carried by the facts of each case. A quotation that reports words someone already said, in an interview, a match report, a statement or a meeting, is a fact about what they said, even when their words are a device.",
+              "examples" => ["The job runs in staging and fails in production. Production's service account has no write access to the export bucket. We granted the role on Tuesday.", "The mayor told reporters on Friday, \"The budget is tight. Our streets aren't optional.\" The council votes on the plan next week.", "At the review, the database lead said, \"We can't shard this table until the foreign keys are gone.\" The team agreed to drop both keys first. That work starts next sprint."] }
+          ]
+        },
+        flag: { level: 0 },
+        excerpt: :all,
+        message: "A sentence in this paragraph makes its point through a device.",
+        suggestion: "Find the line built as a turn and say its point plainly.",
+        examples_bad: [
+          "The new search index went live on Monday. Queries that took two seconds now take two hundred milliseconds. The index is new. The questions people ask it aren't. Most of them still come from the same three dashboards.",
+          "The launch video runs ninety seconds. It ends on the founder looking into the camera and saying one line: \"We didn't build a faster checkout. We built a reason to come back.\" The last frame is the logo on black.",
+          "The migration moved forty tables over two weekends. The schema barely changed; the people who own it changed completely. Three of the five original owners have left, and nobody has picked up the billing tables."
+        ],
+        examples_ok: [
+          "The new search index went live on Monday. Queries that took two seconds now take two hundred milliseconds. Most queries still come from the same three dashboards, so we tuned the index for their filters first.",
+          "The launch video runs ninety seconds. It ends on the founder explaining why the company built its own payments service, then cuts to the logo. Legal asked us to drop one claim about settlement times, which we did.",
+          "The job runs in staging and fails in production. Production's service account has no write access to the export bucket. We granted the role on Tuesday, and the job has passed every night since.",
+          "At the review, the database lead said, \"We can't shard this table until the foreign keys are gone.\" The team agreed to drop both keys first. That work starts next sprint.",
+          "The mayor told reporters on Friday, \"The budget is tight. Our streets aren't optional.\" The council votes on the plan next week. Road repairs take up a third of the draft budget."
+        ],
+        rationale: "A reversal, mirror, slogan or maxim set in the middle of a paragraph reads as a line written to be quoted, not as one more fact. device-before-claim and maxim ask about each sentence, but in a default run the sentence rules only reach paragraphs a paragraph rule flagged; this rule is the paragraph-level question that sends them there. A line in quotation marks written for someone to say, a script line or a tagline, counts; a quotation reporting what someone already said does not, because news quotes people and their devices are part of the story."
+      ),
+
       # ── sentence ────────────────────────────────────────────────────────────
       Rule.new(
         id: "stock-figure", category: "sentence", unit: :sentence, severity: "warning", confidence: "high",
