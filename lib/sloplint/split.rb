@@ -88,9 +88,10 @@ module Sloplint
     # plus-underline form), bullets, ordered items, table rows, block
     # quotes, horizontal rules and reference lines -- are blanked whether or
     # not markdown is set, because their shape alone says they are not
-    # prose. Two kinds come back: a list item that holds a sentence and a
-    # callout blockquote ("> [!NOTE]", "> **Warning:**"), each as a unit of
-    # its own with only its marker blanked, and marked item. markdown additionally blanks fenced code, HTML
+    # prose. Three kinds come back, each as a unit of its own with only its
+    # marker blanked, and marked item: a list item that holds a sentence, a
+    # callout blockquote ("> [!NOTE]", "> **Warning:**"), and a table body
+    # cell that holds a sentence. markdown additionally blanks fenced code, HTML
     # comments and URLs before splitting, and the furniture that only shows
     # once a document is read as Markdown: front matter, an indented code
     # block, a lone HTML tag line, and a line that is only a code span or a
@@ -267,6 +268,17 @@ module Sloplint
     # The alert line itself, which is a label and holds no sentence.
     ALERT_LINE = /\A[ \t]*>[ \t]*\[!\w+\][ \t]*\z/
     QUOTED = /\A[ \t]*>/
+    # A table row, and the separator row under a table's header. A cell is
+    # what sits between two pipes that are not escaped; in the splitter's
+    # copy a pipe inside a code span is already a placeholder.
+    TABLE_ROW = /\A[ \t]*\|/
+    TABLE_SEPARATOR = /\A[ \t]*\|?(?:[ \t]*:?-+:?[ \t]*\|)+[ \t]*(?::?-+:?[ \t]*)?\z/
+    CELL_PIPE = /(?<!\\)\|/
+    # A first cell that is only a name: a code span, a linked code span or a
+    # bold term. Its row is a reference entry, and the other cells describe
+    # that name ("Current working directory." for `cwd`): asked about alone,
+    # without the name, they read as sentences that tell the reader nothing.
+    NAME_CELL = /\A(?:\[?#{INLINE}+\]?(?:\(#{INLINE}*\)|\[[^\]]*\])?|\*\*[^*]+\*\*)\z/
     QUOTE_MARKER = /\A[ \t]*>[ \t]?/
     # The second line of a list item, indented under the first.
     CONTINUED = /\A(?:[ ]{2,}|\t)\S/
@@ -342,6 +354,10 @@ module Sloplint
       # Each callout blockquote as the indexes of its lines.
       callouts = []
       in_callout = false
+      # The indexes of table body rows: the rows under a separator, while
+      # the table runs. The header row above the separator holds labels.
+      body_rows = []
+      in_body = false
       pairs = lines.zip(shown.each_line.to_a).each_with_index.map do |(whole, also), i|
         l = whole.chomp
         ending = whole[l.length..]
@@ -373,12 +389,17 @@ module Sloplint
           callouts.last << i
         end
         in_callout = quoted && (in_callout || l.match?(CALLOUT))
+        row = l.match?(TABLE_ROW) && i >= front && !code
+        separator = row && l.match?(TABLE_SEPARATOR)
+        body_rows << i if row && in_body && !separator
+        in_body = row && (in_body || separator)
         prose = !dropped && !blank
         opens = blank || dropped
         dropped ? ["#{" " * l.length}#{ending}"] * 2 : [whole, also]
       end
       shown_lines = shown.each_line.to_a
-      starts = keep_sentence_items(items, lines, shown_lines, pairs) + keep_callouts(callouts, lines, shown_lines, pairs)
+      starts = keep_sentence_items(items, lines, shown_lines, pairs) + keep_callouts(callouts, lines, shown_lines, pairs) +
+               keep_table_cells(body_rows, lines, shown_lines, pairs)
       [pairs.map(&:first).join, pairs.map(&:last).join, starts]
     end
 
@@ -404,6 +425,37 @@ module Sloplint
         # The line after the item starts a unit too, so prose that follows
         # a list with no blank line is not read as part of its last item.
         [line_offsets[first], line_offsets[indexes.last + 1]]
+      end
+    end
+
+    # Put back each table body cell that holds a sentence, with the rest of
+    # its row left blank, and return each cell's start and end offsets as a
+    # pair, so every kept cell is a unit of its own. A row's other cells, its
+    # pipes and its label cells stay blank.
+    def keep_table_cells(body_rows, lines, shown_lines, pairs)
+      line_offsets = lines.each_with_object([0]) { |l, acc| acc << acc.last + l.length }
+      body_rows.flat_map do |i|
+        line = lines[i].chomp
+        pipes = line.enum_for(:scan, CELL_PIPE).map { Regexp.last_match.begin(0) }
+        next [] if pipes.size >= 2 && line[(pipes[0] + 1)...pipes[1]].strip.match?(NAME_CELL)
+
+        kept = pipes.each_cons(2).filter_map do |left, right|
+          from = left + 1
+          cell = line[from...right]
+          lead = cell.length - cell.lstrip.length
+          body = cell.strip
+          next unless prose_item?(squash(body))
+
+          [from + lead, from + lead + body.length]
+        end
+        next [] if kept.empty?
+
+        pairs[i] = [lines[i], shown_lines[i]].map do |l|
+          out = (" " * line.length) + l[line.length..]
+          kept.each { |from, to| out[from...to] = l[from...to] }
+          out
+        end
+        kept.map { |from, to| [line_offsets[i] + from, line_offsets[i] + to] }
       end
     end
 

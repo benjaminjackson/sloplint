@@ -70,9 +70,9 @@ module Sloplint
       # text: the source. rules: judge Rules to run. backend: answers `ask`.
       # markdown: blank code, HTML comments and URLs, and drop the furniture
       # that needs a Markdown reading (front matter, indented code, a lone
-      # HTML or code-span line). Headings, tables, quotes and list items
-      # that are labels drop either way; a list item or a callout that holds
-      # a sentence gets the sentence rules. strict: run sentence rules on
+      # HTML or code-span line). Headings, quotes, and list items and table
+      # cells that are labels drop either way; a list item, table cell or
+      # callout that holds a sentence gets the sentence rules. strict: run sentence rules on
       # every sentence and keep low notes.
       def scan(text, rules: RULES, backend: Backend.load, markdown: false, path: "-",
                register: DEFAULT_REGISTER, strict: false,

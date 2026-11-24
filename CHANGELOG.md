@@ -13,7 +13,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sentence in a bulleted list was never asked about. A list item that is a
   label ("owner: ops"), a fragment with no closing punctuation, or a
   definition entry ("`url` - The full URL to your site.") still drops, and
-  so does any other blockquote. Each kept item is a unit of its own and
+  so does any other blockquote. Table body cells that hold a sentence are
+  read too, except in a reference row whose first cell is only a name
+  (`cwd`, a linked code span, a bold term). Each kept unit stands alone and
   gets the sentence rules, not the paragraph rules. Documents written in
   bullets send more sentence requests: across 342 gem READMEs, about one
   more request per 12 words of bullet text.

@@ -130,6 +130,28 @@ RSpec.describe Sloplint::Split do
     expect(text[paras.first.offset, paras.first.length]).to eq("The gem converts keys. It does this at every depth.")
   end
 
+  it "keeps a table body cell that holds a sentence, each cell a unit of its own" do
+    text = "| Option | Meaning |\n|---|---|\n| Retries | The client retries a failed upload. Then it stops. |\n| Mode | short label |\nAfter the table. Still prose.\n"
+    paras = described_class.paragraphs(text)
+    expect(paras.map(&:text)).to eq(["The client retries a failed upload. Then it stops.", "After the table. Still prose."])
+    expect(paras.map(&:item)).to eq([true, false])
+    expect(text[paras.first.offset, paras.first.length]).to eq("The client retries a failed upload. Then it stops.")
+  end
+
+  it "keeps two sentence cells in one row apart, and leaves the header row out" do
+    text = "| It runs first. | It runs last. |\n|---|---|\n| The cache warms up. | The worker drains the queue. |\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["The cache warms up.", "The worker drains the queue."])
+  end
+
+  # A row whose first cell is only a name is a reference entry: its other
+  # cells describe the name, and asked about without it they read as
+  # sentences that tell the reader nothing.
+  it "drops a reference row whose first cell is a code span, a code link or a bold term" do
+    text = "| Name | Meaning |\n|---|---|\n| `cwd` | Current working directory. |\n| [`windowMs`](https://x.io/a) | How long to remember requests. |\n" \
+           "| **Parent spans** | Together they form a tree. |\n| `a|b` | A pipe in a code span is not a cell break. |\n"
+    expect(described_class.paragraphs(text, markdown: true)).to eq([])
+  end
+
   it "starts a new unit on prose that follows a kept item with no blank line" do
     text = "1. First do this thing.\n2. Then do that.\nAfter the list. Still prose.\n"
     expect(described_class.paragraphs(text).map(&:text)).to eq(["First do this thing.", "Then do that.", "After the list. Still prose."])
