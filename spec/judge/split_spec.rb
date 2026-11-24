@@ -81,9 +81,58 @@ RSpec.describe Sloplint::Split do
     expect(text[paras.last.offset, paras.last.length]).to eq("After the list. Still prose.")
   end
 
-  it "blanks a wrapped bullet whole, and a one-line lead-in ending in a colon" do
-    text = "- Long sentences appeared often. A rule asks\n  for full sentences, so that is fine.\n- Short one.\n\nRun it like this:\n\nProse here. More prose. And more.\n"
+  # A bullet that holds a sentence is prose the writer wrote, and the judge
+  # once passed "The plugin needs no install step of its own." in a README's
+  # requirements list without asking a single question about it.
+  it "keeps a bullet that holds a sentence, as a unit of its own" do
+    text = "- Long sentences appeared often. A rule asks\n  for full sentences, so that is fine.\n- Short one.\n\nProse here. More prose. And more.\n"
+    paras = described_class.paragraphs(text, markdown: true)
+    expect(paras.map(&:text)).to eq(["Long sentences appeared often. A rule asks for full sentences, so that is fine.",
+                                     "Short one.", "Prose here. More prose. And more."])
+    expect(paras.map { |p| text[p.offset, p.length] }.first).to start_with("Long sentences")
+    expect(paras.first.sentences.size).to eq(2)
+    expect(paras.map(&:item)).to eq([true, true, false])
+  end
+
+  it "keeps an ordered item and a task-list item, with the marker left out" do
+    text = "1. Install it first.\n2) Then run it.\n- [x] The suite passes.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["Install it first.", "Then run it.", "The suite passes."])
+  end
+
+  it "keeps an item that holds two sentences and ends on a code span or a colon" do
+    text = "- A diff that changes the guarantees needs a yes. Flag it. `the-id`\n- If the vault was wrong. Enter it again:\n"
+    expect(described_class.paragraphs(text).map(&:text))
+      .to eq(["A diff that changes the guarantees needs a yes. Flag it. `the-id`", "If the vault was wrong. Enter it again:"])
+  end
+
+  # A label is not a sentence: no capital to open it, or nothing to close it.
+  it "still drops an item that is a label, a fragment or a command" do
+    text = "- owner: ops\n- ticket OPS-412\n- 2022 U.S. Senate: Warnock (D) 58.95%\n- Set your editor to save quickly (e.g. without backups)\n- **Source:** Brewer (1994)\n"
+    expect(described_class.paragraphs(text)).to eq([])
+  end
+
+  it "drops a one-line lead-in ending in a colon, whose content is the code after it" do
+    text = "Or simply:\n\n```\nmake\n```\n\nProse here. More prose. And more.\n"
     expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Prose here. More prose. And more."])
+  end
+
+  it "drops a definition entry, a code name glossed after a dash or colon" do
+    text = "- `url` - The full URL to your site.\n- `title`: Your website's title.\n- `x` runs before the build.\n"
+    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["`x` runs before the build."])
+  end
+
+  # A note set off in a blockquote is the writer's own; any other blockquote
+  # quotes someone else and still drops.
+  it "keeps a callout blockquote and drops a quotation" do
+    text = "> [!NOTE]\n> The gem converts keys. It does this at every depth.\n\n> Someone else said this. Quoted.\n\n> **Warning:** keys pass through verbatim.\n"
+    paras = described_class.paragraphs(text)
+    expect(paras.map(&:text)).to eq(["The gem converts keys. It does this at every depth.", "**Warning:** keys pass through verbatim."])
+    expect(text[paras.first.offset, paras.first.length]).to eq("The gem converts keys. It does this at every depth.")
+  end
+
+  it "starts a new unit on prose that follows a kept item with no blank line" do
+    text = "1. First do this thing.\n2. Then do that.\nAfter the list. Still prose.\n"
+    expect(described_class.paragraphs(text).map(&:text)).to eq(["First do this thing.", "Then do that.", "After the list. Still prose."])
   end
 
   it "cuts sentence text from the original, so an excerpt is always in the file" do
@@ -192,11 +241,13 @@ RSpec.describe Sloplint::Split do
       .to eq(["Indented prose here. Second one. Third one here."])
   end
 
-  it "still drops a bullet or an ordered item that wraps onto a second line" do
+  it "reads a bullet or an ordered item that wraps onto a second line as one unit" do
     text = "- A bullet that wraps\n  onto a second line. And a third.\n\nPlain prose here. More of it.\n"
-    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Plain prose here. More of it."])
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["A bullet that wraps onto a second line. And a third.", "Plain prose here. More of it."])
     text = "1. First item here. More of it.\n   A wrapped line of the item.\n\nPlain prose after. More.\n"
-    expect(described_class.paragraphs(text, markdown: true).map(&:text)).to eq(["Plain prose after. More."])
+    expect(described_class.paragraphs(text, markdown: true).map(&:text))
+      .to eq(["First item here. More of it. A wrapped line of the item.", "Plain prose after. More."])
   end
 
   # CommonMark keeps this line in the paragraph above it, because an ordered

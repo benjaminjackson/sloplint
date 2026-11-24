@@ -5,6 +5,19 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## sloplint-judge
 
+### [Unreleased]
+
+- The judge now reads a list item that holds a sentence, and a blockquote
+  that opens as the writer's own note (`> [!NOTE]`, `> **Warning:**` and
+  the like). Before, every list item and blockquote was dropped, so a
+  sentence in a bulleted list was never asked about. A list item that is a
+  label ("owner: ops"), a fragment with no closing punctuation, or a
+  definition entry ("`url` - The full URL to your site.") still drops, and
+  so does any other blockquote. Each kept item is a unit of its own and
+  gets the sentence rules, not the paragraph rules. Documents written in
+  bullets send more sentence requests: across 342 gem READMEs, about one
+  more request per 12 words of bullet text.
+
 ### [0.3.0] - 2026-11-23
 
 - A default `--judge` run now asks the sentence rules about a long paragraph

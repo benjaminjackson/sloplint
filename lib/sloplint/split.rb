@@ -15,7 +15,10 @@ module Sloplint
     # asked is the same span with what --markdown skips taken out, which is
     # what the model is shown. They are the same string without --markdown.
     Sentence = Data.define(:offset, :length, :text, :asked)
-    Paragraph = Data.define(:offset, :length, :text, :asked, :sentences)
+    # item is true for a list item or a callout kept as prose: it is a unit
+    # of its own, and the judge asks its sentence questions about it but no
+    # paragraph question, because a bullet is not a paragraph.
+    Paragraph = Data.define(:offset, :length, :text, :asked, :sentences, :item)
 
     # Furniture: a line that is not prose, whatever a regex would think.
     # Headings, list items, table rows, block quotes, horizontal rules,
@@ -85,7 +88,9 @@ module Sloplint
     # plus-underline form), bullets, ordered items, table rows, block
     # quotes, horizontal rules and reference lines -- are blanked whether or
     # not markdown is set, because their shape alone says they are not
-    # prose. markdown additionally blanks fenced code, HTML
+    # prose. Two kinds come back: a list item that holds a sentence and a
+    # callout blockquote ("> [!NOTE]", "> **Warning:**"), each as a unit of
+    # its own with only its marker blanked, and marked item. markdown additionally blanks fenced code, HTML
     # comments and URLs before splitting, and the furniture that only shows
     # once a document is read as Markdown: front matter, an indented code
     # block, a lone HTML tag line, and a line that is only a code span or a
@@ -94,7 +99,7 @@ module Sloplint
     # string that is in the file. Blanking is character for character, so
     # the offsets agree.
     def paragraphs(text, markdown: false)
-      scan, asked = blank_furniture(markdown ? blank(text) : text, markdown ? blank_blocks(text) : text, markdown:)
+      scan, asked, units = blank_furniture(markdown ? blank(text) : text, markdown ? blank_blocks(text) : text, markdown:)
       # A document with nothing to leave out is asked about as written, and
       # then every text is cut once instead of twice.
       asked = text if asked == text
@@ -104,9 +109,28 @@ module Sloplint
       at = 0
       # Split keeping the separators, and walk the offsets arithmetically:
       # String#index with a start position rescans from 0 on non-ASCII text.
-      scan.split(KEEP_BREAK).each do |block|
-        start = at
-        at += block.length
+      # A list item kept as prose is a unit of its own: the blocks are cut
+      # again where one starts, so the item and the text around it are never
+      # read as one paragraph.
+      unit_starts = units.to_h { |from, _| [from, true] }
+      cuts = units.flatten.sort.uniq.each
+      upcoming = next_cut(cuts)
+      blocks = scan.split(KEEP_BREAK).flat_map do |whole|
+        from = at
+        at += whole.length
+        pieces = []
+        while upcoming && upcoming < at
+          if upcoming > from
+            pieces << [whole[0, upcoming - from], from]
+            whole = whole[(upcoming - from)..]
+            from = upcoming
+          end
+          upcoming = next_cut(cuts)
+        end
+        pieces << [whole, from]
+      end
+      blocks.each do |block, start|
+        item = unit_starts.key?(start)
         next if block.match?(BREAK_ONLY)
 
         # Both ends trimmed by the same measure. String#strip takes a leading
@@ -127,16 +151,26 @@ module Sloplint
         para_asked = shown ? shown.cut(offset, body.length) : para
         sents = sentences(body, base: offset, text: para, asked: para_asked)
         # A one-sentence block ending in a colon is the lead-in to whatever
-        # follows (a code block, a list), not a paragraph.
+        # follows (a code block, a list), not a paragraph. Its content is in
+        # what follows, which the model is not shown: asked about on their
+        # own, "Or simply:" and "Finally, you can access the reflog for any
+        # branch:" read as sentences that name nothing.
         next if markdown && sents.size == 1 && body.end_with?(":")
 
         unless sents.empty?
           flat = squash(para)
-          out << Paragraph.new(offset:, length: body.length, text: flat, sentences: sents,
+          out << Paragraph.new(offset:, length: body.length, text: flat, sentences: sents, item:,
                                asked: para.equal?(para_asked) ? flat : squash(para_asked))
         end
       end
       out
+    end
+
+    # The next offset from an enumerator, or nil once it runs out.
+    def next_cut(cuts)
+      cuts.next
+    rescue StopIteration
+      nil
     end
 
     # Sentences of one paragraph. base is where the paragraph starts in the
@@ -211,6 +245,29 @@ module Sloplint
     # this is here because a bullet and an ordered item are the only two
     # kinds of furniture a continuation line can belong to.
     BULLET = /\A[ \t]*[-*+][ \t]/
+    # The marker that opens a list item, with a task-list box after it if
+    # there is one: "- ", "* ", "2. ", "1) ", "- [x] ".
+    ITEM_MARKER = /\A[ \t]*(?:[-*+]|\d+[.)])[ \t]+(?:\[[ xX]\][ \t]+)?/
+    # A list item holds prose when it starts as BOUNDARY says a sentence
+    # starts, or with the emphasis or bold that opens a lead-in, and then
+    # either ends on sentence punctuation (with a closing quote, bracket or
+    # emphasis after it) or holds two sentences or more. The second case is
+    # the item that ends on a code span or a colon after a full sentence.
+    SENTENCE_START = /\A["'“‘(\[A-Z0-9*_#{INLINE}]/
+    SENTENCE_END = /[.!?]["'”’)\]*_]*\z/
+    # A definition entry: a code-span name, then a dash or colon, then what
+    # it means ("`url` - The full URL to your site."). It is a table row set
+    # as a bullet, and its gloss is a label, not a sentence the writer built.
+    DEFINITION_ITEM = /\A#{INLINE}+[ \t]*(?:[-–—:]|\*\*)[ \t]/
+    # A blockquote that is the writer's own note rather than a quotation:
+    # a GitHub alert ("> [!NOTE]") or a bold label of the same five kinds
+    # ("> **Note:**", "> **Warning**"). Any other blockquote quotes someone
+    # and stays dropped.
+    CALLOUT = /\A[ \t]*>[ \t]*(?:\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]|\*\*(?:Note|Tip|Important|Warning|Caution)\b)/i
+    # The alert line itself, which is a label and holds no sentence.
+    ALERT_LINE = /\A[ \t]*>[ \t]*\[!\w+\][ \t]*\z/
+    QUOTED = /\A[ \t]*>/
+    QUOTE_MARKER = /\A[ \t]*>[ \t]?/
     # The second line of a list item, indented under the first.
     CONTINUED = /\A(?:[ ]{2,}|\t)\S/
     # An indented code block: four spaces or a tab. Two spaces are still
@@ -279,6 +336,12 @@ module Sloplint
       prose = false
       code = false
       opens = true
+      # Each list item as the indexes of its lines, first line first, so the
+      # ones that hold sentences can be put back once the walk is done.
+      items = []
+      # Each callout blockquote as the indexes of its lines.
+      callouts = []
+      in_callout = false
       pairs = lines.zip(shown.each_line.to_a).each_with_index.map do |(whole, also), i|
         l = whole.chomp
         ending = whole[l.length..]
@@ -297,12 +360,75 @@ module Sloplint
         setext = title[i] || (i.positive? && title[i - 1])
         dropped = i < front || code || listed || l.match?(FURNITURE) || (markdown && (l.match?(HTML_LINE) || l.match?(ENTITY_LINE))) ||
                   (markdown && lone_inline?(l, prose)) || (item && l.match?(CONTINUED)) || setext
-        item = listed || (item && l.match?(CONTINUED))
+        continued = item && l.match?(CONTINUED)
+        if listed && !code && i >= front
+          items << [i]
+        elsif continued && items.any?
+          items.last << i
+        end
+        item = listed || continued
+        quoted = l.match?(QUOTED) && i >= front && !code
+        if quoted && (in_callout || l.match?(CALLOUT))
+          callouts << [] unless in_callout
+          callouts.last << i
+        end
+        in_callout = quoted && (in_callout || l.match?(CALLOUT))
         prose = !dropped && !blank
         opens = blank || dropped
         dropped ? ["#{" " * l.length}#{ending}"] * 2 : [whole, also]
       end
-      [pairs.map(&:first).join, pairs.map(&:last).join]
+      shown_lines = shown.each_line.to_a
+      starts = keep_sentence_items(items, lines, shown_lines, pairs) + keep_callouts(callouts, lines, shown_lines, pairs)
+      [pairs.map(&:first).join, pairs.map(&:last).join, starts]
+    end
+
+    # Put back the list items that hold sentences, with only the marker
+    # blanked, and return each one's start and end offsets as a pair. The caller
+    # makes each kept item a unit of its own, because a list read as one
+    # paragraph is not a paragraph. An item is kept when its text starts the
+    # way a sentence starts and ends on a full stop, question mark or
+    # exclamation mark; a label ("owner: ops", "ticket OPS-412") does neither
+    # and stays dropped.
+    def keep_sentence_items(items, lines, shown_lines, pairs)
+      line_offsets = lines.each_with_object([0]) { |l, acc| acc << acc.last + l.length }
+      items.filter_map do |indexes|
+        first = indexes.first
+        marker = lines[first][ITEM_MARKER].length
+        text = squash(indexes.map { |i| i == first ? lines[i][marker..] : lines[i] }.join(" "))
+        next unless prose_item?(text)
+
+        indexes.each do |i|
+          cut = i == first ? marker : 0
+          pairs[i] = [lines[i], shown_lines[i]].map { |l| (" " * cut) + l[cut..] }
+        end
+        # The line after the item starts a unit too, so prose that follows
+        # a list with no blank line is not read as part of its last item.
+        [line_offsets[first], line_offsets[indexes.last + 1]]
+      end
+    end
+
+    # Whether a list item's text, marker taken off, holds a sentence.
+    def prose_item?(text)
+      return false unless text.match?(SENTENCE_START)
+      return false if text.match?(DEFINITION_ITEM)
+
+      text.match?(SENTENCE_END) || sentences(text).size >= 2
+    end
+
+    # Put back each callout blockquote with its ">" markers blanked, and the
+    # alert line ("> [!NOTE]") left blank, and return each one's start and
+    # end offsets as a pair, so it is a unit of its own.
+    def keep_callouts(callouts, lines, shown_lines, pairs)
+      line_offsets = lines.each_with_object([0]) { |l, acc| acc << acc.last + l.length }
+      callouts.map do |indexes|
+        indexes.each do |i|
+          next if lines[i].chomp.match?(ALERT_LINE)
+
+          cut = lines[i][QUOTE_MARKER].length
+          pairs[i] = [lines[i], shown_lines[i]].map { |l| (" " * cut) + l[cut..] }
+        end
+        [line_offsets[indexes.first], line_offsets[indexes.last + 1]]
+      end
     end
 
     # A line that is only code spans or URLs is furniture: a command on a

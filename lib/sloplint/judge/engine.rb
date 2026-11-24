@@ -70,9 +70,10 @@ module Sloplint
       # text: the source. rules: judge Rules to run. backend: answers `ask`.
       # markdown: blank code, HTML comments and URLs, and drop the furniture
       # that needs a Markdown reading (front matter, indented code, a lone
-      # HTML or code-span line). Headings, lists, tables and quotes drop
-      # either way. strict: run sentence rules on every sentence and keep
-      # low notes.
+      # HTML or code-span line). Headings, tables, quotes and list items
+      # that are labels drop either way; a list item or a callout that holds
+      # a sentence gets the sentence rules. strict: run sentence rules on
+      # every sentence and keep low notes.
       def scan(text, rules: RULES, backend: Backend.load, markdown: false, path: "-",
                register: DEFAULT_REGISTER, strict: false,
                concurrency: ENV.fetch("SLOPLINT_JUDGE_CONCURRENCY", "8").to_i)
@@ -89,7 +90,11 @@ module Sloplint
           # two sentences has no answer to give; the sentence rules already
           # cover those sentences under strict, and each question here is
           # paid for.
-          eligible = paragraphs.select { |p| p.sentences.size >= MIN_SENTENCES }
+          # A list item or a callout is not a paragraph however many
+          # sentences it holds: read against gem READMEs, every paragraph
+          # question asked of a bullet ("**Multi-threaded**. Each request is
+          # served in a separate thread. ...") missed.
+          eligible = paragraphs.select { |p| !p.item && p.sentences.size >= MIN_SENTENCES }
           questions = questions_for(para_rules, register)
           # Under --strict the sentence rules read every paragraph anyway, and
           # with no sentence rule there is nothing to send a paragraph to.

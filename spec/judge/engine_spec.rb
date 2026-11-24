@@ -52,6 +52,18 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(result.notes.map(&:rule).tally).to eq("wrap-up" => 1, "no-news" => 6)
   end
 
+  # A bullet is not a paragraph however many sentences it holds, so it gets
+  # no paragraph question, and its sentences go straight to the sentence
+  # rules as a short paragraph's do.
+  it "asks a list item its sentence questions and no paragraph question" do
+    item = "- First fact here. Second fact here. In short, facts matter.\n"
+    backend = FakeBackend.new
+    result = described_class.scan(item, rules: [para_rule, sent_rule], backend: backend)
+    expect(backend.calls.none? { |s, _| s.key?("sentence_count") }).to be(true)
+    expect(backend.calls.count { |s, _| s.key?("target") }).to eq(3)
+    expect(result.notes.map(&:rule).tally).to eq("no-news" => 3)
+  end
+
   describe "the triage question" do
     let(:long_para) { "A one. B two. C three. D four.\n" }
     # Paragraph rules never flag; the triage question answers with `triage`.
