@@ -290,13 +290,20 @@ RSpec.describe Sloplint::Judge::Engine do
     jev = Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai/v1", key: "k")
     env = { "https_proxy" => "http://u:p@127.0.0.1:3128", "http_proxy" => nil,
             "HTTPS_PROXY" => nil, "HTTP_PROXY" => nil, "no_proxy" => nil, "NO_PROXY" => nil }
-    with_env(env) do
-      expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, "127.0.0.1", 3128, "u", "p").and_raise(Net::OpenTimeout)
-      expect { jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }) }.to raise_error(Sloplint::Judge::BackendError)
-    end
-    with_env(env.merge("no_proxy" => "typesafe.ai")) do
-      expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, nil, nil, nil, nil).and_raise(Net::OpenTimeout)
-      expect { jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }) }.to raise_error(Sloplint::Judge::BackendError)
+    body = JSON.generate("usage" => {}, "answers" => { "q" => { "probabilities" => { "0" => 0.2, "1" => 0.8 } } })
+    {
+      env => ["127.0.0.1", 3128, "u", "p"],
+      env.merge("no_proxy" => "typesafe.ai") => [nil, nil, nil, nil]
+    }.each do |vars, proxy|
+      with_env(vars) do
+        http = instance_double(Net::HTTP)
+        allow(http).to receive(:use_ssl=)
+        allow(http).to receive(:read_timeout=)
+        expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, *proxy).and_return(http)
+        expect(http).to receive(:request).and_return(instance_double(Net::HTTPResponse, code: "200", body: body))
+        answer = jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }).fetch("q")
+        expect(answer.top).to eq(1)
+      end
     end
   end
 
