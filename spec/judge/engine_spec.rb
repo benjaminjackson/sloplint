@@ -283,6 +283,31 @@ RSpec.describe Sloplint::Judge::Engine do
     expect(sent.path).to eq("/v1/systemone?deployment=eu")
   end
 
+  # Net::HTTP left to itself reads http_proxy only, so a setup that sets
+  # just https_proxy sent the key around the proxy, not through it.
+  it "posts through https_proxy, and not when no_proxy names the host" do
+    require "sloplint/judge/backends/jev"
+    jev = Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai/v1", key: "k")
+    env = { "https_proxy" => "http://u:p@127.0.0.1:3128", "http_proxy" => nil,
+            "HTTPS_PROXY" => nil, "HTTP_PROXY" => nil, "no_proxy" => nil, "NO_PROXY" => nil }
+    with_env(env) do
+      expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, "127.0.0.1", 3128, "u", "p").and_raise(Net::OpenTimeout)
+      expect { jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }) }.to raise_error(Sloplint::Judge::BackendError)
+    end
+    with_env(env.merge("no_proxy" => "typesafe.ai")) do
+      expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, nil, nil, nil, nil).and_raise(Net::OpenTimeout)
+      expect { jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }) }.to raise_error(Sloplint::Judge::BackendError)
+    end
+  end
+
+  def with_env(vars)
+    saved = vars.keys.to_h { |k| [k, ENV[k]] }
+    vars.each { |k, v| ENV[k] = v }
+    yield
+  ensure
+    saved.each { |k, v| ENV[k] = v }
+  end
+
   # Jev may leave out a level whose probability is zero. Sorted keys alone
   # would then shift every level down one and flag the wrong criterion.
   it "gives a score one probability per level, whatever keys come back" do

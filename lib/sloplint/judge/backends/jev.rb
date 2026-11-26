@@ -88,7 +88,12 @@ module Sloplint
         def cost_usd(usage) = self.class.cost_usd(usage)
 
         def ask(state, questions)
-          http = Net::HTTP.new(@url.host, @url.port)
+          # Net::HTTP's own proxy lookup builds an http:// URI and so reads
+          # only http_proxy; an https endpoint behind an https_proxy-only
+          # setup would go direct. URI::HTTPS#find_proxy reads https_proxy
+          # and honours no_proxy.
+          proxy = @url.find_proxy
+          http = Net::HTTP.new(@url.host, @url.port, proxy&.host, proxy&.port, proxy&.user, proxy&.password)
           http.use_ssl = true
           http.read_timeout = 90
           req = Net::HTTP::Post.new(@url.request_uri, "Content-Type" => "application/json", "Authorization" => "Bearer #{@key}")
