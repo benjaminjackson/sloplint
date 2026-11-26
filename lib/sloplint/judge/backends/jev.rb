@@ -28,6 +28,7 @@ module Sloplint
           # dialog nobody can see, and a run that is about to be refused for
           # its URL has no business pulling the secret out of the keychain.
           @url = self.class.https!(url)
+          @proxy = self.class.proxy_for(@url)
           key ||= Secret.fetch(KEY)&.first
           raise ArgumentError, Secret.missing(KEY) if key.nil? || key.empty?
 
@@ -72,6 +73,31 @@ module Sloplint
           uri
         end
 
+        # Net::HTTP's own lookup builds an http:// URI for the endpoint and so
+        # reads only http_proxy: behind an https_proxy-only setup the key went
+        # around the proxy, not through it. So look up https_proxy first, then
+        # http_proxy as Net::HTTP always did, both honouring no_proxy. The
+        # rest is what Net::HTTP's lookup does and a hand-built one has to
+        # repeat: hostname (an IPv6 address without its brackets) and the
+        # credentials unescaped. Returns Net::HTTP.new's four proxy
+        # arguments; all nil means connect direct, and a nil address passed
+        # explicitly stops Net::HTTP from looking again.
+        def self.proxy_for(url, env = ENV)
+          proxy = url.find_proxy(env) || URI::HTTP.build(host: url.host, port: url.port).find_proxy(env)
+          return [nil, nil, nil, nil] unless proxy
+          # "proxy.corp:3128" parses, as a scheme with no host, and a nil
+          # address would quietly mean no proxy at all.
+          raise ArgumentError, "the proxy setting has no host; write it as http://host:port" if proxy.hostname.to_s.empty?
+
+          [proxy.hostname, proxy.port, unescape(proxy.user), unescape(proxy.password)]
+        rescue URI::Error
+          # Not quoted back: the setting can hold a password.
+          raise ArgumentError, "the proxy setting (https_proxy or http_proxy) is not a URL"
+        end
+
+        def self.unescape(part) = part && URI.decode_uri_component(part)
+        private_class_method :unescape
+
         # Jev's response carries token counts and no price. TypeSafe's public
         # price is $42 per billion input tokens; output tokens are free. So
         # the cost is the input tokens times this, exactly, not an estimate.
@@ -88,12 +114,7 @@ module Sloplint
         def cost_usd(usage) = self.class.cost_usd(usage)
 
         def ask(state, questions)
-          # Net::HTTP's own proxy lookup builds an http:// URI and so reads
-          # only http_proxy; an https endpoint behind an https_proxy-only
-          # setup would go direct. URI::HTTPS#find_proxy reads https_proxy
-          # and honours no_proxy.
-          proxy = @url.find_proxy
-          http = Net::HTTP.new(@url.host, @url.port, proxy&.host, proxy&.port, proxy&.user, proxy&.password)
+          http = Net::HTTP.new(@url.host, @url.port, *@proxy)
           http.use_ssl = true
           http.read_timeout = 90
           req = Net::HTTP::Post.new(@url.request_uri, "Content-Type" => "application/json", "Authorization" => "Bearer #{@key}")

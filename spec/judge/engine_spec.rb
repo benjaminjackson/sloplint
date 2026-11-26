@@ -285,26 +285,45 @@ RSpec.describe Sloplint::Judge::Engine do
 
   # Net::HTTP left to itself reads http_proxy only, so a setup that sets
   # just https_proxy sent the key around the proxy, not through it.
-  it "posts through https_proxy, and not when no_proxy names the host" do
+  it "posts through https_proxy and gets the answer back" do
     require "sloplint/judge/backends/jev"
-    jev = Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai/v1", key: "k")
-    env = { "https_proxy" => "http://u:p@127.0.0.1:3128", "http_proxy" => nil,
-            "HTTPS_PROXY" => nil, "HTTP_PROXY" => nil, "no_proxy" => nil, "NO_PROXY" => nil }
+    allow(IPSocket).to receive(:getaddress).and_return("203.0.113.5")
+    env = { "https_proxy" => "http://u:p@127.0.0.1:3128", "HTTPS_PROXY" => nil, "http_proxy" => nil,
+            "HTTP_PROXY" => nil, "no_proxy" => nil, "NO_PROXY" => nil }
+    jev = with_env(env) { Sloplint::Judge::Backends::Jev.new(url: "https://api.typesafe.ai/v1", key: "k") }
+    http = instance_double(Net::HTTP)
+    allow(http).to receive(:use_ssl=)
+    allow(http).to receive(:read_timeout=)
+    expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, "127.0.0.1", 3128, "u", "p").and_return(http)
     body = JSON.generate("usage" => {}, "answers" => { "q" => { "probabilities" => { "0" => 0.2, "1" => 0.8 } } })
-    {
-      env => ["127.0.0.1", 3128, "u", "p"],
-      env.merge("no_proxy" => "typesafe.ai") => [nil, nil, nil, nil]
-    }.each do |vars, proxy|
-      with_env(vars) do
-        http = instance_double(Net::HTTP)
-        allow(http).to receive(:use_ssl=)
-        allow(http).to receive(:read_timeout=)
-        expect(Net::HTTP).to receive(:new).with("api.typesafe.ai", 443, *proxy).and_return(http)
-        expect(http).to receive(:request).and_return(instance_double(Net::HTTPResponse, code: "200", body: body))
-        answer = jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }).fetch("q")
-        expect(answer.top).to eq(1)
-      end
-    end
+    expect(http).to receive(:request).and_return(instance_double(Net::HTTPResponse, code: "200", body: body))
+    expect(jev.ask({}, { "q" => { "type" => "score", "criteria" => %w[a b] } }).fetch("q").top).to eq(1)
+  end
+
+  # The rest of what Net::HTTP's own lookup did, which a hand-built one has
+  # to repeat: http_proxy still counts, no_proxy still wins, credentials are
+  # unescaped ("+" stays a plus), and an IPv6 address loses its brackets.
+  it "resolves the proxy the way Net::HTTP would, from either variable" do
+    require "sloplint/judge/backends/jev"
+    allow(IPSocket).to receive(:getaddress).and_return("203.0.113.5")
+    url = URI("https://api.typesafe.ai/v1")
+    proxy = ->(env) { Sloplint::Judge::Backends::Jev.proxy_for(url, env) }
+    expect(proxy.({ "http_proxy" => "http://h:8080" })).to eq(["h", 8080, nil, nil])
+    expect(proxy.({ "https_proxy" => "http://a:1", "http_proxy" => "http://b:2" })).to eq(["a", 1, nil, nil])
+    expect(proxy.({ "https_proxy" => "http://h:1", "no_proxy" => "typesafe.ai" })).to eq([nil, nil, nil, nil])
+    expect(proxy.({})).to eq([nil, nil, nil, nil])
+    expect(proxy.({ "https_proxy" => "http://u%40c:p%3As+x@[fd00::1]:3128" })).to eq(["fd00::1", 3128, "u@c", "p:s+x"])
+  end
+
+  # A setting that would quietly mean "no proxy" is refused instead, and
+  # the message does not echo it back, since it can carry a password.
+  it "refuses a proxy setting it cannot use, without quoting it" do
+    require "sloplint/judge/backends/jev"
+    url = URI("https://api.typesafe.ai/v1")
+    expect { Sloplint::Judge::Backends::Jev.proxy_for(url, { "https_proxy" => "proxy.corp:3128" }) }
+      .to raise_error(ArgumentError, /has no host/)
+    expect { Sloplint::Judge::Backends::Jev.proxy_for(url, { "https_proxy" => "http://u:secret@bad host:1" }) }
+      .to raise_error(ArgumentError, /not a URL/) { |e| expect(e.message).not_to include("secret") }
   end
 
   def with_env(vars)
